@@ -246,10 +246,10 @@
                 </div>
             </section>
 
-            <!-- 3. NUEVA PESTAÑA: INFORMES AL HOGAR -->
+            <!-- 3. INFORMES AL HOGAR -->
             <section id="hogar" class="tab-content">
                 <h2>Generación y Envío de Informes al Hogar</h2>
-                <p style="color: #64748b;">Seleccione el nivel y estudiante para generar el informe oficial consolidado de todas las materias, agregar el comentario obligatorio del docente e iniciar el envío simultáneo a los encargados desde <b>educativoshkenuk@gmail.com</b>.</p>
+                <p style="color: #64748b;">Seleccione el nivel y estudiante para generar el informe oficial consolidado con todas las materias, la nota final, el comentario obligatorio del docente e iniciar el envío simultáneo a los encargados desde <b>educativoshkenuk@gmail.com</b>.</p>
                 
                 <fieldset>
                     <legend>Selección de Estudiante para Informe</legend>
@@ -410,7 +410,7 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label>Materia Académica</label>
+                                    <label>Materia Académica / Conducta / Inglés</label>
                                     <select id="acad-materia-sel" required onchange="actualizarRubrosAcademicos()">
                                         <option value="">Seleccione asignatura</option>
                                         <option value="Español">Español</option>
@@ -592,13 +592,12 @@
                 const opt = document.createElement('option');
                 opt.value = est.cedula;
                 opt.textContent = `${est.nombre} (Cédula: ${est.cedula})`;
-                // Guardar datos completos en el option para acceso directo
                 opt.dataset.estudiante = JSON.stringify(est);
                 selectEstudiantes.appendChild(opt);
             });
         }
 
-        // GENERAR VISTA PREVIA DEL INFORME AL HOGAR
+        // GENERAR VISTA PREVIA DEL INFORME AL HOGAR CON NOTA FINAL
         async function generarInformeHogarVisual() {
             const selectEst = document.getElementById('inf-estudiante-sel');
             const contenedor = document.getElementById('contenedor-vista-informe');
@@ -611,24 +610,41 @@
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
             const docenteNivel = document.getElementById('inf-docente').value || '[Sin asignar]';
 
-            // Obtener notas de este estudiante
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
             let tablaMateriasHTML = '';
             const materiasUnicas = notas ? [...new Set(notas.map(n => n.materia))] : [];
 
             if (materiasUnicas.length === 0) {
-                tablaMateriasHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
+                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
             } else {
                 materiasUnicas.forEach(mat => {
                     const n1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
                     const n2 = notas.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+                    
+                    const p1Val = n1 ? n1.promedio : null;
+                    const p2Val = n2 ? n2.promedio : null;
+                    
+                    let notaFinalStr = 'En Proceso';
+                    let estado = 'En Proceso';
+                    
+                    if (p1Val !== null && p2Val !== null) {
+                        const finalCalc = Number(((p1Val + p2Val) / 2).toFixed(2));
+                        notaFinalStr = finalCalc;
+                        estado = (p1Val >= 65 && p2Val >= 65 && finalCalc >= 65) ? 'Aprobado' : 'Reprobado';
+                    } else if (p1Val !== null) {
+                        notaFinalStr = `${p1Val} (Solo 1° P)`;
+                    } else if (p2Val !== null) {
+                        notaFinalStr = `${p2Val} (Solo 2° P)`;
+                    }
+
                     tablaMateriasHTML += `
                         <tr>
                             <td><b>${mat}</b></td>
-                            <td>${n1 ? n1.promedio : 'Pendiente'}</td>
-                            <td>${n2 ? n2.promedio : 'Pendiente'}</td>
-                            <td>${(n1 && n2) ? ((n1.promedio >= 65 && n2.promedio >= 65) ? 'Aprobado' : 'Reprobado') : 'En Proceso'}</td>
+                            <td>${p1Val !== null ? p1Val : 'Pendiente'}</td>
+                            <td>${p2Val !== null ? p2Val : 'Pendiente'}</td>
+                            <td><b>${notaFinalStr}</b></td>
+                            <td>${estado}</td>
                         </tr>
                     `;
                 });
@@ -641,7 +657,7 @@
                         <div class="school-info">
                             <h3>CES MONTESSORI</h3>
                             <p>Teléfono: 22607806 • Heredia, Costa Rica</p>
-                            <p><b>INFORME OFICIAL AL HOGAR</b></p>
+                            <p><b>INFORME OFICIAL AL HOGAR CON NOTA FINAL</b></p>
                         </div>
                         <div style="font-size: 12px; text-align: right;">
                             <p><b>Remitente:</b> educativoshkenuk@gmail.com</p>
@@ -656,13 +672,14 @@
                         <p><b>Directora Institucional:</b> Flor María Jiménez</p>
                         <p><b>Docente de Nivel:</b> <span id="lbl-docente-ver">${docenteNivel}</span></p>
                     </div>
-                    <h4>Calificaciones por Materia (Primer y Segundo Periodo)</h4>
+                    <h4>Calificaciones, Periodos y Nota Final</h4>
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Materia / Asignatura</th>
                                 <th>Nota 1° Periodo</th>
                                 <th>Nota 2° Periodo</th>
+                                <th>Nota Final</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -678,7 +695,6 @@
             `;
         }
 
-        // VINCULAR OBSERVACIONES EN TIEMPO REAL
         document.addEventListener('input', function(e) {
             if (e.target.id === 'inf-comentarios') {
                 const lbl = document.getElementById('lbl-comentarios-ver');
@@ -690,7 +706,6 @@
             }
         });
 
-        // ENVÍO SIMULTÁNEO A ENCARGADOS DESDE educativoshkenuk@gmail.com
         async function enviarInformeSimultaneo() {
             const selectEst = document.getElementById('inf-estudiante-sel');
             const comentarios = document.getElementById('inf-comentarios').value.trim();
@@ -707,8 +722,6 @@
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            
-            // Recopilar correos de los encargados
             let destinatarios = [];
             if (estData.encargado1_correo) destinatarios.push(estData.encargado1_correo);
             if (estData.encargado2_correo) destinatarios.push(estData.encargado2_correo);
@@ -718,17 +731,15 @@
                 return;
             }
 
-            // Simulación de envío simultáneo corporativo desde educativoshkenuk@gmail.com
             msg.className = 'notification success';
-            msg.innerText = `Enviando informes simultáneos desde educativoshkenuk@gmail.com a: ${destinatarios.join(', ')}...`;
+            msg.innerText = `Enviando informes simultáneos con nota final desde educativoshkenuk@gmail.com a: ${destinatarios.join(', ')}...`;
             msg.style.display = 'block';
 
             setTimeout(() => {
-                msg.innerText = `¡Informes al Hogar enviados exitosamente y de forma simultánea a los encargados de ${estData.nombre}!`;
+                msg.innerText = `¡Informes al Hogar con Nota Final enviados exitosamente y de forma simultánea a los encargados de ${estData.nombre}!`;
             }, 2000);
         }
 
-        // CARGAR LISTAS Y PROMOCIÓN
         async function cargarListasCiclo(ciclo, evt) {
             if (evt) {
                 document.querySelectorAll('#listas .sub-tab-btn').forEach(el => el.classList.remove('active'));
@@ -749,7 +760,7 @@
             }
 
             let html = `
-                <h3>Listado de ${ciclo} con Notas por Periodo</h3>
+                <h3>Listado de ${ciclo} con Notas por Periodo y Nota Final</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -759,6 +770,7 @@
                             <th>Materia</th>
                             <th>Nota 1° Periodo</th>
                             <th>Nota 2° Periodo</th>
+                            <th>Nota Final</th>
                             <th>Estado General</th>
                         </tr>
                     </thead>
@@ -770,17 +782,22 @@
                 const materias = [...new Set(notasEst.map(n => n.materia))];
 
                 if (materias.length === 0) {
-                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b></td><td>${est.nivel}</td><td colspan="4" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
+                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b></td><td>${est.nivel}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
                 } else {
                     materias.forEach((mat, idx) => {
                         const notaP1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
                         const notaP2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                        const p1Val = notaP1 ? notaP1.promedio : '-';
-                        const p2Val = notaP2 ? notaP2.promedio : '-';
-
+                        
+                        const p1Val = notaP1 ? notaP1.promedio : null;
+                        const p2Val = notaP2 ? notaP2.promedio : null;
+                        
+                        let notaFinalStr = '-';
                         let estado = 'Pendiente';
-                        if (notaP1 && notaP2) {
-                            if (p1Val >= 65 && p2Val >= 65) {
+
+                        if (p1Val !== null && p2Val !== null) {
+                            const finalCalc = Number(((p1Val + p2Val) / 2).toFixed(2));
+                            notaFinalStr = finalCalc;
+                            if (p1Val >= 65 && p2Val >= 65 && finalCalc >= 65) {
                                 estado = '<span style="color: #166534; font-weight: bold;">Aprobado (≥65)</span>';
                             } else {
                                 estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado (<65)</span>';
@@ -791,8 +808,9 @@
                             <tr>
                                 ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
-                                <td>${p1Val}</td>
-                                <td>${p2Val}</td>
+                                <td>${p1Val !== null ? p1Val : '-'}</td>
+                                <td>${p2Val !== null ? p2Val : '-'}</td>
+                                <td><b>${notaFinalStr}</b></td>
                                 <td>${estado}</td>
                             </tr>
                         `;
@@ -919,6 +937,7 @@
             const contenedor = document.getElementById('contenedor-rubros-acad');
             contenedor.innerHTML = '';
             let rubros = [];
+            
             if (['Español', 'Matemáticas', 'Ciencias', 'Estudios Sociales'].includes(materia)) {
                 rubros = [
                     { id: 'cotidiano', label: 'Trabajo Cotidiano (50%)', peso: 0.50 },
@@ -931,10 +950,10 @@
                     { id: 'asertividad', label: 'Asertividad (20%)', peso: 0.20 },
                     { id: 'cooperacion', label: 'Cooperación (5%)', peso: 0.05 },
                     { id: 'presentacion', label: 'Presentación Personal (5%)', peso: 0.05 },
-                    { id: 'resp_fisico', label: 'Respeto espacio físico pares/adultos (20%)', peso: 0.20 },
-                    { id: 'resp_verbal', label: 'Respeto espacio verbal pares/adultos (20%)', peso: 0.20 },
+                    { id: 'resp_fisico', label: 'Respeto hacia el espacio físico de sus iguales y adultos (20%)', peso: 0.20 },
+                    { id: 'resp_verbal', label: 'Respeto hacia el espacio verbal de sus iguales y adultos (20%)', peso: 0.20 },
                     { id: 'no_verbal', label: 'Lenguaje no verbal (10%)', peso: 0.10 },
-                    { id: 'resp_psico', label: 'Respeto espacio psicológico pares/adultos (20%)', peso: 0.20 }
+                    { id: 'resp_psico', label: 'Respeto hacia el espacio psicológico de sus iguales y los adultos (20%)', peso: 0.20 }
                 ];
             } else if (materia === 'Inglés') {
                 rubros = [
@@ -947,6 +966,7 @@
                     { id: 'attendance', label: 'Attendance (10%)', peso: 0.10 }
                 ];
             }
+
             rubros.forEach(r => {
                 contenedor.innerHTML += `<div class="form-group"><label>${r.label}</label><input type="number" step="0.01" min="0" max="100" id="acad-rubro-${r.id}" class="input-rubro-acad" data-peso="${r.peso}" required placeholder="Nota 0-100"></div>`;
             });
