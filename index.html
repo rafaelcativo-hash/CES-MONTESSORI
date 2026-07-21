@@ -353,12 +353,10 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE SUPABASE (Credenciales integradas)
         const SUPABASE_URL = 'https://qxtrbyevxexkqjchokrz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dHJieWV2eGV4a3FqY2hva3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MDI2MjgsImV4cCI6MjA4NzQ3ODYyOH0.v7kL2jL8uV2k5V2k5V2k5V2k5V2k5V2k5V2k5V2k5V2';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Control de Pestañas
         function cambiarPestana(idSeccion, evt) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -366,7 +364,6 @@
             if (evt) evt.currentTarget.classList.add('active');
         }
 
-        // Sistema de Login con Supabase Auth
         async function realizarLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -398,14 +395,12 @@
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
         }
 
-        // Verificar sesión activa al cargar
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
             if (session) {
                 iniciarSesionUI(session.user.email);
             }
         });
 
-        // Cálculo de edad exacta con años, meses y días
         function calcularEdadExacta() {
             const fechaNacVal = document.getElementById('mat-fnac').value;
             const resultadoDiv = document.getElementById('edad-resultado');
@@ -431,7 +426,6 @@
             resultadoDiv.innerText = `${anos} años, ${meses} meses y ${dias} días`;
         }
 
-        // Funciones de Guardado en Base de Datos
         async function mostrarMensaje(elementId, texto, esExito) {
             const el = document.getElementById(elementId);
             el.className = 'notification ' + (esExito ? 'success' : 'error');
@@ -472,7 +466,7 @@
         async function guardarConfiguracion(e) {
             e.preventDefault();
             const datos = {
-                id: 1, // Fila única de configuración
+                id: 1,
                 p1_inicio: document.getElementById('cfg-p1-inicio').value,
                 p1_fin: document.getElementById('cfg-p1-fin').value,
                 vac_inicio: document.getElementById('cfg-vac-inicio').value,
@@ -518,14 +512,25 @@
             }
         }
 
-### ¿Dónde lo debes copiar?
+        async function guardarDocente(e, tipo) {
+            e.preventDefault();
+            const prefijo = tipo === 'academico' ? 'acad' : 'art';
+            const datos = {
+                nombre: document.getElementById(`${prefijo}-nombre`).value,
+                correo: document.getElementById(`${prefijo}-correo`).value,
+                telefono: document.getElementById(`${prefijo}-tel`).value,
+                especialidad: document.getElementById(`${prefijo}-esp`).value,
+                tipo_docente: tipo
+            };
 
-Debes copiar este código y pegarlo **directamente dentro de tu archivo `index.html`** en GitHub (o en tu Visual Studio Code si lo prefieres trabajar localmente). 
-
-Para hacerlo de forma rápida en línea:
-1. Entra a tu repositorio en **GitHub**.
-2. Abre tu archivo existente llamado **`index.html`**.
-3. Haz clic en el ícono del lápiz (**Edit this file**) en la esquina superior derecha del recuadro de código.
-4. **Borra todo** lo que tenga adentro el archivo actualmente.
-5. Pega todo este código nuevo que te acabo de dar (ya lleva tus credenciales configuradas).
-6. Baja la página y haz clic en el botón verde **Commit changes** para guardar los cambios.
+            const { error } = await supabaseClient.from('docentes').insert([datos]);
+            if (error) {
+                mostrarMensaje(`${prefijo}-msg`, 'Error al registrar docente: ' + error.message, false);
+            } else {
+                mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
+                document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
+            }
+        }
+    </script>
+</body>
+</html>
