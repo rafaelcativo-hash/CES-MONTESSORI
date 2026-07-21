@@ -35,7 +35,7 @@
         .tab-btn:hover { color: white; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); background-color: rgba(255,255,255,0.03); }
 
-        main { flex: 1; padding: 30px; overflow-y: auto; max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        main { flex: 1; padding: 30px; overflow-y: auto; max-width: 1500px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .tab-content { display: none; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .tab-content.active { display: block; }
 
@@ -50,16 +50,10 @@
         
         button.action-btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
         button.action-btn:hover { background-color: var(--accent-hover); }
-        
-        .sub-panel-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
-        .sub-tab-btn { background: #e2e8f0; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; color: var(--text); }
-        .sub-tab-btn.active { background: var(--accent); color: white; }
-        .sub-panel { display: none; }
-        .sub-panel.active { display: block; }
 
         /* Tables */
         table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; overflow-x: auto; display: block; }
-        table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; }
+        table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
@@ -322,17 +316,17 @@
                 </div>
             </section>
 
-            <!-- 4. CALIFICAR (CARGA GRUPAL COMPLETA Y SOPORTE DE INSTRUMENTOS REPETIDOS) -->
+            <!-- 4. CALIFICAR (CON COMPONENTES DE EVALUACIÓN Y CÁLCULO DE NOTA FINAL) -->
             <section id="calificar" class="tab-content">
-                <h2>Calificación por Grupo Completo (Talleres, Instrumentos y Académicas)</h2>
-                <p style="color: #64748b;">Selecciona el nivel y la asignatura para cargar a todo el grupo de una sola vez, contemplando alumnos con instrumentos o talleres compartidos.</p>
+                <h2>Calificación por Componentes y Rubros (Grupo Completo)</h2>
+                <p style="color: #64748b;">Selecciona el periodo, nivel y asignatura para registrar las notas de cada componente con sus porcentajes y ver la nota final calculada de inmediato.</p>
                 
                 <fieldset>
-                    <legend>Parámetros de Calificación Masiva</legend>
+                    <legend>Parámetros de Calificación</legend>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Periodo Académico Activo</label>
-                            <select id="cal-periodo" required>
+                            <label>Periodo Activo</label>
+                            <select id="cal-periodo" required onchange="cargarGrupoParaCalificar()">
                                 <option value="Primer Periodo">Primer Periodo</option>
                                 <option value="Segundo Periodo">Segundo Periodo</option>
                             </select>
@@ -380,7 +374,7 @@
                 </fieldset>
 
                 <div id="contenedor-grupo-calificar">
-                    <p style="color: #64748b; text-align: center;">Seleccione un nivel y asignatura para desplegar la lista de todo el grupo.</p>
+                    <p style="color: #64748b; text-align: center;">Seleccione Periodo, Nivel y Asignatura para desplegar la planilla con sus componentes de evaluación.</p>
                 </div>
             </section>
 
@@ -611,7 +605,78 @@
             setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
 
-        // CARGAR GRUPO COMPLETO PARA CALIFICAR MASIVAMENTE (SOPORTA INSTRUMENTOS REPETIDOS O MÚLTIPLES)
+        // OBTENER RUBROS Y PESOS SEGÚN LA MATERIA SELECCIONADA
+        function obtenerRubrosMateria(materia) {
+            if (materia.includes('Conducta')) {
+                return [
+                    { id: 'asertividad', label: 'Asertividad', peso: 0.20 },
+                    { id: 'cooperacion', label: 'Cooperación', peso: 0.05 },
+                    { id: 'presentacion', label: 'Presentación', peso: 0.05 },
+                    { id: 'resp_fisico', label: 'Respeto Físico', peso: 0.20 },
+                    { id: 'resp_verbal', label: 'Respeto Verbal', peso: 0.20 },
+                    { id: 'no_verbal', label: 'No Verbal', peso: 0.10 },
+                    { id: 'resp_psico', label: 'Respeto Psicológico', peso: 0.20 }
+                ];
+            } else if (materia.includes('Inglés')) {
+                return [
+                    { id: 'puntuality', label: 'Punctuality', peso: 0.05 },
+                    { id: 'phonics', label: 'Phonics & Pron.', peso: 0.10 },
+                    { id: 'projects', label: 'Projects', peso: 0.10 },
+                    { id: 'test', label: 'Test', peso: 0.20 },
+                    { id: 'notebook', label: 'Notebook', peso: 0.10 },
+                    { id: 'oral', label: 'Oral Class', peso: 0.35 },
+                    { id: 'attendance', label: 'Attendance', peso: 0.10 }
+                ];
+            } else if (materia.includes('Danza')) {
+                return [
+                    { id: 'puntualidad', label: 'Puntualidad', peso: 0.10 },
+                    { id: 'seguimiento', label: 'Coreografía', peso: 0.20 },
+                    { id: 'preparacion', label: 'Preparación', peso: 0.10 },
+                    { id: 'participacion', label: 'Participación', peso: 0.20 },
+                    { id: 'concentracion', label: 'Concentración', peso: 0.10 },
+                    { id: 'aportes', label: 'Creatividad', peso: 0.20 },
+                    { id: 'asistencia', label: 'Asistencia', peso: 0.10 }
+                ];
+            } else if (materia.includes('Artes Plásticas')) {
+                return [
+                    { id: 'asistencia', label: 'Asistencia', peso: 0.25 },
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 },
+                    { id: 'autorregulacion', label: 'Autorregulación', peso: 0.15 }
+                ];
+            } else if (materia.includes('Taller de Percusión')) {
+                return [
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 },
+                    { id: 'materiales', label: 'Materiales', peso: 0.20 },
+                    { id: 'asistencia', label: 'Asistencia', peso: 0.20 }
+                ];
+            } else if (materia.includes('Solfeo')) {
+                return [
+                    { id: 'autorregulacion', label: 'Autorregulación', peso: 0.40 },
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 }
+                ];
+            } else if (materia.includes('Edufi')) {
+                return [
+                    { id: 'asistencia', label: 'Asistencia', peso: 0.50 },
+                    { id: 'respeto', label: 'Respeto', peso: 0.25 },
+                    { id: 'disposicion', label: 'Disposición', peso: 0.25 }
+                ];
+            } else if (materia.includes('Académica')) {
+                return [
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.50 },
+                    { id: 'pruebas', label: 'Pruebas', peso: 0.30 },
+                    { id: 'extraclase', label: 'Extraclase', peso: 0.10 },
+                    { id: 'asistencia', label: 'Asistencia', peso: 0.10 }
+                ];
+            } else {
+                // Instrumentos y otras artísticas estándar
+                return [
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 },
+                    { id: 'asistencia', label: 'Asistencia/Participación', peso: 0.40 }
+                ];
+            }
+        }
+
+        // CARGAR GRUPO COMPLETO CON COMPONENTES DE EVALUACIÓN Y CÁLCULO EN VIVO
         async function cargarGrupoParaCalificar() {
             const nivel = document.getElementById('cal-nivel').value;
             const materia = document.getElementById('cal-materia').value;
@@ -619,11 +684,11 @@
             const contenedor = document.getElementById('contenedor-grupo-calificar');
 
             if (!nivel || !materia) {
-                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione el Nivel y la Asignatura para desplegar el grupo completo.</p>';
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione el Nivel y la Asignatura para desplegar la planilla.</p>';
                 return;
             }
 
-            contenedor.innerHTML = '<p>Cargando estudiantes del grupo...</p>';
+            contenedor.innerHTML = '<p>Cargando estudiantes y componentes...</p>';
 
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
@@ -633,16 +698,22 @@
                 return;
             }
 
+            const rubros = obtenerRubrosMateria(materia);
+
             let html = `
-                <h3 style="color: var(--primary); margin-top: 20px;">Calificando a Grupo: ${nivel} - Materia: ${materia} (${periodo})</h3>
-                <p style="font-size: 13px; color: #64748b;">Ingresa la nota final o promedio del periodo para cada estudiante y haz clic en Guardar.</p>
+                <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Cédula</th>
-                            <th>Estudiante</th>
-                            <th>Instrumento Principal / Opcionales</th>
-                            <th>Nota Actual / Calificación del Periodo (0-100)</th>
+                            <th>Estudiante / Instrumento</th>
+            `;
+
+            rubros.forEach(r => {
+                html += `<th>${r.label}<br><span style="font-size:10px; font-weight:normal;">(${Math.round(r.peso * 100)}%)</span></th>`;
+            });
+
+            html += `
+                            <th>Nota Final Periodo</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -651,18 +722,21 @@
 
             estudiantes.forEach(est => {
                 const notaReg = notas ? notas.find(n => n.cedula_estudiante === est.cedula) : null;
-                const notaVal = notaReg ? notaReg.promedio : '';
+                const promedioGuardado = notaReg ? notaReg.promedio : '-';
 
                 html += `
                     <tr>
-                        <td>${est.cedula}</td>
-                        <td style="text-align: left;"><b>${est.nombre}</b></td>
-                        <td><small>Principal: <b>${est.instrumento_principal || 'N/A'}</b><br>Opcionales: ${est.instrumento_opc1 || 'Ninguno'}, ${est.instrumento_opc2 || 'Ninguno'}</small></td>
+                        <td style="text-align: left;"><b>${est.nombre}</b><br><small>Inst: ${est.instrumento_principal || 'N/A'}</small></td>
+                `;
+
+                rubros.forEach(r => {
+                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-peso="${r.peso}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}')"></td>`;
+                });
+
+                html += `
+                        <td><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
                         <td>
-                            <input type="number" step="0.01" min="0" max="100" id="nota-est-${est.cedula}" value="${notaVal}" placeholder="Ej. 85" style="width: 120px; text-align: center; font-weight: bold;">
-                        </td>
-                        <td>
-                            <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaIndividualGrupo('${est.cedula}', '${materia}', '${periodo}')">Guardar</button>
+                            <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}')">Guardar</button>
                         </td>
                     </tr>
                 `;
@@ -672,21 +746,43 @@
             contenedor.innerHTML = html;
         }
 
-        async function guardarNotaIndividualGrupo(cedula, materia, periodo) {
-            const inputVal = document.getElementById(`nota-est-${cedula}`).value;
-            if (inputVal === '' || isNaN(inputVal)) {
-                alert('Por favor ingrese una nota válida.');
+        function calcularNotaFinalEstudiante(cedula) {
+            const inputs = document.querySelectorAll(`.input-rubro-${cedula}`);
+            let total = 0;
+            let completo = true;
+
+            inputs.forEach(input => {
+                const val = parseFloat(input.value);
+                const peso = parseFloat(input.getAttribute('data-peso'));
+                if (!isNaN(val)) {
+                    total += val * peso;
+                } else {
+                    completo = false;
+                }
+            });
+
+            const lblFinal = document.getElementById(`lbl-final-${cedula}`);
+            if (lblFinal) {
+                lblFinal.innerText = Number(total.toFixed(2));
+            }
+        }
+
+        async function guardarNotaComponentes(cedula, materia, periodo) {
+            const lblFinal = document.getElementById(`lbl-final-${cedula}`);
+            const promedioFinal = parseFloat(lblFinal.innerText);
+
+            if (isNaN(promedioFinal)) {
+                alert('Por favor ingrese las notas en los componentes antes de guardar.');
                 return;
             }
 
-            const promedio = Number(parseFloat(inputVal).toFixed(2));
-            const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedio };
+            const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedioFinal };
 
             const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
             if (error) {
                 await supabaseClient.from('notas').insert([datos]);
             }
-            alert(`¡Nota guardada exitosamente para la cédula ${cedula}!`);
+            alert(`¡Nota final de periodo (${promedioFinal}) guardada exitosamente para la cédula ${cedula}!`);
         }
 
         // REGISTRO HISTÓRICO UNIFICADO
