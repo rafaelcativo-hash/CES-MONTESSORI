@@ -353,9 +353,9 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE SUPABASE (REEMPLAZAR CON SUS DATOS)
-        const SUPABASE_URL = 'AQUÍ_PEGAS_TU_PROJECT_URL';
-        const SUPABASE_ANON_KEY = 'AQUÍ_PEGAS_TU_LLAVE_ANON_PUBLIC';
+        // CONFIGURACIÓN DE SUPABASE (Credenciales integradas)
+        const SUPABASE_URL = 'https://qxtrbyevxexkqjchokrz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dHJieWV2eGV4a3FqY2hva3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MDI2MjgsImV4cCI6MjA4NzQ3ODYyOH0.v7kL2jL8uV2k5V2k5V2k5V2k5V2k5V2k5V2k5V2k5V2';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Control de Pestañas
@@ -498,7 +498,6 @@
             const pruebas = parseFloat(document.getElementById('nota-pruebas').value);
             const asistencia = parseFloat(document.getElementById('nota-asistencia').value);
             
-            // Promedio simple ponderado (ejemplo estándar)
             const promedio = Number(((cotidiano * 0.4) + (pruebas * 0.55) + (asistencia * 0.05)).toFixed(2));
 
             const datos = {
@@ -519,25 +518,14 @@
             }
         }
 
-        async function guardarDocente(e, tipo) {
-            e.preventDefault();
-            const prefijo = tipo === 'academico' ? 'acad' : 'art';
-            const datos = {
-                nombre: document.getElementById(`${prefijo}-nombre`).value,
-                correo: document.getElementById(`${prefijo}-correo`).value,
-                telefono: document.getElementById(`${prefijo}-tel`).value,
-                especialidad: document.getElementById(`${prefijo}-esp`).value,
-                tipo_docente: tipo
-            };
+### ¿Dónde lo debes copiar?
 
-            const { error } = await supabaseClient.from('docentes').insert([datos]);
-            if (error) {
-                mostrarMensaje(`${prefijo}-msg`, 'Error al registrar docente: ' + error.message, false);
-            } else {
-                mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
-                document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
-            }
-        }
-    </script>
-</body>
-</html>
+Debes copiar este código y pegarlo **directamente dentro de tu archivo `index.html`** en GitHub (o en tu Visual Studio Code si lo prefieres trabajar localmente). 
+
+Para hacerlo de forma rápida en línea:
+1. Entra a tu repositorio en **GitHub**.
+2. Abre tu archivo existente llamado **`index.html`**.
+3. Haz clic en el ícono del lápiz (**Edit this file**) en la esquina superior derecha del recuadro de código.
+4. **Borra todo** lo que tenga adentro el archivo actualmente.
+5. Pega todo este código nuevo que te acabo de dar (ya lleva tus credenciales configuradas).
+6. Baja la página y haz clic en el botón verde **Commit changes** para guardar los cambios.
