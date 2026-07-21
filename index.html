@@ -57,6 +57,12 @@
         .sub-panel { display: none; }
         .sub-panel.active { display: block; }
 
+        /* Tables for Lists and Reports */
+        table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+        table.data-table th { background-color: var(--primary); color: white; }
+        table.data-table tr:nth-child(even) { background-color: #f8fafc; }
+
         .age-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; margin-top: 5px; text-align: left; }
         .notification { margin-top: 15px; padding: 12px; border-radius: 6px; font-weight: 600; display: none; font-size: 14px; }
         .success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
@@ -100,6 +106,7 @@
 
         <nav>
             <button class="tab-btn active" onclick="cambiarPestana('matricula', event)">Matrícula</button>
+            <button class="tab-btn" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
             <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración de Periodos</button>
             <button class="tab-btn" onclick="cambiarPestana('notas', event)">Registro de Notas</button>
             <button class="tab-btn" onclick="cambiarPestana('academicos', event)">Docentes Académicos</button>
@@ -214,7 +221,27 @@
                 </form>
             </section>
 
-            <!-- 2. CONFIGURACIÓN DE PERIODOS -->
+            <!-- 2. NUEVA PESTAÑA: LISTAS Y PROMOCIÓN -->
+            <section id="listas" class="tab-content">
+                <h2>Listas Oficiales por Ciclo y Control de Promoción</h2>
+                <p style="color: #64748b;">Visualiza los estudiantes separados por Primer y Segundo Ciclo, revisa las notas de ambos periodos en una misma hoja y aplica la promoción automática al siguiente nivel si la nota mínima es de 65 en ambos periodos.</p>
+                
+                <div class="sub-panel-tabs" style="margin-top: 20px;">
+                    <button class="sub-tab-btn active" onclick="cargarListasCiclo('Primer Ciclo', event)">Primer Ciclo (1°, 2°, 3°)</button>
+                    <button class="sub-tab-btn" onclick="cargarListasCiclo('Segundo Ciclo', event)">Segundo Ciclo (4°, 5°, 6°)</button>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <button class="action-btn" onclick="procesarPromocionAutomatica()">Verificar y Aplicar Promoción Automática</button>
+                    <span id="promocion-msg" style="margin-left: 15px; font-weight: 600; color: #166534;"></span>
+                </div>
+
+                <div id="contenedor-listas-tabla">
+                    <p>Seleccione un ciclo para desplegar la lista de estudiantes.</p>
+                </div>
+            </section>
+
+            <!-- 3. CONFIGURACIÓN DE PERIODOS -->
             <section id="configuracion" class="tab-content">
                 <h2>Configuración de Periodos y Eventos Institucionales</h2>
                 <form id="form-config" onsubmit="guardarConfiguracion(event)">
@@ -252,34 +279,23 @@
                         </div>
                     </fieldset>
 
-                    <fieldset>
-                        <legend>Festival Institucional</legend>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Fecha del Festival</label>
-                                <input type="date" id="cfg-fest-fecha" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Hora del Evento</label>
-                                <input type="time" id="cfg-fest-hora" required>
-                            </div>
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label>Lugar del Festival</label>
-                                <input type="text" id="cfg-fest-lugar" required placeholder="Ej. Gimnasio Institucional">
-                            </div>
-                        </div>
-                    </fieldset>
-
                     <button type="submit" class="action-btn">Guardar Configuración</button>
                     <div id="cfg-msg" class="notification"></div>
                 </form>
             </section>
 
-            <!-- 3. REGISTRO DE NOTAS (DOS PANELES: ARTÍSTICAS Y ACADÉMICAS) -->
+            <!-- 4. REGISTRO DE NOTAS -->
             <section id="notas" class="tab-content">
-                <h2>Registro de Notas por Estudiante y Asignatura</h2>
+                <h2>Registro de Notas por Estudiante y Periodo</h2>
                 
-                <!-- PESTAÑAS PARA LOS DOS PANELES -->
+                <div class="form-group" style="margin-bottom: 20px; max-width: 300px;">
+                    <label>Periodo Académico</label>
+                    <select id="select-periodo-global" required>
+                        <option value="Primer Periodo">Primer Periodo</option>
+                        <option value="Segundo Periodo">Segundo Periodo</option>
+                    </select>
+                </div>
+
                 <div class="sub-panel-tabs">
                     <button class="sub-tab-btn active" onclick="cambiarSubPanel('artisticas', event)">Materias Artísticas</button>
                     <button class="sub-tab-btn" onclick="cambiarSubPanel('academicas', event)">Materias Académicas</button>
@@ -326,11 +342,11 @@
                         <fieldset>
                             <legend>Rubros de Evaluación (Artísticas)</legend>
                             <div id="contenedor-rubros-art" class="form-grid">
-                                <p style="color: #64748b; grid-column: span 2;">Seleccione una materia artística para desplegar sus rubros y porcentajes específicos.</p>
+                                <p style="color: #64748b; grid-column: span 2;">Seleccione una materia artística para desplegar sus rubros.</p>
                             </div>
                         </fieldset>
 
-                        <button type="submit" class="action-btn">Guardar Nota Artística y Calcular</button>
+                        <button type="submit" class="action-btn">Guardar Nota Artística</button>
                         <div id="art-nota-msg" class="notification"></div>
                     </form>
                 </div>
@@ -377,17 +393,17 @@
                         <fieldset>
                             <legend>Rubros de Evaluación (Académicas)</legend>
                             <div id="contenedor-rubros-acad" class="form-grid">
-                                <p style="color: #64748b; grid-column: span 2;">Seleccione una materia académica para desplegar sus rubros y porcentajes específicos.</p>
+                                <p style="color: #64748b; grid-column: span 2;">Seleccione una materia académica para desplegar sus rubros.</p>
                             </div>
                         </fieldset>
 
-                        <button type="submit" class="action-btn">Guardar Nota Académica y Calcular</button>
+                        <button type="submit" class="action-btn">Guardar Nota Académica</button>
                         <div id="acad-nota-msg" class="notification"></div>
                     </form>
                 </div>
             </section>
 
-            <!-- 4. DOCENTES ACADÉMICOS -->
+            <!-- 5. DOCENTES ACADÉMICOS -->
             <section id="academicos" class="tab-content">
                 <h2>Directorio de Docentes Académicos</h2>
                 <form id="form-acad" onsubmit="guardarDocente(event, 'academico')">
@@ -406,7 +422,7 @@
                         </div>
                         <div class="form-group">
                             <label>Especialidad / Materia</label>
-                            <input type="text" id="acad-esp" required placeholder="Ej. Español, Matemáticas">
+                            <input type="text" id="acad-esp" required placeholder="Ej. Español">
                         </div>
                     </div>
                     <button type="submit" class="action-btn">Registrar Docente Académico</button>
@@ -414,7 +430,7 @@
                 </form>
             </section>
 
-            <!-- 5. DOCENTES ARTÍSTICOS -->
+            <!-- 6. DOCENTES ARTÍSTICOS -->
             <section id="artisticos" class="tab-content">
                 <h2>Directorio de Docentes Artísticos</h2>
                 <form id="form-art" onsubmit="guardarDocente(event, 'artistico')">
@@ -433,7 +449,7 @@
                         </div>
                         <div class="form-group">
                             <label>Disciplina Artística</label>
-                            <input type="text" id="art-esp" required placeholder="Ej. Danza, Música, Solfeo">
+                            <input type="text" id="art-esp" required placeholder="Ej. Danza">
                         </div>
                     </div>
                     <button type="submit" class="action-btn">Registrar Docente Artístico</button>
@@ -522,7 +538,154 @@
             setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
 
-        // CARGAR ESTUDIANTES SEGÚN NIVEL SELECCIONADO DESDE LA MATRÍCULA
+        // CARGAR LISTAS SEPARADAS POR CICLO Y MOSTRAR AMBOS PERIODOS EN LA MISMA HOJA
+        async function cargarListasCiclo(ciclo, evt) {
+            if (evt) {
+                document.querySelectorAll('#listas .sub-tab-btn').forEach(el => el.classList.remove('active'));
+                evt.currentTarget.classList.add('active');
+            }
+
+            const contenedor = document.getElementById('contenedor-listas-tabla');
+            contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
+
+            let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
+
+            // 1. Obtener estudiantes de esos niveles
+            const { data: estudiantes, error: errEst } = await supabaseClient
+                .from('estudiantes')
+                .select('*')
+                .in('nivel', niveles);
+
+            if (errEst || !estudiantes || estudiantes.length === 0) {
+                contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${ciclo}.</p>`;
+                return;
+            }
+
+            // 2. Obtener todas las notas registradas
+            const { data: notas, error: errNotas } = await supabaseClient
+                .from('notas')
+                .select('*');
+
+            let html = `
+                <h3>Listado de ${ciclo} con Notas por Periodo</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th>
+                            <th>Estudiante</th>
+                            <th>Nivel Actual</th>
+                            <th>Materia</th>
+                            <th>Nota 1° Periodo</th>
+                            <th>Nota 2° Periodo</th>
+                            <th>Estado General</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            estudiantes.forEach(est => {
+                // Filtrar notas de este estudiante
+                const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
+                
+                // Agrupar materias únicas
+                const materias = [...new Set(notasEst.map(n => n.materia))];
+
+                if (materias.length === 0) {
+                    html += `
+                        <tr>
+                            <td>${est.cedula}</td>
+                            <td><b>${est.nombre}</b></td>
+                            <td>${est.nivel}</td>
+                            <td colspan="4" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td>
+                        </tr>
+                    `;
+                } else {
+                    materias.forEach((mat, idx) => {
+                        const notaP1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
+                        const notaP2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+                        
+                        const p1Val = notaP1 ? notaP1.promedio : '-';
+                        const p2Val = notaP2 ? notaP2.promedio : '-';
+
+                        let estado = 'Pendiente';
+                        if (notaP1 && notaP2) {
+                            if (p1Val >= 65 && p2Val >= 65) {
+                                estado = '<span style="color: #166534; font-weight: bold;">Aprobado (≥65)</span>';
+                            } else {
+                                estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado (<65)</span>';
+                            }
+                        }
+
+                        html += `
+                            <tr>
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                <td>${mat}</td>
+                                <td>${p1Val}</td>
+                                <td>${p2Val}</td>
+                                <td>${estado}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
+        }
+
+        // PROMOCIÓN AUTOMÁTICA AL SIGUIENTE NIVEL SI NOTA >= 65 EN AMBOS PERIODOS
+        async function procesarPromocionAutomatica() {
+            const msgSpan = document.getElementById('promocion-msg');
+            msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
+
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
+            const { data: notas } = await supabaseClient.from('notas').select('*');
+
+            if (!estudiantes || !notas) {
+                msgSpan.innerText = 'No hay datos suficientes para procesar.';
+                return;
+            }
+
+            const secuenciaNiveles = {
+                'Primero': 'Segundo',
+                'Segundo': 'Tercero',
+                'Tercero': 'Cuarto',
+                'Cuarto': 'Quinto',
+                'Quinto': 'Sexto',
+                'Sexto': 'Graduado'
+            };
+
+            let promovidosCount = 0;
+
+            for (const est of estudiantes) {
+                const notasEst = notas.filter(n => n.cedula_estudiante === est.cedula);
+                const materias = [...new Set(notasEst.map(n => n.materia))];
+
+                if (materias.length === 0) continue;
+
+                let pasaTodas = true;
+                for (const mat of materias) {
+                    const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
+                    const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+
+                    if (!n1 || !n2 || n1.promedio < 65 || n2.promedio < 65) {
+                        pasaTodas = false;
+                        break;
+                    }
+                }
+
+                if (pasaTodas && est.nivel !== 'Graduado') {
+                    const nuevoNivel = secuenciaNiveles[est.nivel];
+                    if (nuevoNivel) {
+                        await supabaseClient.from('estudiantes').update({ nivel: nuevoNivel }).eq('cedula', est.cedula);
+                        promovidosCount++;
+                    }
+                }
+            }
+
+            msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
+        }
+
         async function cargarEstudiantesPorNivel(prefijo) {
             const nivel = document.getElementById(`${prefijo}-nivel-sel`).value;
             const selectEstudiantes = document.getElementById(`${prefijo}-estudiante-sel`);
@@ -533,18 +696,9 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient
-                .from('estudiantes')
-                .select('cedula, nombre')
-                .eq('nivel', nivel);
-
-            if (error) {
-                selectEstudiantes.innerHTML = '<option value="">Error al cargar estudiantes</option>';
-                return;
-            }
-
-            if (data.length === 0) {
-                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes matriculados en este nivel</option>';
+            const { data, error } = await supabaseClient.from('estudiantes').select('cedula, nombre').eq('nivel', nivel);
+            if (error || data.length === 0) {
+                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
                 return;
             }
 
@@ -557,12 +711,10 @@
             });
         }
 
-        // GENERADOR DINÁMICO DE RUBROS ARTÍSTICOS
         function actualizarRubrosArtisticos() {
             const materia = document.getElementById('art-materia-sel').value;
             const contenedor = document.getElementById('contenedor-rubros-art');
             contenedor.innerHTML = '';
-
             let rubros = [];
             if (materia === 'Danza') {
                 rubros = [
@@ -598,7 +750,6 @@
                     { id: 'disposicion', label: 'Disposición al aprendizaje (25%)', peso: 0.25 }
                 ];
             }
-
             rubros.forEach(r => {
                 contenedor.innerHTML += `
                     <div class="form-group">
@@ -609,12 +760,10 @@
             });
         }
 
-        // GENERADOR DINÁMICO DE RUBROS ACADÉMICOS
         function actualizarRubrosAcademicos() {
             const materia = document.getElementById('acad-materia-sel').value;
             const contenedor = document.getElementById('contenedor-rubros-acad');
             contenedor.innerHTML = '';
-
             let rubros = [];
             if (['Español', 'Matemáticas', 'Ciencias', 'Estudios Sociales'].includes(materia)) {
                 rubros = [
@@ -644,7 +793,6 @@
                     { id: 'attendance', label: 'Attendance (10%)', peso: 0.10 }
                 ];
             }
-
             rubros.forEach(r => {
                 contenedor.innerHTML += `
                     <div class="form-group">
@@ -655,73 +803,45 @@
             });
         }
 
-        // GUARDAR NOTA ARTÍSTICA
         async function guardarNotaArtistica(e) {
             e.preventDefault();
             const cedula = document.getElementById('art-estudiante-sel').value;
             const materia = document.getElementById('art-materia-sel').value;
+            const periodo = document.getElementById('select-periodo-global').value;
             
             let promedioCalculado = 0;
-            const inputs = document.querySelectorAll('.input-rubro-art');
-            inputs.forEach(input => {
-                const val = parseFloat(input.value) || 0;
-                const peso = parseFloat(input.getAttribute('data-peso'));
-                promedioCalculado += val * peso;
+            document.querySelectorAll('.input-rubro-art').forEach(input => {
+                promedioCalculado += (parseFloat(input.value) || 0) * parseFloat(input.getAttribute('data-peso'));
             });
-
             promedioCalculado = Number(promedioCalculado.toFixed(2));
 
-            const datos = {
-                cedula_estudiante: cedula,
-                materia: `[Artística] ${materia}`,
-                cotidiano: 0,
-                pruebas: 0,
-                asistencia: 0,
-                promedio: promedioCalculado
-            };
-
+            const datos = { cedula_estudiante: cedula, materia: `[Artística] ${materia}`, periodo: periodo, promedio: promedioCalculado };
             const { error } = await supabaseClient.from('notas').insert([datos]);
-            if (error) {
-                mostrarMensaje('art-nota-msg', 'Error al registrar nota: ' + error.message, false);
-            } else {
-                mostrarMensaje('art-nota-msg', `¡Nota artística guardada! Promedio ponderado: ${promedioCalculado}`, true);
+            if (error) mostrarMensaje('art-nota-msg', 'Error: ' + error.message, false);
+            else {
+                mostrarMensaje('art-nota-msg', `¡Nota guardada para ${periodo}! Promedio: ${promedioCalculado}`, true);
                 document.getElementById('form-notas-art').reset();
-                document.getElementById('contenedor-rubros-art').innerHTML = '<p style="color: #64748b; grid-column: span 2;">Seleccione una materia artística para desplegar sus rubros.</p>';
             }
         }
 
-        // GUARDAR NOTA ACADÉMICA
         async function guardarNotaAcademica(e) {
             e.preventDefault();
             const cedula = document.getElementById('acad-estudiante-sel').value;
             const materia = document.getElementById('acad-materia-sel').value;
+            const periodo = document.getElementById('select-periodo-global').value;
             
             let promedioCalculado = 0;
-            const inputs = document.querySelectorAll('.input-rubro-acad');
-            inputs.forEach(input => {
-                const val = parseFloat(input.value) || 0;
-                const peso = parseFloat(input.getAttribute('data-peso'));
-                promedioCalculado += val * peso;
+            document.querySelectorAll('.input-rubro-acad').forEach(input => {
+                promedioCalculado += (parseFloat(input.value) || 0) * parseFloat(input.getAttribute('data-peso'));
             });
-
             promedioCalculado = Number(promedioCalculado.toFixed(2));
 
-            const datos = {
-                cedula_estudiante: cedula,
-                materia: `[Académica] ${materia}`,
-                cotidiano: 0,
-                pruebas: 0,
-                asistencia: 0,
-                promedio: promedioCalculado
-            };
-
+            const datos = { cedula_estudiante: cedula, materia: `[Académica] ${materia}`, periodo: periodo, promedio: promedioCalculado };
             const { error } = await supabaseClient.from('notas').insert([datos]);
-            if (error) {
-                mostrarMensaje('acad-nota-msg', 'Error al registrar nota: ' + error.message, false);
-            } else {
-                mostrarMensaje('acad-nota-msg', `¡Nota académica guardada! Promedio ponderado: ${promedioCalculado}`, true);
+            if (error) mostrarMensaje('acad-nota-msg', 'Error: ' + error.message, false);
+            else {
+                mostrarMensaje('acad-nota-msg', `¡Nota guardada para ${periodo}! Promedio: ${promedioCalculado}`, true);
                 document.getElementById('form-notas-acad').reset();
-                document.getElementById('contenedor-rubros-acad').innerHTML = '<p style="color: #64748b; grid-column: span 2;">Seleccione una materia académica para desplegar sus rubros.</p>';
             }
         }
 
@@ -744,12 +864,10 @@
                 encargado2_cel: document.getElementById('enc2-cel').value
             };
             const { error } = await supabaseClient.from('estudiantes').insert([datos]);
-            if (error) {
-                mostrarMensaje('mat-msg', 'Error al guardar matrícula: ' + error.message, false);
-            } else {
+            if (error) mostrarMensaje('mat-msg', 'Error: ' + error.message, false);
+            else {
                 mostrarMensaje('mat-msg', '¡Matrícula guardada exitosamente!', true);
                 document.getElementById('form-matricula').reset();
-                document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             }
         }
 
@@ -762,17 +880,11 @@
                 vac_inicio: document.getElementById('cfg-vac-inicio').value,
                 vac_fin: document.getElementById('cfg-vac-fin').value,
                 p2_inicio: document.getElementById('cfg-p2-inicio').value,
-                p2_fin: document.getElementById('cfg-p2-fin').value,
-                festival_fecha: document.getElementById('cfg-fest-fecha').value,
-                festival_hora: document.getElementById('cfg-fest-hora').value,
-                festival_lugar: document.getElementById('cfg-fest-lugar').value
+                p2_fin: document.getElementById('cfg-p2-fin').value
             };
             const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
-            if (error) {
-                mostrarMensaje('cfg-msg', 'Error al guardar configuración: ' + error.message, false);
-            } else {
-                mostrarMensaje('cfg-msg', '¡Configuración institucional guardada con éxito!', true);
-            }
+            if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
+            else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
         }
 
         async function guardarDocente(e, tipo) {
@@ -786,9 +898,8 @@
                 tipo_docente: tipo
             };
             const { error } = await supabaseClient.from('docentes').insert([datos]);
-            if (error) {
-                mostrarMensaje(`${prefijo}-msg`, 'Error al registrar docente: ' + error.message, false);
-            } else {
+            if (error) mostrarMensaje(`${prefijo}-msg`, 'Error: ' + error.message, false);
+            else {
                 mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
                 document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
             }
