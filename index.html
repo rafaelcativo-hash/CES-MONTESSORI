@@ -124,7 +124,7 @@
         </nav>
 
         <main>
-            <!-- 1. MATRÍCULA -->
+            <!-- 1. MATRÍCULA CON INSTRUMENTOS Y DOCENTE ASIGNADO -->
             <section id="matricula" class="tab-content active">
                 <h2>Gestión de Matrícula Estudiantil</h2>
                 <form id="form-matricula" onsubmit="guardarMatricula(event)">
@@ -163,6 +163,57 @@
                                         <option value="Quinto">Quinto</option>
                                         <option value="Sexto">Sexto</option>
                                     </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- ASIGNACIÓN DE INSTRUMENTOS Y PROFESOR -->
+                    <fieldset>
+                        <legend>Asignación de Instrumentos y Docente</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Instrumento Individual Principal</label>
+                                <select id="mat-instr-principal" required>
+                                    <option value="">Seleccione instrumento</option>
+                                    <option value="Canto">Canto</option>
+                                    <option value="Piano">Piano</option>
+                                    <option value="Guitarra">Guitarra</option>
+                                    <option value="Ukulele">Ukulele</option>
+                                    <option value="Batería">Batería</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Profesor Asignado</label>
+                                <select id="mat-docente-asig" required>
+                                    <option value="">Cargando docentes...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>1° Instrumento Opcional (Pago)</label>
+                                <select id="mat-instr-opc1">
+                                    <option value="Ninguno">Ninguno</option>
+                                    <option value="Canto">Canto</option>
+                                    <option value="Piano">Piano</option>
+                                    <option value="Guitarra">Guitarra</option>
+                                    <option value="Ukulele">Ukulele</option>
+                                    <option value="Batería">Batería</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>2° Instrumento Opcional (Pago)</label>
+                                <select id="mat-instr-opc2">
+                                    <option value="Ninguno">Ninguno</option>
+                                    <option value="Canto">Canto</option>
+                                    <option value="Piano">Piano</option>
+                                    <option value="Guitarra">Guitarra</option>
+                                    <option value="Ukulele">Ukulele</option>
+                                    <option value="Batería">Batería</option>
+                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
                         </div>
@@ -247,11 +298,9 @@
                 </div>
             </section>
 
-            <!-- 3. NUEVA PESTAÑA: REGISTRO (CUADROS SEPARADOS ACADÉMICOS Y ARTÍSTICOS CON NOTA Y PORCENTAJE, NOTA FINAL 50%-50% Y ESPACIO PARA DOCENTE NUEVO) -->
+            <!-- 3. REGISTRO -->
             <section id="registro" class="tab-content">
                 <h2>REGISTRO INSTITUCIONAL DE CALIFICACIONES</h2>
-                <p style="color: #64748b;">Visualización detallada en cuadros separados por área con desglose de rubros, notas, porcentajes y nota final (50% Primer Periodo + 50% Segundo Periodo), con capacidad de modificación manual y espacio vinculado para observaciones del docente actual o nuevo.</p>
-
                 <div class="form-group" style="margin-bottom: 20px; max-width: 350px;">
                     <label>Seleccionar Nivel para el Registro</label>
                     <select id="reg-nivel-sel" class="form-group" onchange="cargarCuadrosRegistro()">
@@ -264,7 +313,6 @@
                         <option value="Sexto">Sexto</option>
                     </select>
                 </div>
-
                 <div id="contenedor-cuadros-registro">
                     <p style="color: #64748b;">Seleccione un nivel educativo para desplegar los cuadros de registro.</p>
                 </div>
@@ -295,8 +343,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Docente de Nivel (Responsable)</label>
-                            <input type="text" id="inf-docente" required placeholder="Nombre del docente de nivel">
+                            <label>Docente de Nivel / Música (Actual o Nuevo)</label>
+                            <input type="text" id="inf-docente" required placeholder="Nombre del docente responsable">
                         </div>
                     </div>
                     <div class="form-group">
@@ -347,7 +395,7 @@
                 </form>
             </section>
 
-            <!-- 6. REGISTRO DE NOTAS (CON OPCIÓN DE MODIFICACIÓN MANUAL REAL) -->
+            <!-- 6. REGISTRO DE NOTAS -->
             <section id="notas" class="tab-content">
                 <h2>Registro de Notas por Estudiante y Periodo</h2>
                 <div class="form-group" style="margin-bottom: 20px; max-width: 300px;">
@@ -403,8 +451,8 @@
                                 <p style="color: #64748b; grid-column: span 2;">Seleccione una materia artística para desplegar sus rubros.</p>
                             </div>
                             <div class="form-group" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-                                <label style="color: var(--accent);">¿Desea asignar o modificar la nota final del periodo de manera manual?</label>
-                                <input type="number" step="0.01" min="0" max="100" id="art-nota-manual" placeholder="Dejar en blanco para cálculo automático por rubros, o ingresar nota fija 0-100">
+                                <label style="color: var(--accent);">Modificación manual de nota final de periodo (Opcional)</label>
+                                <input type="number" step="0.01" min="0" max="100" id="art-nota-manual" placeholder="Dejar en blanco para cálculo automático o ingresar nota fija">
                             </div>
                         </fieldset>
                         <button type="submit" class="action-btn">Guardar o Actualizar Nota Artística</button>
@@ -454,8 +502,8 @@
                                 <p style="color: #64748b; grid-column: span 2;">Seleccione una materia académica para desplegar sus rubros.</p>
                             </div>
                             <div class="form-group" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-                                <label style="color: var(--accent);">¿Desea asignar o modificar la nota final del periodo de manera manual?</label>
-                                <input type="number" step="0.01" min="0" max="100" id="acad-nota-manual" placeholder="Dejar en blanco para cálculo automático por rubros, o ingresar nota fija 0-100">
+                                <label style="color: var(--accent);">Modificación manual de nota final de periodo (Opcional)</label>
+                                <input type="number" step="0.01" min="0" max="100" id="acad-nota-manual" placeholder="Dejar en blanco para cálculo automático o ingresar nota fija">
                             </div>
                         </fieldset>
                         <button type="submit" class="action-btn">Guardar o Actualizar Nota Académica</button>
@@ -510,7 +558,7 @@
                         </div>
                         <div class="form-group">
                             <label>Disciplina Artística</label>
-                            <input type="text" id="art-esp" required placeholder="Ej. Danza">
+                            <input type="text" id="art-esp" required placeholder="Ej. Piano, Danza">
                         </div>
                     </div>
                     <button type="submit" class="action-btn">Registrar Docente Artístico</button>
@@ -530,6 +578,7 @@
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(idSeccion).classList.add('active');
             if (evt) evt.currentTarget.classList.add('active');
+            if (idSeccion === 'matricula') cargarDocentesEnMatricula();
         }
 
         function cambiarSubPanel(tipo, evt) {
@@ -564,11 +613,33 @@
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
+            cargarDocentesEnMatricula();
         }
 
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
             if (session) iniciarSesionUI(session.user.email);
         });
+
+        // CARGAR DOCENTES REGISTRADOS EN EL SELECTOR DE MATRÍCULA
+        async function cargarDocentesEnMatricula() {
+            const selectDocente = document.getElementById('mat-docente-asig');
+            if (!selectDocente) return;
+            selectDocente.innerHTML = '<option value="">Cargando docentes...</option>';
+
+            const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad');
+            if (error || !data || data.length === 0) {
+                selectDocente.innerHTML = '<option value="">No hay docentes registrados</option>';
+                return;
+            }
+
+            selectDocente.innerHTML = '<option value="">Seleccione un profesor</option>';
+            data.forEach(doc => {
+                const opt = document.createElement('option');
+                opt.value = doc.nombre;
+                opt.textContent = `${doc.nombre} (${doc.especialidad})`;
+                selectDocente.appendChild(opt);
+            });
+        }
 
         function calcularEdadExacta() {
             const fechaNacVal = document.getElementById('mat-fnac').value;
@@ -599,7 +670,7 @@
             setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
 
-        // CARGAR CUADROS DE REGISTRO SEPARADOS (ACADÉMICOS Y ARTÍSTICOS) CON DESGLOSE DE RUBROS, PORCENTAJES Y NOTA FINAL 50%-50%
+        // CARGAR CUADROS DE REGISTRO INSTITUCIONAL
         async function cargarCuadrosRegistro() {
             const nivel = document.getElementById('reg-nivel-sel').value;
             const contenedor = document.getElementById('contenedor-cuadros-registro');
@@ -626,7 +697,7 @@
 
             // CUADRO 1: MATERIAS ACADÉMICAS
             html += `<h4 style="color: var(--primary); margin-top: 25px; border-bottom: 2px solid var(--primary); padding-bottom: 5px;">I. MATERIAS ACADÉMICAS Y CONDUCTUALES</h4>`;
-            html += `<table class="data-table"><thead><tr><th>Estudiante / Cédula</th>`;
+            html += `<table class="data-table"><thead><tr><th>Estudiante / Instrumento / Docente</th>`;
             materiasAcademicas.forEach(mat => {
                 html += `<th>${mat}<br><span style="font-size:10px; font-weight:normal;">1°P (50%) | 2°P (50%) | Final</span></th>`;
             });
@@ -634,7 +705,7 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b><br><span style="font-size:11px; color:#64748b;">${est.cedula}</span></td>`;
+                html += `<td><b>${est.nombre}</b><br><span style="font-size:11px; color:#64748b;">Inst: ${est.instrumento_principal || 'N/A'}<br>Prof: ${est.docente_asignado || 'N/A'}</span></td>`;
                 
                 materiasAcademicas.forEach(mat => {
                     const n1 = notasEst.find(n => n.materia === `[Académica] ${mat}` && n.periodo === 'Primer Periodo');
@@ -656,7 +727,7 @@
 
             // CUADRO 2: MATERIAS ARTÍSTICAS
             html += `<h4 style="color: var(--primary); margin-top: 35px; border-bottom: 2px solid var(--primary); padding-bottom: 5px;">II. MATERIAS ARTÍSTICAS Y COMPLEMENTARIAS</h4>`;
-            html += `<table class="data-table"><thead><tr><th>Estudiante / Cédula</th>`;
+            html += `<table class="data-table"><thead><tr><th>Estudiante / Instrumento / Docente</th>`;
             materiasArtisticas.forEach(mat => {
                 html += `<th>${mat}<br><span style="font-size:10px; font-weight:normal;">1°P (50%) | 2°P (50%) | Final</span></th>`;
             });
@@ -664,7 +735,7 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b><br><span style="font-size:11px; color:#64748b;">${est.cedula}</span></td>`;
+                html += `<td><b>${est.nombre}</b><br><span style="font-size:11px; color:#64748b;">Inst: ${est.instrumento_principal || 'N/A'}<br>Prof: ${est.docente_asignado || 'N/A'}</span></td>`;
                 
                 materiasArtisticas.forEach(mat => {
                     const n1 = notasEst.find(n => n.materia === `[Artística] ${mat}` && n.periodo === 'Primer Periodo');
@@ -687,7 +758,6 @@
             contenedor.innerHTML = html;
         }
 
-        // CARGAR ESTUDIANTES PARA INFORMES AL HOGAR
         async function cargarEstudiantesInforme() {
             const nivel = document.getElementById('inf-nivel-sel').value;
             const selectEstudiantes = document.getElementById('inf-estudiante-sel');
@@ -714,7 +784,6 @@
             });
         }
 
-        // GENERAR VISTA PREVIA DEL INFORME AL HOGAR CON CÁLCULO 50%-50%
         async function generarInformeHogarVisual() {
             const selectEst = document.getElementById('inf-estudiante-sel');
             const contenedor = document.getElementById('contenedor-vista-informe');
@@ -725,7 +794,7 @@
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const docenteNivel = document.getElementById('inf-docente').value || '[Sin asignar]';
+            const docenteNivel = document.getElementById('inf-docente').value || estData.docente_asignado || '[Sin asignar]';
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
@@ -783,8 +852,9 @@
                     <div style="margin-bottom: 15px; font-size: 14px;">
                         <p><b>Estudiante:</b> ${estData.nombre} (Cédula: ${estData.cedula})</p>
                         <p><b>Nivel:</b> ${estData.nivel}</p>
-                        <p><b>Encargados:</b> ${estData.encargado1_nombre} (${estData.encargado1_correo}) ${estData.encargado2_nombre ? ' / ' + estData.encargado2_nombre + ' (' + estData.encargado2_correo + ')' : ''}</p>
-                        <p><b>Dirección de Hogar:</b> ${estData.provincia}, ${estData.canton}, ${estData.distrito}</p>
+                        <p><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'} | <b>Opcionales:</b> ${estData.instrumento_opc1 || 'Ninguno'}, ${estData.instrumento_opc2 || 'Ninguno'}</p>
+                        <p><b>Profesor Asignado:</b> ${estData.docente_asignado || 'Ninguno'}</p>
+                        <p><b>Encargados:</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                         <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
                         <p><b>Directora Institucional:</b> Flor María Jiménez</p>
                         <p><b>Docente Responsable / Nuevo:</b> <span id="lbl-docente-ver">${docenteNivel}</span></p>
@@ -877,18 +947,18 @@
             }
 
             let html = `
-                <h3>Listado de ${ciclo} con Notas por Periodo y Nota Final</h3>
+                <h3>Listado de ${ciclo} con Instrumentos y Notas</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Cédula</th>
-                            <th>Estudiante</th>
-                            <th>Nivel Actual</th>
+                            <th>Estudiante / Inst.</th>
+                            <th>Nivel</th>
                             <th>Materia</th>
-                            <th>Nota 1° Periodo</th>
-                            <th>Nota 2° Periodo</th>
-                            <th>Nota Final (50%-50%)</th>
-                            <th>Estado General</th>
+                            <th>1° P</th>
+                            <th>2° P</th>
+                            <th>Final (50%-50%)</th>
+                            <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -899,7 +969,7 @@
                 const materias = [...new Set(notasEst.map(n => n.materia))];
 
                 if (materias.length === 0) {
-                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b></td><td>${est.nivel}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
+                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b><br><small>${est.instrumento_principal || ''}</small></td><td>${est.nivel}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
                 } else {
                     materias.forEach((mat, idx) => {
                         const notaP1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
@@ -923,7 +993,7 @@
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Inst: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
@@ -977,7 +1047,7 @@
                     }
                 }
             }
-            msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente (nota mínima 65 en ambos periodos): ${promovidosCount}`;
+            msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
         }
 
         async function cargarEstudiantesPorNivel(prefijo) {
@@ -1067,10 +1137,10 @@
                     { id: 'asertividad', label: 'Asertividad (20%)', peso: 0.20 },
                     { id: 'cooperacion', label: 'Cooperación (5%)', peso: 0.05 },
                     { id: 'presentacion', label: 'Presentación Personal (5%)', peso: 0.05 },
-                    { id: 'resp_fisico', label: 'Respeto hacia el espacio físico de sus iguales y adultos (20%)', peso: 0.20 },
-                    { id: 'resp_verbal', label: 'Respeto hacia el espacio verbal de sus iguales y adultos (20%)', peso: 0.20 },
+                    { id: 'resp_fisico', label: 'Respeto espacio físico pares/adultos (20%)', peso: 0.20 },
+                    { id: 'resp_verbal', label: 'Respeto espacio verbal pares/adultos (20%)', peso: 0.20 },
                     { id: 'no_verbal', label: 'Lenguaje no verbal (10%)', peso: 0.10 },
-                    { id: 'resp_psico', label: 'Respeto hacia el espacio psicológico de sus iguales y los adultos (20%)', peso: 0.20 }
+                    { id: 'resp_psico', label: 'Respeto espacio psicológico pares/adultos (20%)', peso: 0.20 }
                 ];
             } else if (materia === 'Inglés') {
                 rubros = [
@@ -1083,13 +1153,11 @@
                     { id: 'attendance', label: 'Attendance (10%)', peso: 0.10 }
                 ];
             }
-
             rubros.forEach(r => {
                 contenedor.innerHTML += `<div class="form-group"><label>${r.label}</label><input type="number" step="0.01" min="0" max="100" id="acad-rubro-${r.id}" class="input-rubro-acad" data-peso="${r.peso}" required placeholder="Nota 0-100"></div>`;
             });
         }
 
-        // GUARDAR O ACTUALIZAR NOTA ARTÍSTICA (PERMITE MODIFICACIÓN MANUAL REAL CON UPSERT)
         async function guardarNotaArtistica(e) {
             e.preventDefault();
             const cedula = document.getElementById('art-estudiante-sel').value;
@@ -1097,34 +1165,23 @@
             const periodo = document.getElementById('select-periodo-global').value;
             const notaManual = document.getElementById('art-nota-manual').value;
             
-            let promedioCalculado = 0;
-            if (notaManual !== '') {
-                promedioCalculado = parseFloat(notaManual);
-            } else {
+            let promedioCalculado = notaManual !== '' ? parseFloat(notaManual) : 0;
+            if (notaManual === '') {
                 document.querySelectorAll('.input-rubro-art').forEach(input => {
                     promedioCalculado += (parseFloat(input.value) || 0) * parseFloat(input.getAttribute('data-peso'));
                 });
             }
             promedioCalculado = Number(promedioCalculado.toFixed(2));
 
-            // UPSERT (Si ya existe la nota para este estudiante, materia y periodo, la actualiza limpiamente en lugar de duplicar)
             const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedioCalculado };
             const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
-            
             if (error) {
-                // Fallback si no hay constraint de unique, hacemos insert
-                const { error: err2 } = await supabaseClient.from('notas').insert([datos]);
-                if (err2) {
-                    mostrarMensaje('art-nota-msg', 'Error: ' + err2.message, false);
-                    return;
-                }
+                await supabaseClient.from('notas').insert([datos]);
             }
-            
-            mostrarMensaje('art-nota-msg', `¡Nota guardada/actualizada para ${periodo}! Promedio: ${promedioCalculado}`, true);
+            mostrarMensaje('art-nota-msg', `¡Nota guardada para ${periodo}! Promedio: ${promedioCalculado}`, true);
             document.getElementById('form-notas-art').reset();
         }
 
-        // GUARDAR O ACTUALIZAR NOTA ACADÉMICA (PERMITE MODIFICACIÓN MANUAL REAL CON UPSERT)
         async function guardarNotaAcademica(e) {
             e.preventDefault();
             const cedula = document.getElementById('acad-estudiante-sel').value;
@@ -1132,10 +1189,8 @@
             const periodo = document.getElementById('select-periodo-global').value;
             const notaManual = document.getElementById('acad-nota-manual').value;
             
-            let promedioCalculado = 0;
-            if (notaManual !== '') {
-                promedioCalculado = parseFloat(notaManual);
-            } else {
+            let promedioCalculado = notaManual !== '' ? parseFloat(notaManual) : 0;
+            if (notaManual === '') {
                 document.querySelectorAll('.input-rubro-acad').forEach(input => {
                     promedioCalculado += (parseFloat(input.value) || 0) * parseFloat(input.getAttribute('data-peso'));
                 });
@@ -1144,16 +1199,10 @@
 
             const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedioCalculado };
             const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
-            
             if (error) {
-                const { error: err2 } = await supabaseClient.from('notas').insert([datos]);
-                if (err2) {
-                    mostrarMensaje('acad-nota-msg', 'Error: ' + err2.message, false);
-                    return;
-                }
+                await supabaseClient.from('notas').insert([datos]);
             }
-            
-            mostrarMensaje('acad-nota-msg', `¡Nota guardada/actualizada para ${periodo}! Promedio: ${promedioCalculado}`, true);
+            mostrarMensaje('acad-nota-msg', `¡Nota guardada para ${periodo}! Promedio: ${promedioCalculado}`, true);
             document.getElementById('form-notas-acad').reset();
         }
 
@@ -1164,6 +1213,10 @@
                 cedula: document.getElementById('mat-cedula').value,
                 fecha_nacimiento: document.getElementById('mat-fnac').value,
                 nivel: document.getElementById('mat-nivel').value,
+                instrumento_principal: document.getElementById('mat-instr-principal').value,
+                docente_asignado: document.getElementById('mat-docente-asig').value,
+                instrumento_opc1: document.getElementById('mat-instr-opc1').value,
+                instrumento_opc2: document.getElementById('mat-instr-opc2').value,
                 provincia: document.getElementById('dir-provincia').value,
                 canton: document.getElementById('dir-canton').value,
                 distrito: document.getElementById('dir-distrito').value,
@@ -1178,7 +1231,7 @@
             const { error } = await supabaseClient.from('estudiantes').insert([datos]);
             if (error) mostrarMensaje('mat-msg', 'Error: ' + error.message, false);
             else {
-                mostrarMensaje('mat-msg', '¡Matrícula guardada exitosamente!', true);
+                mostrarMensaje('mat-msg', '¡Matrícula guardada con instrumento y docente!', true);
                 document.getElementById('form-matricula').reset();
             }
         }
@@ -1212,6 +1265,7 @@
             else {
                 mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
                 document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
+                cargarDocentesEnMatricula();
             }
         }
     </script>
