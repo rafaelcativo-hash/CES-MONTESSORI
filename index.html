@@ -322,138 +322,65 @@
                 </div>
             </section>
 
-            <!-- 4. CALIFICAR (INGRESO DE NOTAS) -->
+            <!-- 4. CALIFICAR (CARGA GRUPAL COMPLETA Y SOPORTE DE INSTRUMENTOS REPETIDOS) -->
             <section id="calificar" class="tab-content">
-                <h2>Calificar y Registro de Notas por Periodo</h2>
-                <div class="form-group" style="margin-bottom: 20px; max-width: 300px;">
-                    <label>Periodo Académico Activo</label>
-                    <select id="select-periodo-global" required>
-                        <option value="Primer Periodo">Primer Periodo</option>
-                        <option value="Segundo Periodo">Segundo Periodo</option>
-                    </select>
-                </div>
-                <div class="sub-panel-tabs">
-                    <button class="sub-tab-btn active" onclick="cambiarSubPanel('artisticas', event)">Materias Artísticas / Instrumentos</button>
-                    <button class="sub-tab-btn" onclick="cambiarSubPanel('academicas', event)">Materias Académicas y Otras</button>
-                </div>
+                <h2>Calificación por Grupo Completo (Talleres, Instrumentos y Académicas)</h2>
+                <p style="color: #64748b;">Selecciona el nivel y la asignatura para cargar a todo el grupo de una sola vez, contemplando alumnos con instrumentos o talleres compartidos.</p>
                 
-                <div id="panel-artisticas" class="sub-panel active">
-                    <form id="form-notas-art" onsubmit="guardarNotaArtistica(event)">
-                        <fieldset>
-                            <legend>Selección y Estudiante</legend>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Nivel Educativo</label>
-                                    <select id="art-nivel-sel" required onchange="cargarEstudiantesPorNivel('art')">
-                                        <option value="">Seleccione el nivel</option>
-                                        <option value="Primero">Primero</option>
-                                        <option value="Segundo">Segundo</option>
-                                        <option value="Tercero">Tercero</option>
-                                        <option value="Cuarto">Cuarto</option>
-                                        <option value="Quinto">Quinto</option>
-                                        <option value="Sexto">Sexto</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Estudiante (Matriculado)</label>
-                                    <select id="art-estudiante-sel" required>
-                                        <option value="">Primero seleccione un nivel</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Materia Artística / Instrumento / Otra</label>
-                                    <select id="art-materia-sel" required onchange="actualizarRubrosArtisticos()">
-                                        <option value="">Seleccione asignatura</option>
-                                        <option value="Danza">Danza</option>
-                                        <option value="Artes Plásticas">Artes Plásticas</option>
-                                        <option value="Taller de Percusión">Taller de Percusión</option>
-                                        <option value="Solfeo">Solfeo</option>
-                                        <option value="Edufi">Edufi (Educación Física)</option>
-                                        <option value="Piano">Piano</option>
-                                        <option value="Guitarra">Guitarra</option>
-                                        <option value="Ukulele">Ukulele</option>
-                                        <option value="Batería">Batería</option>
-                                        <option value="Bajo">Bajo</option>
-                                        <option value="Canto">Canto</option>
-                                        <option value="Otra Materia Artística">Otra (Personalizada)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group" id="div-otra-art" style="display:none; margin-top: 10px;">
-                                <label>Escriba el nombre de la materia o instrumento personalizado:</label>
-                                <input type="text" id="art-materia-custom" placeholder="Ej. Ensamble, Flauta, etc.">
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <legend>Rubros de Evaluación / Modificación Manual</legend>
-                            <div id="contenedor-rubros-art" class="form-grid">
-                                <p style="color: #64748b; grid-column: span 2;">Seleccione una materia para desplegar sus rubros.</p>
-                            </div>
-                            <div class="form-group" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-                                <label style="color: var(--accent);">Modificación manual de nota final de periodo (Opcional)</label>
-                                <input type="number" step="0.01" min="0" max="100" id="art-nota-manual" placeholder="Dejar en blanco para cálculo automático o ingresar nota fija">
-                            </div>
-                        </fieldset>
-                        <button type="submit" class="action-btn">Guardar o Actualizar Calificación</button>
-                        <div id="art-nota-msg" class="notification"></div>
-                    </form>
-                </div>
+                <fieldset>
+                    <legend>Parámetros de Calificación Masiva</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Periodo Académico Activo</label>
+                            <select id="cal-periodo" required>
+                                <option value="Primer Periodo">Primer Periodo</option>
+                                <option value="Segundo Periodo">Segundo Periodo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nivel / Grupo</label>
+                            <select id="cal-nivel" required onchange="cargarGrupoParaCalificar()">
+                                <option value="">Seleccione el nivel</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Asignatura / Taller / Instrumento</label>
+                            <select id="cal-materia" required onchange="cargarGrupoParaCalificar()">
+                                <option value="">Seleccione asignatura</option>
+                                <optgroup label="Materias Artísticas y Talleres">
+                                    <option value="[Artística] Solfeo">Solfeo (Grupal)</option>
+                                    <option value="[Artística] Taller de Percusión">Taller de Percusión (Grupal)</option>
+                                    <option value="[Artística] Danza">Danza</option>
+                                    <option value="[Artística] Artes Plásticas">Artes Plásticas</option>
+                                    <option value="[Artística] Edufi">Edufi (Educación Física)</option>
+                                    <option value="[Artística] Piano">Piano (Individual/Grupal)</option>
+                                    <option value="[Artística] Guitarra">Guitarra (Individual/Grupal)</option>
+                                    <option value="[Artística] Ukulele">Ukulele</option>
+                                    <option value="[Artística] Batería">Batería</option>
+                                    <option value="[Artística] Bajo">Bajo</option>
+                                    <option value="[Artística] Canto">Canto</option>
+                                </optgroup>
+                                <optgroup label="Materias Académicas">
+                                    <option value="[Académica] Español">Español</option>
+                                    <option value="[Académica] Matemáticas">Matemáticas</option>
+                                    <option value="[Académica] Ciencias">Ciencias</option>
+                                    <option value="[Académica] Estudios Sociales">Estudios Sociales</option>
+                                    <option value="[Académica] Conducta">Conducta</option>
+                                    <option value="[Académica] Inglés">Inglés</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
 
-                <div id="panel-academicas" class="sub-panel">
-                    <form id="form-notas-acad" onsubmit="guardarNotaAcademica(event)">
-                        <fieldset>
-                            <legend>Selección y Estudiante</legend>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Nivel Educativo</label>
-                                    <select id="acad-nivel-sel" required onchange="cargarEstudiantesPorNivel('acad')">
-                                        <option value="">Seleccione el nivel</option>
-                                        <option value="Primero">Primero</option>
-                                        <option value="Segundo">Segundo</option>
-                                        <option value="Tercero">Tercero</option>
-                                        <option value="Cuarto">Cuarto</option>
-                                        <option value="Quinto">Quinto</option>
-                                        <option value="Sexto">Sexto</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Estudiante (Matriculado)</label>
-                                    <select id="acad-estudiante-sel" required>
-                                        <option value="">Primero seleccione un nivel</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Materia Académica / Conducta / Otra</label>
-                                    <select id="acad-materia-sel" required onchange="actualizarRubrosAcademicos()">
-                                        <option value="">Seleccione asignatura</option>
-                                        <option value="Español">Español</option>
-                                        <option value="Matemáticas">Matemáticas</option>
-                                        <option value="Ciencias">Ciencias</option>
-                                        <option value="Estudios Sociales">Estudios Sociales</option>
-                                        <option value="Conducta">Conducta</option>
-                                        <option value="Inglés">Inglés</option>
-                                        <option value="Otra Materia Académica">Otra (Personalizada)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group" id="div-otra-acad" style="display:none; margin-top: 10px;">
-                                <label>Escriba el nombre de la materia académica personalizada:</label>
-                                <input type="text" id="acad-materia-custom" placeholder="Ej. Religión, Informática, etc.">
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <legend>Rubros de Evaluación / Modificación Manual</legend>
-                            <div id="contenedor-rubros-acad" class="form-grid">
-                                <p style="color: #64748b; grid-column: span 2;">Seleccione una materia para desplegar sus rubros.</p>
-                            </div>
-                            <div class="form-group" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-                                <label style="color: var(--accent);">Modificación manual de nota final de periodo (Opcional)</label>
-                                <input type="number" step="0.01" min="0" max="100" id="acad-nota-manual" placeholder="Dejar en blanco para cálculo automático o ingresar nota fija">
-                            </div>
-                        </fieldset>
-                        <button type="submit" class="action-btn">Guardar o Actualizar Calificación</button>
-                        <div id="acad-nota-msg" class="notification"></div>
-                    </form>
+                <div id="contenedor-grupo-calificar">
+                    <p style="color: #64748b; text-align: center;">Seleccione un nivel y asignatura para desplegar la lista de todo el grupo.</p>
                 </div>
             </section>
 
@@ -603,13 +530,6 @@
             if (idSeccion === 'matricula') cargarDocentesEnMatricula();
         }
 
-        function cambiarSubPanel(tipo, evt) {
-            document.querySelectorAll('.sub-panel').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('panel-' + tipo).classList.add('active');
-            if (evt) evt.currentTarget.classList.add('active');
-        }
-
         async function realizarLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -689,6 +609,84 @@
             el.innerText = texto;
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        // CARGAR GRUPO COMPLETO PARA CALIFICAR MASIVAMENTE (SOPORTA INSTRUMENTOS REPETIDOS O MÚLTIPLES)
+        async function cargarGrupoParaCalificar() {
+            const nivel = document.getElementById('cal-nivel').value;
+            const materia = document.getElementById('cal-materia').value;
+            const periodo = document.getElementById('cal-periodo').value;
+            const contenedor = document.getElementById('contenedor-grupo-calificar');
+
+            if (!nivel || !materia) {
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione el Nivel y la Asignatura para desplegar el grupo completo.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '<p>Cargando estudiantes del grupo...</p>';
+
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
+
+            if (!estudiantes || estudiantes.length === 0) {
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados en el nivel ${nivel}.</p>`;
+                return;
+            }
+
+            let html = `
+                <h3 style="color: var(--primary); margin-top: 20px;">Calificando a Grupo: ${nivel} - Materia: ${materia} (${periodo})</h3>
+                <p style="font-size: 13px; color: #64748b;">Ingresa la nota final o promedio del periodo para cada estudiante y haz clic en Guardar.</p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th>
+                            <th>Estudiante</th>
+                            <th>Instrumento Principal / Opcionales</th>
+                            <th>Nota Actual / Calificación del Periodo (0-100)</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            estudiantes.forEach(est => {
+                const notaReg = notas ? notas.find(n => n.cedula_estudiante === est.cedula) : null;
+                const notaVal = notaReg ? notaReg.promedio : '';
+
+                html += `
+                    <tr>
+                        <td>${est.cedula}</td>
+                        <td style="text-align: left;"><b>${est.nombre}</b></td>
+                        <td><small>Principal: <b>${est.instrumento_principal || 'N/A'}</b><br>Opcionales: ${est.instrumento_opc1 || 'Ninguno'}, ${est.instrumento_opc2 || 'Ninguno'}</small></td>
+                        <td>
+                            <input type="number" step="0.01" min="0" max="100" id="nota-est-${est.cedula}" value="${notaVal}" placeholder="Ej. 85" style="width: 120px; text-align: center; font-weight: bold;">
+                        </td>
+                        <td>
+                            <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaIndividualGrupo('${est.cedula}', '${materia}', '${periodo}')">Guardar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
+        }
+
+        async function guardarNotaIndividualGrupo(cedula, materia, periodo) {
+            const inputVal = document.getElementById(`nota-est-${cedula}`).value;
+            if (inputVal === '' || isNaN(inputVal)) {
+                alert('Por favor ingrese una nota válida.');
+                return;
+            }
+
+            const promedio = Number(parseFloat(inputVal).toFixed(2));
+            const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedio };
+
+            const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
+            if (error) {
+                await supabaseClient.from('notas').insert([datos]);
+            }
+            alert(`¡Nota guardada exitosamente para la cédula ${cedula}!`);
         }
 
         // REGISTRO HISTÓRICO UNIFICADO
@@ -895,12 +893,6 @@
                 const lbl = document.getElementById('lbl-docente-ver');
                 if (lbl) lbl.innerText = e.target.value || '[Sin asignar]';
             }
-            if (e.target.id === 'art-materia-sel') {
-                document.getElementById('div-otra-art').style.display = e.target.value === 'Otra Materia Artística' ? 'block' : 'none';
-            }
-            if (e.target.id === 'acad-materia-sel') {
-                document.getElementById('div-otra-acad').style.display = e.target.value === 'Otra Materia Académica' ? 'block' : 'none';
-            }
         });
 
         async function enviarInformeSimultaneo() {
@@ -1058,176 +1050,6 @@
                 }
             }
             msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
-        }
-
-        async function cargarEstudiantesPorNivel(prefijo) {
-            const nivel = document.getElementById(`${prefijo}-nivel-sel`).value;
-            const selectEstudiantes = document.getElementById(`${prefijo}-estudiante-sel`);
-            selectEstudiantes.innerHTML = '<option value="">Cargando lista...</option>';
-
-            if (!nivel) {
-                selectEstudiantes.innerHTML = '<option value="">Primero seleccione un nivel</option>';
-                return;
-            }
-
-            const { data } = await supabaseClient.from('estudiantes').select('cedula, nombre').eq('nivel', nivel);
-            if (!data || data.length === 0) {
-                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
-                return;
-            }
-
-            selectEstudiantes.innerHTML = '<option value="">Seleccione un estudiante</option>';
-            data.forEach(est => {
-                const opt = document.createElement('option');
-                opt.value = est.cedula;
-                opt.textContent = `${est.nombre} (Cédula: ${est.cedula})`;
-                selectEstudiantes.appendChild(opt);
-            });
-        }
-
-        function actualizarRubrosArtisticos() {
-            const materiaSel = document.getElementById('art-materia-sel').value;
-            const contenedor = document.getElementById('contenedor-rubros-art');
-            contenedor.innerHTML = '';
-            
-            let rubros = [
-                { id: 'cotidiano', label: 'Trabajo Cotidiano (60%)', peso: 0.60 },
-                { id: 'asistencia', label: 'Asistencia y Participación (40%)', peso: 0.40 }
-            ];
-
-            if (materiaSel === 'Danza') {
-                rubros = [
-                    { id: 'puntualidad', label: 'Puntualidad (10%)', peso: 0.10 },
-                    { id: 'seguimiento', label: 'Seguimiento Coreográfico (20%)', peso: 0.20 },
-                    { id: 'preparacion', label: 'Preparación Previa (10%)', peso: 0.10 },
-                    { id: 'participacion', label: 'Participación (20%)', peso: 0.20 },
-                    { id: 'concentracion', label: 'Concentración (10%)', peso: 0.10 },
-                    { id: 'aportes', label: 'Aportes Creativos (20%)', peso: 0.20 },
-                    { id: 'asistencia', label: 'Asistencia (10%)', peso: 0.10 }
-                ];
-            } else if (materiaSel === 'Artes Plásticas') {
-                rubros = [
-                    { id: 'asistencia', label: 'Asistencia, puntualidad y permanencia (25%)', peso: 0.25 },
-                    { id: 'cotidiano', label: 'Trabajo Cotidiano / Instrumento (60%)', peso: 0.60 },
-                    { id: 'autorregulacion', label: 'Autorregulación (15%)', peso: 0.15 }
-                ];
-            } else if (materiaSel === 'Taller de Percusión') {
-                rubros = [
-                    { id: 'cotidiano', label: 'Trabajo Cotidiano (60%)', peso: 0.60 },
-                    { id: 'materiales', label: 'Materiales (20%)', peso: 0.20 },
-                    { id: 'asistencia', label: 'Asistencia (20%)', peso: 0.20 }
-                ];
-            } else if (materiaSel === 'Solfeo') {
-                rubros = [
-                    { id: 'autorregulacion', label: 'Autorregulación (40%)', peso: 0.40 },
-                    { id: 'cotidiano', label: 'Trabajo Cotidiano (60%)', peso: 0.60 }
-                ];
-            } else if (materiaSel === 'Edufi') {
-                rubros = [
-                    { id: 'asistencia', label: 'Asistencia (50%)', peso: 0.50 },
-                    { id: 'respeto', label: 'Respeto por los compañeros (25%)', peso: 0.25 },
-                    { id: 'disposicion', label: 'Disposición al aprendizaje (25%)', peso: 0.25 }
-                ];
-            }
-
-            rubros.forEach(r => {
-                contenedor.innerHTML += `<div class="form-group"><label>${r.label}</label><input type="number" step="0.01" min="0" max="100" id="art-rubro-${r.id}" class="input-rubro-art" data-peso="${r.peso}" required placeholder="Nota 0-100"></div>`;
-            });
-        }
-
-        function actualizarRubrosAcademicos() {
-            const materiaSel = document.getElementById('acad-materia-sel').value;
-            const contenedor = document.getElementById('contenedor-rubros-acad');
-            contenedor.innerHTML = '';
-            let rubros = [
-                { id: 'cotidiano', label: 'Trabajo Cotidiano (50%)', peso: 0.50 },
-                { id: 'pruebas', label: 'Pruebas / Exámenes (30%)', peso: 0.30 },
-                { id: 'extraclase', label: 'Extraclase (10%)', peso: 0.10 },
-                { id: 'asistencia', label: 'Asistencia (10%)', peso: 0.10 }
-            ];
-            
-            if (materiaSel === 'Conducta') {
-                rubros = [
-                    { id: 'asertividad', label: 'Asertividad (20%)', peso: 0.20 },
-                    { id: 'cooperacion', label: 'Cooperación (5%)', peso: 0.05 },
-                    { id: 'presentacion', label: 'Presentación Personal (5%)', peso: 0.05 },
-                    { id: 'resp_fisico', label: 'Respeto espacio físico pares/adultos (20%)', peso: 0.20 },
-                    { id: 'resp_verbal', label: 'Respeto espacio verbal pares/adultos (20%)', peso: 0.20 },
-                    { id: 'no_verbal', label: 'Lenguaje no verbal (10%)', peso: 0.10 },
-                    { id: 'resp_psico', label: 'Respeto espacio psicológico pares/adultos (20%)', peso: 0.20 }
-                ];
-            } else if (materiaSel === 'Inglés') {
-                rubros = [
-                    { id: 'puntuality', label: 'Punctuality (5%)', peso: 0.05 },
-                    { id: 'phonics', label: 'Phonics & Pronunciation (10%)', peso: 0.10 },
-                    { id: 'projects', label: 'Projects & Extended Work (10%)', peso: 0.10 },
-                    { id: 'test', label: 'Test (20%)', peso: 0.20 },
-                    { id: 'notebook', label: 'Notebook (10%)', peso: 0.10 },
-                    { id: 'oral', label: 'Oral class and practices (35%)', peso: 0.35 },
-                    { id: 'attendance', label: 'Attendance (10%)', peso: 0.10 }
-                ];
-            }
-            rubros.forEach(r => {
-                contenedor.innerHTML += `<div class="form-group"><label>${r.label}</label><input type="number" step="0.01" min="0" max="100" id="acad-rubro-${r.id}" class="input-rubro-acad" data-peso="${r.peso}" required placeholder="Nota 0-100"></div>`;
-            });
-        }
-
-        async function guardarNotaArtistica(e) {
-            e.preventDefault();
-            const cedula = document.getElementById('art-estudiante-sel').value;
-            let matSel = document.getElementById('art-materia-sel').value;
-            if (matSel === 'Otra Materia Artística') {
-                matSel = document.getElementById('art-materia-custom').value.trim() || 'Otra Artística';
-            }
-            const materia = `[Artística] ${matSel}`;
-            const periodo = document.getElementById('select-periodo-global').value;
-            const notaManual = document.getElementById('art-nota-manual').value;
-            
-            let promedioCalculado = notaManual !== '' ? parseFloat(notaManual) : 0;
-            if (notaManual === '') {
-                document.querySelectorAll('.input-rubro-art').forEach(input => {
-                    promedioCalculado += (parseFloat(input.value) || 0) * parseFloat(input.getAttribute('data-peso'));
-                });
-            }
-            promedioCalculado = Number(promedioCalculado.toFixed(2));
-
-            const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedioCalculado };
-            const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
-            if (error) {
-                await supabaseClient.from('notas').insert([datos]);
-            }
-            mostrarMensaje('art-nota-msg', `¡Calificación guardada para ${periodo}! Promedio: ${promedioCalculado}`, true);
-            document.getElementById('form-notas-art').reset();
-            document.getElementById('div-otra-art').style.display = 'none';
-        }
-
-        async function guardarNotaAcademica(e) {
-            e.preventDefault();
-            const cedula = document.getElementById('acad-estudiante-sel').value;
-            let matSel = document.getElementById('acad-materia-sel').value;
-            if (matSel === 'Otra Materia Académica') {
-                matSel = document.getElementById('acad-materia-custom').value.trim() || 'Otra Académica';
-            }
-            const materia = `[Académica] ${matSel}`;
-            const periodo = document.getElementById('select-periodo-global').value;
-            const notaManual = document.getElementById('acad-nota-manual').value;
-            
-            let promedioCalculado = notaManual !== '' ? parseFloat(notaManual) : 0;
-            if (notaManual === '') {
-                document.querySelectorAll('.input-rubro-acad').forEach(input => {
-                    promedioCalculado += (parseFloat(input.value) || 0) * parseFloat(input.getAttribute('data-peso'));
-                });
-            }
-            promedioCalculado = Number(promedioCalculado.toFixed(2));
-
-            const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedioCalculado };
-            const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
-            if (error) {
-                await supabaseClient.from('notas').insert([datos]);
-            }
-            mostrarMensaje('acad-nota-msg', `¡Calificación guardada para ${periodo}! Promedio: ${promedioCalculado}`, true);
-            document.getElementById('form-notas-acad').reset();
-            document.getElementById('div-otra-acad').style.display = 'none';
         }
 
         async function guardarMatricula(e) {
