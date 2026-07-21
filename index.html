@@ -3,72 +3,541 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro Institucional de Notas</title>
-    <!-- Incluimos la librería oficial de Supabase -->
+    <title>Sistema de Gestión Académica e Institucional</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; font-size: 24px; }
-        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; }
-        button:hover { background-color: #219653; }
-        #mensaje { margin-top: 15px; font-weight: bold; }
+        :root {
+            --primary: #1e293b;
+            --secondary: #0f172a;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --bg-light: #f8fafc;
+            --border: #cbd5e1;
+            --text: #334155;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--bg-light); color: var(--text); }
+        
+        /* Login Styles */
+        #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px; box-sizing: border-box; }
+        .login-card h2 { text-align: center; color: var(--primary); margin-top: 0; margin-bottom: 25px; }
+
+        /* App Layout */
+        #app-container { display: none; height: 100vh; flex-direction: column; }
+        header { background-color: var(--primary); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-size: 20px; }
+        
+        nav { background-color: var(--secondary); display: flex; overflow-x: auto; padding: 0 20px; border-bottom: 1px solid #334155; }
+        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 20px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-size: 14px; }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); background-color: rgba(255,255,255,0.03); }
+
+        main { flex: 1; padding: 30px; overflow-y: auto; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .tab-content { display: none; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .tab-content.active { display: block; }
+
+        /* Form Elements */
+        fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 25px; background: #fff; }
+        legend { font-weight: bold; color: var(--primary); padding: 0 10px; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #475569; }
+        input, select, textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box; background-color: #fff; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        button.action-btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
+        button.action-btn:hover { background-color: var(--accent-hover); }
+        
+        .age-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; margin-top: 5px; }
+        .notification { margin-top: 15px; padding: 12px; border-radius: 6px; font-weight: 600; display: none; font-size: 14px; }
+        .success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .logout-btn:hover { background: #dc2626; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Registro de Estudiantes</h1>
-        <p>Agrega un estudiante a tu base de datos de Supabase:</p>
-        
-        <input type="text" id="nombre" placeholder="Nombre completo del estudiante">
-        <input type="text" id="nivel" placeholder="Nivel / Grupo (Ej: Cuarto)">
-        <input type="text" id="cedula" placeholder="Número de cédula">
-        
-        <button onclick="guardarEstudiante()">Guardar Estudiante</button>
-        
-        <p id="mensaje"></p>
+    <!-- PANTALLA DE ACCESO -->
+    <div id="login-container">
+        <div class="login-card">
+            <h2>Acceso al Sistema</h2>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Correo Electrónico</label>
+                <input type="email" id="login-email" placeholder="usuario@correo.com">
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>Contraseña</label>
+                <input type="password" id="login-pass" placeholder="••••••••">
+            </div>
+            <button class="action-btn" style="width: 100%;" onclick="realizarLogin()">Ingresar al Sistema</button>
+            <div id="login-msg" class="notification"></div>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="app-container">
+        <header>
+            <h1>Panel Institucional</h1>
+            <div>
+                <span id="user-email-display" style="margin-right: 15px; font-size: 14px;"></span>
+                <button class="logout-btn" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <nav>
+            <button class="tab-btn active" onclick="cambiarPestana('matricula', event)">Matrícula</button>
+            <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración de Periodos</button>
+            <button class="tab-btn" onclick="cambiarPestana('notas', event)">Registro de Notas</button>
+            <button class="tab-btn" onclick="cambiarPestana('academicos', event)">Docentes Académicos</button>
+            <button class="tab-btn" onclick="cambiarPestana('artisticos', event)">Docentes Artísticos</button>
+        </nav>
+
+        <main>
+            <!-- 1. MATRÍCULA -->
+            <section id="matricula" class="tab-content active">
+                <h2>Gestión de Matrícula Estudiantil</h2>
+                <form id="form-matricula" onsubmit="guardarMatricula(event)">
+                    <fieldset>
+                        <legend>Datos Personales del Estudiante</legend>
+                        <div class="form-grid">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
+                            </div>
+                            <div class="form-group">
+                                <label>Número de Cédula</label>
+                                <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha de Nacimiento</label>
+                                <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Edad Exacta Calculada</label>
+                            <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
+                        </div>
+                        <div class="form-grid" style="margin-top: 15px;">
+                            <div class="form-group">
+                                <label>Nivel Educativo</label>
+                                <select id="mat-nivel" required>
+                                    <option value="">Seleccione el nivel</option>
+                                    <optgroup label="Primer Ciclo">
+                                        <option value="Primero">Primero</option>
+                                        <option value="Segundo">Segundo</option>
+                                        <option value="Tercero">Tercero</option>
+                                    </optgroup>
+                                    <optgroup label="Segundo Ciclo">
+                                        <option value="Cuarto">Cuarto</option>
+                                        <option value="Quinto">Quinto</option>
+                                        <option value="Sexto">Sexto</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Ubicación / Dirección</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Provincia</label>
+                                <input type="text" id="dir-provincia" required placeholder="Ej. Heredia">
+                            </div>
+                            <div class="form-group">
+                                <label>Cantón</label>
+                                <input type="text" id="dir-canton" required placeholder="Ej. Heredia">
+                            </div>
+                            <div class="form-group">
+                                <label>Distrito</label>
+                                <input type="text" id="dir-distrito" required placeholder="Ej. Ulloa">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Otras señas / Dirección exacta</label>
+                            <textarea id="dir-detalles" rows="2" placeholder="Detalle de la ubicación"></textarea>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Primer Encargado</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="enc1-nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input type="email" id="enc1-correo" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Contacto Celular</label>
+                                <input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Segundo Encargado</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="enc2-nombre">
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input type="email" id="enc2-correo">
+                            </div>
+                            <div class="form-group">
+                                <label>Contacto Celular</label>
+                                <input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="action-btn">Guardar Matrícula Completa</button>
+                    <div id="mat-msg" class="notification"></div>
+                </form>
+            </section>
+
+            <!-- 2. CONFIGURACIÓN DE PERIODOS -->
+            <section id="configuracion" class="tab-content">
+                <h2>Configuración de Periodos y Eventos Institucionales</h2>
+                <form id="form-config" onsubmit="guardarConfiguracion(event)">
+                    <fieldset>
+                        <legend>Calendario Lectivo</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Inicio Primer Periodo</label>
+                                <input type="date" id="cfg-p1-inicio" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Finalización Primer Periodo</label>
+                                <input type="date" id="cfg-p1-fin" required>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Inicio Vacaciones de Medio Año</label>
+                                <input type="date" id="cfg-vac-inicio" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fin Vacaciones de Medio Año</label>
+                                <input type="date" id="cfg-vac-fin" required>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Inicio Segundo Periodo</label>
+                                <input type="date" id="cfg-p2-inicio" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Finalización Segundo Periodo</label>
+                                <input type="date" id="cfg-p2-fin" required>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Festival Artístico Institucional</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Fecha del Festival</label>
+                                <input type="date" id="cfg-fest-fecha" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Hora del Evento</label>
+                                <input type="time" id="cfg-fest-hora" required>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Lugar del Festival</label>
+                                <input type="text" id="cfg-fest-lugar" required placeholder="Ej. Gimnasio Institucional">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="action-btn">Guardar Configuración</button>
+                    <div id="cfg-msg" class="notification"></div>
+                </form>
+            </section>
+
+            <!-- 3. REGISTRO DE NOTAS -->
+            <section id="notas" class="tab-content">
+                <h2>Registro de Notas por Estudiante</h2>
+                <form id="form-notas" onsubmit="guardarNota(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Cédula del Estudiante</label>
+                            <input type="text" id="nota-cedula" required placeholder="Ingrese cédula registrada">
+                        </div>
+                        <div class="form-group">
+                            <label>Materia / Asignatura</label>
+                            <input type="text" id="nota-materia" required placeholder="Ej. Matemáticas, Música">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Trabajo Cotidiano</label>
+                            <input type="number" step="0.01" min="0" max="100" id="nota-cotidiano" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pruebas / Exámenes</label>
+                            <input type="number" step="0.01" min="0" max="100" id="nota-pruebas" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Asistencia (Calificación)</label>
+                            <input type="number" step="0.01" min="0" max="100" id="nota-asistencia" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="action-btn">Registrar y Calcular Promedio</button>
+                    <div id="nota-msg" class="notification"></div>
+                </form>
+            </section>
+
+            <!-- 4. DOCENTES ACADÉMICOS -->
+            <section id="academicos" class="tab-content">
+                <h2>Directorio de Docentes Académicos</h2>
+                <form id="form-acad" onsubmit="guardarDocente(event, 'academico')">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="acad-nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico</label>
+                            <input type="email" id="acad-correo" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono / Celular</label>
+                            <input type="tel" id="acad-tel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Especialidad / Materia</label>
+                            <input type="text" id="acad-esp" required placeholder="Ej. Español, Estudios Sociales">
+                        </div>
+                    </div>
+                    <button type="submit" class="action-btn">Registrar Docente Académico</button>
+                    <div id="acad-msg" class="notification"></div>
+                </form>
+            </section>
+
+            <!-- 5. DOCENTES ARTÍSTICOS -->
+            <section id="artisticos" class="tab-content">
+                <h2>Directorio de Docentes Artísticos</h2>
+                <form id="form-art" onsubmit="guardarDocente(event, 'artistico')">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="art-nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico</label>
+                            <input type="email" id="art-correo" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono / Celular</label>
+                            <input type="tel" id="art-tel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Disciplina Artística</label>
+                            <input type="text" id="art-esp" required placeholder="Ej. Música, Artes Plásticas, Teatro">
+                        </div>
+                    </div>
+                    <button type="submit" class="action-btn">Registrar Docente Artístico</button>
+                    <div id="art-msg" class="notification"></div>
+                </form>
+            </section>
+        </main>
     </div>
 
     <script>
-        // 1. Pega aquí tu Project URL y tu llave anon public que copiaste de Supabase
+        // CONFIGURACIÓN DE SUPABASE (REEMPLAZAR CON SUS DATOS)
         const SUPABASE_URL = 'AQUÍ_PEGAS_TU_PROJECT_URL';
         const SUPABASE_ANON_KEY = 'AQUÍ_PEGAS_TU_LLAVE_ANON_PUBLIC';
-
-        // Inicializamos la conexión con Supabase
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        async function guardarEstudiante() {
-            const nombre = document.getElementById('nombre').value;
-            const nivel = document.getElementById('nivel').value;
-            const cedula = document.getElementById('cedula').value;
-            const mensaje = document.getElementById('mensaje');
+        // Control de Pestañas
+        function cambiarPestana(idSeccion, evt) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(idSeccion).classList.add('active');
+            if (evt) evt.currentTarget.classList.add('active');
+        }
 
-            if (!nombre || !nivel || !cedula) {
-                mensaje.style.color = 'red';
-                mensaje.innerText = 'Por favor, completa todos los campos.';
-                return;
-            }
+        // Sistema de Login con Supabase Auth
+        async function realizarLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const msg = document.getElementById('login-msg');
 
-            // Enviamos los datos a la tabla 'estudiantes' que creamos en Supabase
-            const { data, error } = await supabaseClient
-                .from('estudiantes')
-                .insert([{ nombre: nombre, nivel: nivel, cedula: cedula }]);
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: pass
+            });
 
             if (error) {
-                mensaje.style.color = 'red';
-                mensaje.innerText = 'Error al guardar: ' + error.message;
+                msg.className = 'notification error';
+                msg.innerText = 'Error de acceso: ' + error.message;
+                msg.style.display = 'block';
             } else {
-                mensaje.style.color = 'green';
-                mensaje.innerText = '¡Estudiante guardado con éxito en Supabase!';
-                // Limpiar campos
-                document.getElementById('nombre').value = '';
-                document.getElementById('nivel').value = '';
-                document.getElementById('cedula').value = '';
+                iniciarSesionUI(data.user.email);
+            }
+        }
+
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('login-container').style.display = 'flex';
+        }
+
+        function iniciarSesionUI(email) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
+        }
+
+        // Verificar sesión activa al cargar
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                iniciarSesionUI(session.user.email);
+            }
+        });
+
+        // Cálculo de edad exacta con años, meses y días
+        function calcularEdadExacta() {
+            const fechaNacVal = document.getElementById('mat-fnac').value;
+            const resultadoDiv = document.getElementById('edad-resultado');
+            if (!fechaNacVal) return;
+
+            const fnac = new Date(fechaNacVal);
+            const hoy = new Date();
+
+            let anos = hoy.getFullYear() - fnac.getFullYear();
+            let meses = hoy.getMonth() - fnac.getMonth();
+            let dias = hoy.getDate() - fnac.getDate();
+
+            if (dias < 0) {
+                meses--;
+                const ultimoMes = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+                dias += ultimoMes.getDate();
+            }
+            if (meses < 0) {
+                anos--;
+                meses += 12;
+            }
+
+            resultadoDiv.innerText = `${anos} años, ${meses} meses y ${dias} días`;
+        }
+
+        // Funciones de Guardado en Base de Datos
+        async function mostrarMensaje(elementId, texto, esExito) {
+            const el = document.getElementById(elementId);
+            el.className = 'notification ' + (esExito ? 'success' : 'error');
+            el.innerText = texto;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        async function guardarMatricula(e) {
+            e.preventDefault();
+            const datos = {
+                nombre: document.getElementById('mat-nombre').value,
+                cedula: document.getElementById('mat-cedula').value,
+                fecha_nacimiento: document.getElementById('mat-fnac').value,
+                nivel: document.getElementById('mat-nivel').value,
+                provincia: document.getElementById('dir-provincia').value,
+                canton: document.getElementById('dir-canton').value,
+                distrito: document.getElementById('dir-distrito').value,
+                direccion_detalles: document.getElementById('dir-detalles').value,
+                encargado1_nombre: document.getElementById('enc1-nombre').value,
+                encargado1_correo: document.getElementById('enc1-correo').value,
+                encargado1_cel: document.getElementById('enc1-cel').value,
+                encargado2_nombre: document.getElementById('enc2-nombre').value,
+                encargado2_correo: document.getElementById('enc2-correo').value,
+                encargado2_cel: document.getElementById('enc2-cel').value
+            };
+
+            const { error } = await supabaseClient.from('estudiantes').insert([datos]);
+            if (error) {
+                mostrarMensaje('mat-msg', 'Error al guardar matrícula: ' + error.message, false);
+            } else {
+                mostrarMensaje('mat-msg', '¡Matrícula guardada exitosamente!', true);
+                document.getElementById('form-matricula').reset();
+                document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
+            }
+        }
+
+        async function guardarConfiguracion(e) {
+            e.preventDefault();
+            const datos = {
+                id: 1, // Fila única de configuración
+                p1_inicio: document.getElementById('cfg-p1-inicio').value,
+                p1_fin: document.getElementById('cfg-p1-fin').value,
+                vac_inicio: document.getElementById('cfg-vac-inicio').value,
+                vac_fin: document.getElementById('cfg-vac-fin').value,
+                p2_inicio: document.getElementById('cfg-p2-inicio').value,
+                p2_fin: document.getElementById('cfg-p2-fin').value,
+                festival_fecha: document.getElementById('cfg-fest-fecha').value,
+                festival_hora: document.getElementById('cfg-fest-hora').value,
+                festival_lugar: document.getElementById('cfg-fest-lugar').value
+            };
+
+            const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
+            if (error) {
+                mostrarMensaje('cfg-msg', 'Error al guardar configuración: ' + error.message, false);
+            } else {
+                mostrarMensaje('cfg-msg', '¡Configuración institucional guardada con éxito!', true);
+            }
+        }
+
+        async function guardarNota(e) {
+            e.preventDefault();
+            const cotidiano = parseFloat(document.getElementById('nota-cotidiano').value);
+            const pruebas = parseFloat(document.getElementById('nota-pruebas').value);
+            const asistencia = parseFloat(document.getElementById('nota-asistencia').value);
+            
+            // Promedio simple ponderado (ejemplo estándar)
+            const promedio = Number(((cotidiano * 0.4) + (pruebas * 0.55) + (asistencia * 0.05)).toFixed(2));
+
+            const datos = {
+                cedula_estudiante: document.getElementById('nota-cedula').value,
+                materia: document.getElementById('nota-materia').value,
+                cotidiano: cotidiano,
+                pruebas: pruebas,
+                asistencia: asistencia,
+                promedio: promedio
+            };
+
+            const { error } = await supabaseClient.from('notas').insert([datos]);
+            if (error) {
+                mostrarMensaje('nota-msg', 'Error al registrar nota: ' + error.message, false);
+            } else {
+                mostrarMensaje('nota-msg', `¡Nota registrada! Promedio calculado: ${promedio}`, true);
+                document.getElementById('form-notas').reset();
+            }
+        }
+
+        async function guardarDocente(e, tipo) {
+            e.preventDefault();
+            const prefijo = tipo === 'academico' ? 'acad' : 'art';
+            const datos = {
+                nombre: document.getElementById(`${prefijo}-nombre`).value,
+                correo: document.getElementById(`${prefijo}-correo`).value,
+                telefono: document.getElementById(`${prefijo}-tel`).value,
+                especialidad: document.getElementById(`${prefijo}-esp`).value,
+                tipo_docente: tipo
+            };
+
+            const { error } = await supabaseClient.from('docentes').insert([datos]);
+            if (error) {
+                mostrarMensaje(`${prefijo}-msg`, 'Error al registrar docente: ' + error.message, false);
+            } else {
+                mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
+                document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
             }
         }
     </script>
-
 </body>
 </html>
