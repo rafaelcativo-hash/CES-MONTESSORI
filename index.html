@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Institucional de Notas</title>
+    <!-- Incluimos la librería oficial de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 24px; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #219653; }
+        #mensaje { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Registro de Estudiantes</h1>
+        <p>Agrega un estudiante a tu base de datos de Supabase:</p>
+        
+        <input type="text" id="nombre" placeholder="Nombre completo del estudiante">
+        <input type="text" id="nivel" placeholder="Nivel / Grupo (Ej: Cuarto)">
+        <input type="text" id="cedula" placeholder="Número de cédula">
+        
+        <button onclick="guardarEstudiante()">Guardar Estudiante</button>
+        
+        <p id="mensaje"></p>
+    </div>
+
+    <script>
+        // 1. Pega aquí tu Project URL y tu llave anon public que copiaste de Supabase
+        const SUPABASE_URL = 'AQUÍ_PEGAS_TU_PROJECT_URL';
+        const SUPABASE_ANON_KEY = 'AQUÍ_PEGAS_TU_LLAVE_ANON_PUBLIC';
+
+        // Inicializamos la conexión con Supabase
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function guardarEstudiante() {
+            const nombre = document.getElementById('nombre').value;
+            const nivel = document.getElementById('nivel').value;
+            const cedula = document.getElementById('cedula').value;
+            const mensaje = document.getElementById('mensaje');
+
+            if (!nombre || !nivel || !cedula) {
+                mensaje.style.color = 'red';
+                mensaje.innerText = 'Por favor, completa todos los campos.';
+                return;
+            }
+
+            // Enviamos los datos a la tabla 'estudiantes' que creamos en Supabase
+            const { data, error } = await supabaseClient
+                .from('estudiantes')
+                .insert([{ nombre: nombre, nivel: nivel, cedula: cedula }]);
+
+            if (error) {
+                mensaje.style.color = 'red';
+                mensaje.innerText = 'Error al guardar: ' + error.message;
+            } else {
+                mensaje.style.color = 'green';
+                mensaje.innerText = '¡Estudiante guardado con éxito en Supabase!';
+                // Limpiar campos
+                document.getElementById('nombre').value = '';
+                document.getElementById('nivel').value = '';
+                document.getElementById('cedula').value = '';
+            }
+        }
+    </script>
+
+</body>
+</html>
