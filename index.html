@@ -605,7 +605,6 @@
             setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
 
-        // OBTENER RUBROS Y PESOS SEGÚN LA MATERIA SELECCIONADA
         function obtenerRubrosMateria(materia) {
             if (materia.includes('Conducta')) {
                 return [
@@ -668,7 +667,6 @@
                     { id: 'asistencia', label: 'Asistencia', peso: 0.10 }
                 ];
             } else {
-                // Instrumentos y otras artísticas estándar
                 return [
                     { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 },
                     { id: 'asistencia', label: 'Asistencia/Participación', peso: 0.40 }
@@ -676,7 +674,6 @@
             }
         }
 
-        // CARGAR GRUPO COMPLETO CON COMPONENTES DE EVALUACIÓN Y CÁLCULO EN VIVO
         async function cargarGrupoParaCalificar() {
             const nivel = document.getElementById('cal-nivel').value;
             const materia = document.getElementById('cal-materia').value;
@@ -749,15 +746,12 @@
         function calcularNotaFinalEstudiante(cedula) {
             const inputs = document.querySelectorAll(`.input-rubro-${cedula}`);
             let total = 0;
-            let completo = true;
 
             inputs.forEach(input => {
                 const val = parseFloat(input.value);
                 const peso = parseFloat(input.getAttribute('data-peso'));
                 if (!isNaN(val)) {
                     total += val * peso;
-                } else {
-                    completo = false;
                 }
             });
 
@@ -785,7 +779,6 @@
             alert(`¡Nota final de periodo (${promedioFinal}) guardada exitosamente para la cédula ${cedula}!`);
         }
 
-        // REGISTRO HISTÓRICO UNIFICADO
         async function cargarCuadrosRegistro() {
             const nivel = document.getElementById('reg-nivel-sel').value;
             const contenedor = document.getElementById('contenedor-cuadros-registro');
