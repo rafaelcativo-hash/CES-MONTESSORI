@@ -378,7 +378,7 @@
                 </div>
             </section>
 
-            <!-- 5. INFORMES AL HOGAR (CON SELECTOR DE PERIODO) -->
+            <!-- 5. INFORMES AL HOGAR -->
             <section id="hogar" class="tab-content">
                 <h2>Generación y Envío de Informes al Hogar</h2>
                 <fieldset>
@@ -939,7 +939,7 @@
                         </tr>
                     `;
 
-                    // Recopilar comentarios individuales del periodo seleccionado
+                    // Recopilar comentarios individuales del periodo seleccionado (buscando coincidencia exacta con el periodo)
                     if (notaMatPeriodo && notaMatPeriodo.comentario) {
                         comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[${mat}]:</b> ${notaMatPeriodo.comentario}</p>`;
                     }
@@ -947,7 +947,7 @@
             }
 
             if (!comentariosDocenteHTML) {
-                comentariosDocenteHTML = '<p style="color: #64748b; font-style: italic;">[Sin comentarios individuales registrados para este periodo]</p>';
+                comentariosDocenteHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios individuales registrados para este ${periodoSel}]</p>`;
             }
 
             contenedor.innerHTML = `
