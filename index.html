@@ -412,8 +412,10 @@
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Docente Responsable / Música (Actual o Nuevo)</label>
-                            <input type="text" id="inf-docente" required placeholder="Nombre del docente responsable">
+                            <label>Docente Responsable / Académico (Seleccionar de la lista)</label>
+                            <select id="inf-docente-sel" required onchange="actualizarNombreDocenteInforme()">
+                                <option value="">Cargando docentes...</option>
+                            </select>
                         </div>
                     </div>
                 </fieldset>
@@ -527,6 +529,7 @@
             document.getElementById(idSeccion).classList.add('active');
             if (evt) evt.currentTarget.classList.add('active');
             if (idSeccion === 'matricula') cargarDocentesEnMatricula();
+            if (idSeccion === 'hogar') cargarDocentesEnInforme();
         }
 
         async function realizarLogin() {
@@ -555,6 +558,7 @@
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
             cargarDocentesEnMatricula();
+            cargarDocentesEnInforme();
         }
 
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
@@ -579,6 +583,34 @@
                 opt.textContent = `${doc.nombre} (${doc.especialidad})`;
                 selectDocente.appendChild(opt);
             });
+        }
+
+        async function cargarDocentesEnInforme() {
+            const selectDocente = document.getElementById('inf-docente-sel');
+            if (!selectDocente) return;
+            selectDocente.innerHTML = '<option value="">Cargando docentes...</option>';
+
+            const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad, tipo_docente');
+            if (error || !data || data.length === 0) {
+                selectDocente.innerHTML = '<option value="">No hay docentes registrados</option>';
+                return;
+            }
+
+            selectDocente.innerHTML = '<option value="">Seleccione el docente responsable</option>';
+            data.forEach(doc => {
+                const opt = document.createElement('option');
+                opt.value = doc.nombre;
+                opt.textContent = `${doc.nombre} - ${doc.especialidad} (${doc.tipo_docente === 'academico' ? 'Académico' : 'Artístico'})`;
+                selectDocente.appendChild(opt);
+            });
+        }
+
+        function actualizarNombreDocenteInforme() {
+            const selectDocente = document.getElementById('inf-docente-sel');
+            const lblDocenteVer = document.getElementById('lbl-docente-ver');
+            if (lblDocenteVer && selectDocente.value) {
+                lblDocenteVer.innerText = selectDocente.value;
+            }
         }
 
         function calcularEdadExacta() {
@@ -903,6 +935,7 @@
         async function generarInformeHogarVisual() {
             const selectEst = document.getElementById('inf-estudiante-sel');
             const periodoSel = document.getElementById('inf-periodo-sel').value;
+            const selectDocente = document.getElementById('inf-docente-sel');
             const contenedor = document.getElementById('contenedor-vista-informe');
             
             if (!selectEst.value) {
@@ -911,7 +944,7 @@
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const docenteNivel = document.getElementById('inf-docente').value || estData.docente_asignado || '[Sin asignar]';
+            const docenteSeleccionado = selectDocente && selectDocente.value ? selectDocente.value : (estData.docente_asignado || '[Sin asignar]');
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
@@ -970,7 +1003,7 @@
                         <p><b>Encargados:</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                         <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
                         <p><b>Directora Institucional:</b> Flor María Jiménez</p>
-                        <p><b>Docente Responsable / Nuevo:</b> <span id="lbl-docente-ver">${docenteNivel}</span></p>
+                        <p><b>Docente Responsable / Académico:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
                     </div>
                     <h4>Calificaciones del ${periodoSel}</h4>
                     <table class="data-table">
@@ -1205,6 +1238,7 @@
                 mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
                 document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
                 cargarDocentesEnMatricula();
+                cargarDocentesEnInforme();
             }
         }
     </script>
