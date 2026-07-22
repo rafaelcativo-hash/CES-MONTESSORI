@@ -107,7 +107,7 @@
             <button class="tab-btn" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
             <button class="tab-btn" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
             <button class="tab-btn" onclick="cambiarPestana('calificar', event)">Calificar</button>
-            <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogار</button>
+            <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" onclick="cambiarPestana('academicos', event)">Docentes Académicos</button>
             <button class="tab-btn" onclick="cambiarPestana('artisticos', event)">Docentes Artísticos</button>
@@ -118,7 +118,6 @@
             <section id="matricula" class="tab-content active">
                 <h2>Gestión y Corrección de Matrícula Estudiantil</h2>
                 
-                <!-- Buscador de Corrección -->
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
                     <legend style="color: var(--accent);">Modo Corrección / Edición</legend>
                     <div class="form-grid" style="align-items: flex-end;">
@@ -637,7 +636,6 @@
                 encargado2_cel: document.getElementById('enc2-cel').value
             };
 
-            // Usamos upsert basado en la cédula para insertar o actualizar automáticamente sin duplicar claves
             const { error } = await supabaseClient.from('estudiantes').upsert([datos], { onConflict: 'cedula' });
 
             if (error) {
@@ -1076,28 +1074,36 @@
 
             contenedor.innerHTML = `
                 <div class="report-preview" id="plantilla-informe-oficial">
-                    <div class="report-header">
-                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo CES Montessori">
-                        <div class="school-info">
-                            <h3>CES MONTESSORI</h3>
-                            <p>Teléfono: 22607806 • Heredia, Costa Rica</p>
-                            <p><b>INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</b></p>
+                    <div class="report-header" style="border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo CES Montessori" style="width: 60px; height: 60px; object-fit: contain;">
+                        <div class="school-info" style="text-align: center; flex: 1; margin: 0 15px;">
+                            <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Escuela CES Montessori</h3>
+                            <p style="margin: 3px 0; font-size: 12px; color: #64748b;">Heredia, Costa Rica • Teléfono: 2260-7806</p>
+                            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
                         </div>
-                        <div style="font-size: 12px; text-align: right;">
-                            <p><b>Remitente:</b> educativoshkenuk@gmail.com</p>
+                        <div style="font-size: 11px; text-align: right; color: #475569;">
+                            <p style="margin: 0;"><b>Remitente Oficial:</b></p>
+                            <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
                         </div>
                     </div>
-                    <div style="margin-bottom: 15px; font-size: 14px;">
-                        <p><b>Estudiante:</b> ${estData.nombre} (Cédula: ${estData.cedula})</p>
-                        <p><b>Nivel:</b> ${estData.nivel}</p>
-                        <p><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'} | <b>Profesor Instrumento:</b> ${estData.docente_asignado || 'Ninguno'}</p>
-                        <p><b>Profesor Académico:</b> ${estData.docente_academico || 'Ninguno'} | <b>Profesor Artístico Grupal:</b> ${estData.docente_artistico_grupal || 'Ninguno'}</p>
-                        <p><b>Encargados:</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
+                    <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
+                            <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
+                            <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
+                            <p style="margin: 3px 0;"><b>Profesor Académico:</b> ${estData.docente_academico || 'No asignado'}</p>
+                            <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
+                            <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
+                            <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal:</b> ${estData.docente_artistico_grupal || 'Ninguno'}</p>
+                            <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
+                        </div>
                         <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
-                        <p><b>Directora Institucional:</b> Flor María Jiménez</p>
-                        <p><b>Docente Responsable del Informe:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
+                        <div style="display: flex; justify-content: space-between;">
+                            <p style="margin: 3px 0;"><b>Dirección Institucional:</b> Flor María Jiménez</p>
+                            <p style="margin: 3px 0;"><b>Docente Responsable:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
+                        </div>
                     </div>
-                    <h4>Calificaciones del ${periodoSel}</h4>
+                    <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
                     <table class="data-table">
                         <thead>
                             <tr>
