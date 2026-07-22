@@ -127,9 +127,14 @@
             <section id="matricula" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                     <h2 style="margin: 0;">Gestión y Corrección de Matrícula Estudiantil</h2>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                         <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula (Excel/CSV)</button>
-                        <button class="warning-btn" onclick="descargarMatriculaPDF()">Descargar Matrícula (PDF)</button>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <select id="select-estudiante-pdf" style="padding: 10px; font-size: 13px; max-width: 220px;">
+                                <option value="">-- Seleccione estudiante para PDF --</option>
+                            </select>
+                            <button class="warning-btn" onclick="descargarMatriculaPDFIndividual()">Descargar PDF Individual</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -494,8 +499,8 @@
         </main>
     </div>
 
-    <!-- Contenedor oculto para la generación limpia del PDF de Matrícula -->
-    <div id="pdf-matricula-container" style="display: none;"></div>
+    <!-- Contenedor visible pero fuera de pantalla para renderizar el PDF individual correctamente -->
+    <div id="pdf-matricula-container" style="position: absolute; left: -9999px; top: 0; background: white;"></div>
 
     <script>
         const SUPABASE_URL = 'https://sfiutfanfkerrpyejgga.supabase.co';
@@ -510,6 +515,7 @@
             if (idSeccion === 'matricula') {
                 cargarDocentesEnMatricula();
                 cargarSelectorEstudiantesEdicion();
+                cargarSelectorEstudiantesPDF();
             }
             if (idSeccion === 'hogar') cargarDocentesEnInforme();
             if (idSeccion === 'configuracion') cargarConfiguracion();
@@ -543,6 +549,7 @@
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
             cargarDocentesEnMatricula();
             cargarSelectorEstudiantesEdicion();
+            cargarSelectorEstudiantesPDF();
             cargarDocentesEnInforme();
             cargarConfiguracion();
             cargarTablaDocentesGeneral();
@@ -595,6 +602,22 @@
                 opt.value = est.cedula;
                 opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})`;
                 selectEdit.appendChild(opt);
+            });
+        }
+
+        async function cargarSelectorEstudiantesPDF() {
+            const selectPDF = document.getElementById('select-estudiante-pdf');
+            if (!selectPDF) return;
+            selectPDF.innerHTML = '<option value="">-- Seleccione estudiante para PDF --</option>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula').order('nombre');
+            if (error || !data) return;
+
+            data.forEach(est => {
+                const opt = document.createElement('option');
+                opt.value = est.cedula;
+                opt.textContent = est.nombre;
+                selectPDF.appendChild(opt);
             });
         }
 
@@ -681,6 +704,7 @@
             } else {
                 mostrarMensaje('mat-msg', '¡Matrícula guardada / actualizada con éxito!', true);
                 cargarSelectorEstudiantesEdicion();
+                cargarSelectorEstudiantesPDF();
                 limpiarFormularioMatricula();
             }
         }
@@ -728,55 +752,75 @@
             document.body.removeChild(link);
         }
 
-        async function descargarMatriculaPDF() {
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
-            if (error || !data || data.length === 0) {
-                alert('No hay registros de matrícula para exportar.');
+        async function descargarMatriculaPDFIndividual() {
+            const cedula = document.getElementById('select-estudiante-pdf').value;
+            if (!cedula) {
+                alert('Por favor seleccione un estudiante de la lista desplegable.');
                 return;
             }
 
-            let filasHTML = '';
-            data.forEach(est => {
-                filasHTML += `
-                    <tr>
-                        <td><b>${est.cedula || ''}</b></td>
-                        <td style="text-align: left;">${est.nombre || ''}</td>
-                        <td>${est.nivel || ''}</td>
-                        <td>${est.instrumento_principal || 'N/A'}</td>
-                        <td style="text-align: left;">${est.encargado1_nombre || ''} (${est.encargado1_cel || ''})</td>
-                    </tr>
-                `;
-            });
+            const { data: est, error } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
+            if (error || !est) {
+                alert('No se pudo encontrar la información del estudiante.');
+                return;
+            }
 
             const contenedorPDF = document.getElementById('pdf-matricula-container');
             contenedorPDF.innerHTML = `
-                <div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white; width: 210mm; box-sizing: border-box;">
-                    <div style="display: flex; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 15px;">
+                <div style="padding: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white; width: 210mm; box-sizing: border-box; color: #334155;">
+                    <div style="display: flex; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px;">
                         <div style="flex: 1; text-align: center;">
-                            <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Archivo Oficial de Matrícula Estudiantil</p>
+                            <h3 style="margin: 0; color: #1e293b; font-size: 20px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 12px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil</p>
                         </div>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                        <thead>
-                            <tr style="background-color: #1e293b; color: white;">
-                                <th style="border: 1px solid #cbd5e1; padding: 6px;">Cédula</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Nombre del Estudiante</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 6px;">Nivel</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 6px;">Instrumento</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Encargado y Teléfono</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${filasHTML}
-                        </tbody>
-                    </table>
+
+                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">1. Datos Personales</h4>
+                        <p style="margin: 5px 0;"><b>Nombre Completo:</b> ${est.nombre || ''}</p>
+                        <p style="margin: 5px 0;"><b>Cédula:</b> ${est.cedula || ''}</p>
+                        <p style="margin: 5px 0;"><b>Fecha de Nacimiento:</b> ${est.fecha_nacimiento || ''}</p>
+                        <p style="margin: 5px 0;"><b>Nivel Educativo:</b> ${est.nivel || ''}</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">2. Asignación Académica y Artística</h4>
+                        <p style="margin: 5px 0;"><b>Profesor Académico:</b> ${est.docente_academico || 'No asignado'}</p>
+                        <p style="margin: 5px 0;"><b>Profesor Artístico Grupal:</b> ${est.docente_artistico_grupal || 'Ninguno'}</p>
+                        <p style="margin: 5px 0;"><b>Instrumento Principal:</b> ${est.instrumento_principal || 'Ninguno'}</p>
+                        <p style="margin: 5px 0;"><b>Profesor de Instrumento:</b> ${est.docente_asignado || 'No asignado'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">3. Dirección y Ubicación</h4>
+                        <p style="margin: 5px 0;"><b>Provincia / Cantón / Distrito:</b> ${est.provincia || ''}, ${est.canton || ''}, ${est.distrito || ''}</p>
+                        <p style="margin: 5px 0;"><b>Otras Señas:</b> ${est.direccion_detalles || 'N/A'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">4. Información de Encargados</h4>
+                        <p style="margin: 5px 0;"><b>Primer Encargado:</b> ${est.encargado1_nombre || ''} - Correo: ${est.encargado1_correo || ''} - Tel: ${est.encargado1_cel || ''}</p>
+                        <p style="margin: 5px 0;"><b>Segundo Encargado:</b> ${est.encargado2_nombre || 'N/A'} - Correo: ${est.encargado2_correo || 'N/A'} - Tel: ${est.encargado2_cel || 'N/A'}</p>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-around; margin-top: 40px; text-align: center;">
+                        <div style="width: 40%;">
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
+                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Firma del Encargado</p>
+                        </div>
+                        <div style="width: 40%;">
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
+                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Sello y Dirección Institucional</p>
+                        </div>
+                    </div>
                 </div>
             `;
 
+            const nombreArchivoLimio = `Matricula_${est.nombre.replace(/\s+/g, '_')}.pdf`;
+
             const opciones = {
                 margin:       [10, 10, 10, 10],
-                filename:     'Archivo_Matricula_Shkenuk.pdf',
+                filename:     nombreArchivoLimio,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
