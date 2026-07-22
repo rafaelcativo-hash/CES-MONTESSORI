@@ -1082,8 +1082,8 @@
                     if (notaMatPeriodo && notaMatPeriodo.comentario) {
                         let docenteCargo = docenteSeleccionado;
                         if (docentesLista) {
-                            const matLimpia = mat.replace('[Artística]', '').replace('[Académica]', '').trim();
-                            const docEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes(matLimpia.toLowerCase()));
+                            const matLimpia = mat.replace('[Artística]', '').replace('[Académica]', '').trim().toLowerCase();
+                            const docEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes(matLimpia));
                             if (docEncontrado) {
                                 docenteCargo = docEncontrado.nombre;
                             }
@@ -1106,6 +1106,15 @@
 
             if (!reflexionesDocentesHTML) {
                 reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones docentes registradas para este ${periodoSel}]</p>`;
+            }
+
+            // Búsqueda dinámica del docente de Danza o materia artística asociada en el membrete superior del reporte
+            let docenteDanzaEncargado = estData.docente_artistico_grupal || 'No asignado';
+            if (docentesLista) {
+                const docDanzaEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes('danza'));
+                if (docDanzaEncontrado) {
+                    docenteDanzaEncargado = docDanzaEncontrado.nombre;
+                }
             }
 
             contenedor.innerHTML = `
@@ -1136,7 +1145,7 @@
                             <p style="margin: 3px 0;"><b>Profesor Académico:</b> ${estData.docente_academico || 'No asignado'}</p>
                             <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
                             <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
-                            <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal:</b> ${estData.docente_artistico_grupal || 'Ninguno'}</p>
+                            <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal (Danza/Otros):</b> ${docenteDanzaEncargado}</p>
                             <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                         </div>
                         <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
