@@ -84,8 +84,8 @@
 
         @media print {
             body * { visibility: hidden; }
-            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-constancia-traslado, #plantilla-constancia-traslado * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-informe-oficial, #plantilla-constancia-traslado { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
+            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial * { visibility: visible; }
+            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
             .no-print { display: none !important; }
         }
     </style>
@@ -132,39 +132,76 @@
         </nav>
 
         <main>
-            <!-- 1. MATRÍCULA Y GESTIÓN INSTITUCIONAL -->
+            <!-- 1. MATRÍCULA Y GESTIÓN DE ESTUDIANTES (Flujo Original) -->
             <section id="matricula" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">Gestión de Matrícula y Traslados</h2>
+                    <h2 style="margin: 0;">Gestión de Matrícula y Control de Estudiantes</h2>
+                    <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula (Excel/CSV)</button>
                 </div>
 
-                <!-- Las 3 pestañas solicitadas -->
-                <div class="sub-panel-tabs">
-                    <button class="sub-tab-btn active" onclick="cambiarSubPestanaMatricula('regular', event)">1. Matrícula Regular</button>
-                    <button class="sub-tab-btn" onclick="cambiarSubPestanaMatricula('traslado', event)">2. Generar Traslado</button>
-                    <button class="sub-tab-btn" onclick="cambiarSubPestanaMatricula('busqueda-retirados', event)">3. Búsqueda de Retirados</button>
-                </div>
-
-                <!-- Pestaña 1: Matrícula Regular (con lista general, formulario y edición) -->
-                <div id="sub-panel-regular" class="sub-matricula-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                        <h3 style="margin: 0; color: var(--primary);">Listado General de Estudiantes Regulares y Formulario</h3>
-                        <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula (Excel/CSV)</button>
+                <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda</legend>
+                    <div class="form-grid" style="align-items: flex-end;">
+                        <div class="form-group">
+                            <label>Año Lectivo</label>
+                            <select id="filtro-anio-lectivo">
+                                <!-- Dinámico -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Filtrar por Ciclo / Nivel General</label>
+                            <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
+                                <option value="">-- Todos los niveles vigentes --</option>
+                                <optgroup label="Primer Ciclo">
+                                    <option value="Primero">Primero</option>
+                                    <option value="Segundo">Segundo</option>
+                                    <option value="Tercero">Tercero</option>
+                                </optgroup>
+                                <optgroup label="Segundo Ciclo">
+                                    <option value="Cuarto">Cuarto</option>
+                                    <option value="Quinto">Quinto</option>
+                                    <option value="Sexto">Sexto</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Seleccionar Estudiante para Editar</label>
+                            <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
+                                <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
+                        </div>
                     </div>
+                </fieldset>
 
-                    <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                        <legend style="color: var(--accent);">Selección y Búsqueda de Estudiante Regular</legend>
-                        <div class="form-grid" style="align-items: flex-end;">
-                            <div class="form-group">
-                                <label>Año Lectivo</label>
-                                <select id="filtro-anio-lectivo">
-                                    <!-- Dinámico -->
-                                </select>
+                <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
+                    <fieldset>
+                        <legend>Datos Personales del Estudiante</legend>
+                        <div class="form-grid">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
                             </div>
                             <div class="form-group">
-                                <label>Filtrar por Nivel</label>
-                                <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
-                                    <option value="">-- Todos los niveles vigentes --</option>
+                                <label>Número de Cédula (Llave única)</label>
+                                <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha de Nacimiento</label>
+                                <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Edad Exacta Calculada</label>
+                            <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
+                        </div>
+                        <div class="form-grid" style="margin-top: 15px;">
+                            <div class="form-group">
+                                <label>Nivel Educativo (Ciclos)</label>
+                                <select id="mat-nivel" required>
+                                    <option value="">Seleccione el nivel</option>
                                     <optgroup label="Primer Ciclo">
                                         <option value="Primero">Primero</option>
                                         <option value="Segundo">Segundo</option>
@@ -177,188 +214,87 @@
                                     </optgroup>
                                 </select>
                             </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Asignación de Docentes, Talleres y Cursos Artísticos</legend>
+                        <div class="form-grid">
                             <div class="form-group">
-                                <label>Seleccionar Estudiante para Editar</label>
-                                <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
-                                    <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
+                                <label>Profesor Académico (Nivel)</label>
+                                <select id="mat-docente-acad" required>
+                                    <option value="">Cargando docentes académicos...</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
+                                <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
+                                <select id="mat-docente-art-grupal">
+                                    <option value="">Cargando docentes artísticos...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Instrumento Individual Principal</label>
+                                <select id="mat-instr-principal" required>
+                                    <option value="">Seleccione instrumento</option>
+                                    <option value="Canto">Canto</option>
+                                    <option value="Piano">Piano</option>
+                                    <option value="Guitarra">Guitarra</option>
+                                    <option value="Ukulele">Ukulele</option>
+                                    <option value="Batería">Batería</option>
+                                    <option value="Bajo">Bajo</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Profesor de Instrumento Principal</label>
+                                <select id="mat-docente-asig" required>
+                                    <option value="">Cargando instructores...</option>
+                                </select>
                             </div>
                         </div>
                     </fieldset>
 
-                    <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
-                        <fieldset>
-                            <legend>Datos Personales del Estudiante</legend>
-                            <div class="form-grid">
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Nombre Completo</label>
-                                    <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
-                                </div>
-                                <div class="form-group">
-                                    <label>Número de Cédula (Llave única)</label>
-                                    <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
-                                </div>
-                                <div class="form-group">
-                                    <label>Fecha de Nacimiento</label>
-                                    <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Edad Exacta Calculada</label>
-                                <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
-                            </div>
-                            <div class="form-grid" style="margin-top: 15px;">
-                                <div class="form-group">
-                                    <label>Nivel Educativo</label>
-                                    <select id="mat-nivel" required>
-                                        <option value="">Seleccione el nivel</option>
-                                        <optgroup label="Primer Ciclo">
-                                            <option value="Primero">Primero</option>
-                                            <option value="Segundo">Segundo</option>
-                                            <option value="Tercero">Tercero</option>
-                                        </optgroup>
-                                        <optgroup label="Segundo Ciclo">
-                                            <option value="Cuarto">Cuarto</option>
-                                            <option value="Quinto">Quinto</option>
-                                            <option value="Sexto">Sexto</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                            </div>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>Asignación de Docentes, Talleres y Cursos Artísticos</legend>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Profesor Académico (Nivel)</label>
-                                    <select id="mat-docente-acad" required>
-                                        <option value="">Cargando docentes académicos...</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
-                                    <select id="mat-docente-art-grupal">
-                                        <option value="">Cargando docentes artísticos...</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Instrumento Individual Principal</label>
-                                    <select id="mat-instr-principal" required>
-                                        <option value="">Seleccione instrumento</option>
-                                        <option value="Canto">Canto</option>
-                                        <option value="Piano">Piano</option>
-                                        <option value="Guitarra">Guitarra</option>
-                                        <option value="Ukulele">Ukulele</option>
-                                        <option value="Batería">Batería</option>
-                                        <option value="Bajo">Bajo</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Profesor de Instrumento Principal</label>
-                                    <select id="mat-docente-asig" required>
-                                        <option value="">Cargando instructores...</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>Ubicación / Dirección</legend>
-                            <div class="form-grid">
-                                <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
-                                <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Barva"></div>
-                                <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. El Carbonal"></div>
-                            </div>
-                            <div class="form-group">
-                                <label>Otras señas / Dirección exacta</label>
-                                <textarea id="dir-detalles" rows="2" placeholder="Calle El Pedregal 40205"></textarea>
-                            </div>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>Primer Encargado</legend>
-                            <div class="form-grid">
-                                <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre" required></div>
-                                <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo" required></div>
-                                <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888"></div>
-                            </div>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>Segundo Encargado</legend>
-                            <div class="form-grid">
-                                <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
-                                <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
-                                <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888"></div>
-                            </div>
-                        </fieldset>
-
-                        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
-                            <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
-                            <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir o PDF</button>
+                    <fieldset>
+                        <legend>Ubicación / Dirección</legend>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
+                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Barva"></div>
+                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. El Carbonal"></div>
                         </div>
-                        <div id="mat-msg" class="notification"></div>
-                    </form>
-
-                    <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px;"></div>
-                </div>
-
-                <!-- Pestaña 2: Generar Traslado -->
-                <div id="sub-panel-traslado" class="sub-matricula-content" style="display: none;">
-                    <h3 style="color: var(--primary);">Generar Constancia de Traslado</h3>
-                    <p style="color: #64748b; font-size: 13px;">Seleccione el año en curso, el nivel y al estudiante para procesar su traslado y generar la constancia oficial con notas.</p>
-                    
-                    <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                        <legend style="color: var(--accent);">Parámetros para Traslado</legend>
-                        <div class="form-grid" style="align-items: flex-end;">
-                            <div class="form-group">
-                                <label>Año Lectivo en Curso</label>
-                                <select id="traslado-anio-curso">
-                                    <!-- Dinámico -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Filtrar por Nivel</label>
-                                <select id="traslado-nivel-filtro" onchange="cargarEstudiantesParaTrasladoTab()">
-                                    <option value="">-- Seleccione nivel --</option>
-                                    <option value="Primero">Primero</option>
-                                    <option value="Segundo">Segundo</option>
-                                    <option value="Tercero">Tercero</option>
-                                    <option value="Cuarto">Cuarto</option>
-                                    <option value="Quinto">Quinto</option>
-                                    <option value="Sexto">Sexto</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label>Seleccionar Estudiante</label>
-                                <select id="traslado-estudiante-sel">
-                                    <option value="">-- Primero seleccione el nivel --</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label>Otras señas / Dirección exacta</label>
+                            <textarea id="dir-detalles" rows="2" placeholder="Calle El Pedregal 40205"></textarea>
                         </div>
-                        <button type="button" class="danger-btn" style="padding: 12px 20px; font-size: 14px;" onclick="procesarTrasladoDesdePestana2()">Procesar Traslado y Generar Constancia Oficial</button>
                     </fieldset>
 
-                    <div id="contenedor-constancia-traslado-tab2" style="display: none; margin-top: 30px;"></div>
-                </div>
+                    <fieldset>
+                        <legend>Primer Encargado</legend>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre" required></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo" required></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888"></div>
+                        </div>
+                    </fieldset>
 
-                <!-- Pestaña 3: Búsqueda de Retirados -->
-                <div id="sub-panel-busqueda-retirados" class="sub-matricula-content" style="display: none;">
-                    <h3 style="color: var(--primary);">Búsqueda de Estudiantes Retirados / Trasladados</h3>
-                    <p style="color: #64748b; font-size: 13px;">Consulte aquí el historial y las constancias de los estudiantes que se han retirado de la institución.</p>
-                    
-                    <div id="contenedor-tabla-retirados" style="overflow-x: auto; margin-top: 20px;">
-                        <p>Cargando estudiantes retirados...</p>
+                    <fieldset>
+                        <legend>Segundo Encargado</legend>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888"></div>
+                        </div>
+                    </fieldset>
+
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
+                        <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
+                        <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir o PDF</button>
                     </div>
-                    <div id="contenedor-constancia-retirados" style="margin-top: 30px;"></div>
-                </div>
+                    <div id="mat-msg" class="notification"></div>
+                </form>
+
+                <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px;"></div>
             </section>
 
             <!-- 2. LISTAS Y PROMOCIÓN -->
@@ -593,20 +529,18 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         function inicializarAniosLectivos() {
-            const selects = [document.getElementById('filtro-anio-lectivo'), document.getElementById('traslado-anio-curso')];
-            selects.forEach(selectAnio => {
-                if (!selectAnio) return;
-                selectAnio.innerHTML = '';
-                const anioActual = 2026;
-                for (let i = 0; i <= 6; i++) {
-                    const anioOpt = anioActual + i;
-                    const opt = document.createElement('option');
-                    opt.value = anioOpt;
-                    opt.textContent = `Año Lectivo ${anioOpt}`;
-                    if (anioOpt === 2026) opt.selected = true;
-                    selectAnio.appendChild(opt);
-                }
-            });
+            const selectAnio = document.getElementById('filtro-anio-lectivo');
+            if (!selectAnio) return;
+            selectAnio.innerHTML = '';
+            const anioActual = 2026;
+            for (let i = 0; i <= 6; i++) {
+                const anioOpt = anioActual + i;
+                const opt = document.createElement('option');
+                opt.value = anioOpt;
+                opt.textContent = `Año Lectivo ${anioOpt}`;
+                if (anioOpt === 2026) opt.selected = true;
+                selectAnio.appendChild(opt);
+            }
         }
 
         function cambiarPestana(idSeccion, evt) {
@@ -622,22 +556,6 @@
             if (idSeccion === 'hogar') cargarDocentesEnInforme();
             if (idSeccion === 'configuracion') cargarConfiguracion();
             if (idSeccion === 'docentes') cargarTablaDocentesGeneral();
-        }
-
-        function cambiarSubPestanaMatricula(subId, evt) {
-            document.querySelectorAll('.sub-matricula-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('#matricula .sub-tab-btn').forEach(el => el.classList.remove('active'));
-            
-            if (subId === 'regular') {
-                document.getElementById('sub-panel-regular').style.display = 'block';
-                cargarSelectorEstudiantesEdicion();
-            } else if (subId === 'traslado') {
-                document.getElementById('sub-panel-traslado').style.display = 'block';
-            } else if (subId === 'busqueda-retirados') {
-                document.getElementById('sub-panel-busqueda-retirados').style.display = 'block';
-                cargarTablaRetirados();
-            }
-            if (evt) evt.currentTarget.classList.add('active');
         }
 
         async function realizarLogin() {
@@ -712,7 +630,7 @@
             if (!selectEdit) return;
             selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').or('estado.is.null,estado.neq.trasladado').order('nombre');
+            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
             if (error || !data) return;
 
             data.forEach(est => {
@@ -730,7 +648,7 @@
 
             selectEdit.innerHTML = '<option value="">-- Cargando por nivel filtrado --</option>';
 
-            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').or('estado.is.null,estado.neq.trasladado').order('nombre');
+            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
             if (cicloFiltro) {
                 query = query.eq('nivel', cicloFiltro);
             }
@@ -741,40 +659,12 @@
                 return;
             }
 
-            selectEdit.innerHTML = '<option value="">-- Seleccione estudiante regular --</option>';
+            selectEdit.innerHTML = '<option value="">-- Seleccione estudiante --</option>';
             data.forEach(est => {
                 const opt = document.createElement('option');
                 opt.value = est.cedula;
                 opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})`;
                 selectEdit.appendChild(opt);
-            });
-        }
-
-        async function cargarEstudiantesParaTrasladoTab() {
-            const nivelFiltro = document.getElementById('traslado-nivel-filtro').value;
-            const selectEst = document.getElementById('traslado-estudiante-sel');
-            if (!selectEst) return;
-
-            if (!nivelFiltro) {
-                selectEst.innerHTML = '<option value="">-- Primero seleccione el nivel --</option>';
-                return;
-            }
-
-            selectEst.innerHTML = '<option value="">Cargando estudiantes...</option>';
-
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivelFiltro).or('estado.is.null,estado.neq.trasladado').order('nombre');
-            if (error || !data || data.length === 0) {
-                selectEst.innerHTML = '<option value="">No hay estudiantes vigentes en este nivel</option>';
-                return;
-            }
-
-            selectEst.innerHTML = '<option value="">-- Seleccione un estudiante --</option>';
-            data.forEach(est => {
-                const opt = document.createElement('option');
-                opt.value = est.cedula;
-                opt.textContent = `${est.nombre} (Cédula: ${est.cedula})`;
-                opt.dataset.estudiante = JSON.stringify(est);
-                selectEst.appendChild(opt);
             });
         }
 
@@ -854,8 +744,7 @@
                 encargado1_cel: document.getElementById('enc1-cel').value,
                 encargado2_nombre: document.getElementById('enc2-nombre').value,
                 encargado2_correo: document.getElementById('enc2-correo').value,
-                encargado2_cel: document.getElementById('enc2-cel').value,
-                estado: 'activo'
+                encargado2_cel: document.getElementById('enc2-cel').value
             };
 
             const { error } = await supabaseClient.from('estudiantes').upsert([datos], { onConflict: 'cedula' });
@@ -867,185 +756,6 @@
                 cargarSelectorEstudiantesEdicion();
                 generarVistaPreviaMatricula();
             }
-        }
-
-        async function procesarTrasladoDesdePestana2() {
-            const selectEst = document.getElementById('traslado-estudiante-sel');
-            if (!selectEst.value) {
-                alert('Por favor seleccione un estudiante para procesar su traslado.');
-                return;
-            }
-            const cedula = selectEst.value;
-            const nombreEst = selectEst.options[selectEst.selectedIndex].text;
-
-            if (!confirm(`¿Está seguro de procesar el TRASLADO y DESMATRICULAR al estudiante ${nombreEst}?\n\nEsto lo ocultará de las listas activas y generará su constancia oficial con notas.`)) {
-                return;
-            }
-
-            const { error } = await supabaseClient.from('estudiantes').update({ estado: 'trasladado' }).eq('cedula', cedula);
-
-            if (error) {
-                alert('Error al procesar el traslado: ' + error.message);
-                return;
-            }
-
-            alert('¡Traslado procesado exitosamente!');
-            await generarConstanciaTrasladoOficial(cedula, 'contenedor-constancia-traslado-tab2');
-            cargarEstudiantesParaTrasladoTab();
-            cargarSelectorEstudiantesEdicion();
-        }
-
-        async function generarConstanciaTrasladoOficial(cedula, contenedorId) {
-            const { data: estData, error: errEst } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', cedula);
-
-            if (errEst || !estData) {
-                alert('Error al cargar datos del estudiante para la constancia.');
-                return;
-            }
-
-            let tablaNotasHTML = '';
-            if (!notas || notas.length === 0) {
-                tablaNotasHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Sin calificaciones registradas al momento del traslado.</td></tr>`;
-            } else {
-                notas.forEach(n => {
-                    tablaNotasHTML += `
-                        <tr>
-                            <td><b>${n.materia}</b></td>
-                            <td>${n.periodo}</td>
-                            <td><b>${n.promedio}</b></td>
-                            <td>${n.comentario || 'N/A'}</td>
-                        </tr>
-                    `;
-                });
-            }
-
-            const fechaActual = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
-            const contenedorConstancia = document.getElementById(contenedorId);
-            contenedorConstancia.style.display = 'block';
-
-            contenedorConstancia.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
-                    <h3 style="margin: 0; color: #166534;">Constancia Oficial de Traslado - ${estData.nombre}</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="action-btn" onclick="window.print()">Imprimir Constancia Física</button>
-                        <button type="button" class="warning-btn" onclick="descargarConstanciaPDF()">Guardar Constancia PDF</button>
-                    </div>
-                </div>
-
-                <div class="report-preview" id="plantilla-constancia-traslado">
-                    <div class="report-header">
-                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
-                        <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center;">
-                            <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #166534; font-weight: bold;">CONSTANCIA OFICIAL DE TRASLADO Y NOTAS</p>
-                        </div>
-                    </div>
-
-                    <p style="text-align: right; font-size: 12px; margin-bottom: 15px;">Heredia, Barva, El Carbonal, a ${fechaActual}</p>
-
-                    <p style="font-size: 13px; line-height: 1.6; text-align: justify; margin-bottom: 20px;">
-                        La Dirección del <b>Centro Educativo Shkénuk</b> hace constar que el(la) estudiante <b>${estData.nombre}</b>, portador(a) de la cédula de identidad / identificación <b>${estData.cedula}</b>, cursaba el nivel de <b>${estData.nivel}</b> en esta institución y ha sido <b>TRASLADADO(A)</b> oficialmente en esta fecha. A continuación, se detallan las calificaciones obtenidas en su historial académico hasta el momento de su retiro:
-                    </p>
-
-                    <div style="margin-bottom: 25px;">
-                        <h4 style="color: var(--primary); margin-bottom: 8px;">Desglose de Calificaciones al Momento del Traslado</h4>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Asignatura / Materia</th>
-                                    <th>Periodo</th>
-                                    <th>Calificación</th>
-                                    <th>Observaciones / Comentarios</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tablaNotasHTML}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <p style="font-size: 12px; line-height: 1.5; margin-bottom: 35px; color: #475569;">
-                        Se extiende la presente constancia a solicitud de parte interesada para los fines legales y académicos que estime convenientes.
-                    </p>
-
-                    <div style="display: flex; justify-content: space-around; margin-top: 40px; text-align: center;">
-                        <div style="width: 40%;">
-                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
-                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
-                            <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Dirección Institucional</p>
-                        </div>
-                        <div style="width: 40%;">
-                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
-                            <p style="margin: 0; font-size: 12px; font-weight: bold;">${estData.docente_academico || 'Docente de Nivel'}</p>
-                            <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente Responsable / Nivel</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            contenedorConstancia.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function descargarConstanciaPDF() {
-            const elemento = document.getElementById('plantilla-constancia-traslado');
-            const opciones = {
-                margin:       [10, 10, 10, 10],
-                filename:     `Constancia_Traslado_Estudiante.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().from(elemento).set(opciones).save();
-        }
-
-        async function cargarTablaRetirados() {
-            const contenedor = document.getElementById('contenedor-tabla-retirados');
-            contenedor.innerHTML = '<p>Cargando estudiantes retirados / trasladados...</p>';
-
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('estado', 'trasladado').order('nombre');
-            if (error) {
-                contenedor.innerHTML = '<p style="color: red;">Error al cargar retirados: ' + error.message + '</p>';
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                contenedor.innerHTML = '<p style="color: #64748b;">No hay estudiantes registrados con estado de retiro o traslado.</p>';
-                return;
-            }
-
-            let html = `
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Cédula</th>
-                            <th>Nombre Completo</th>
-                            <th>Nivel</th>
-                            <th>Docente Académico</th>
-                            <th>Encargado / Contacto</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            data.forEach(est => {
-                html += `
-                    <tr>
-                        <td><b>${est.cedula}</b></td>
-                        <td style="text-align: left;">${est.nombre}</td>
-                        <td>${est.nivel}</td>
-                        <td>${est.docente_academico || 'N/A'}</td>
-                        <td>${est.encargado1_nombre} (${est.encargado1_cel || 'N/A'})</td>
-                        <td>
-                            <button class="action-btn" style="padding: 5px 10px; font-size: 11px;" onclick="generarConstanciaTrasladoOficial('${est.cedula}', 'contenedor-constancia-retirados')">Ver Constancia / Notas</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += `</tbody></table>`;
-            contenedor.innerHTML = html;
         }
 
         function generarVistaPreviaMatricula() {
@@ -1152,9 +862,9 @@
         }
 
         async function descargarMatriculaExcel() {
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').or('estado.is.null,estado.neq.trasladado').order('nivel');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
             if (error || !data || data.length === 0) {
-                alert('No hay registros de matrícula vigentes para exportar.');
+                alert('No hay registros de matrícula para exportar.');
                 return;
             }
 
@@ -1493,7 +1203,7 @@
                 }
             });
 
-            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
+            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             const { data: estudiantesRaw } = await queryEstudiantes;
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
 
@@ -1503,7 +1213,7 @@
             }
 
             if (estudiantes.length === 0) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes vigentes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
             }
 
@@ -1634,11 +1344,11 @@
 
             contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No hay estudiantes vigentes matriculados en ${nivel}.</p>`;
+                contenedor.innerHTML = `<p>No hay estudiantes matriculados en ${nivel}.</p>`;
                 return;
             }
 
@@ -1698,9 +1408,9 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             if (error || !data || data.length === 0) {
-                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes vigentes en este nivel</option>';
+                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
                 return;
             }
 
@@ -1976,11 +1686,11 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).or('estado.is.null,estado.neq.trasladado');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No se encontraron estudiantes vigentes matriculados en ${ciclo}.</p>`;
+                contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${ciclo}.</p>`;
                 return;
             }
 
@@ -2050,7 +1760,7 @@
             const msgSpan = document.getElementById('promocion-msg');
             msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').or('estado.is.null,estado.neq.trasladado');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || !notas) {
