@@ -17,12 +17,10 @@
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--bg-light); color: var(--text); }
         
-        /* Login Styles */
         #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, var(--primary), var(--secondary)); }
         .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px; box-sizing: border-box; text-align: center; }
         .login-card h2 { color: var(--primary); margin-top: 0; margin-bottom: 25px; }
 
-        /* App Layout */
         #app-container { display: none; height: 100vh; flex-direction: column; }
         header { background-color: var(--primary); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
@@ -39,7 +37,6 @@
         .tab-content { display: none; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .tab-content.active { display: block; }
 
-        /* Form Elements */
         fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 25px; background: #fff; }
         legend { font-weight: bold; color: var(--primary); padding: 0 10px; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 15px; }
@@ -51,13 +48,11 @@
         button.action-btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
         button.action-btn:hover { background-color: var(--accent-hover); }
 
-        /* Tables */
         table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; overflow-x: auto; display: block; }
         table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Report Card Preview Style */
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; }
         .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
         .report-header img { width: 60px; height: 60px; object-fit: contain; }
@@ -76,7 +71,6 @@
 </head>
 <body>
 
-    <!-- PANTALLA DE ACCESO -->
     <div id="login-container">
         <div class="login-card">
             <h2>Acceso al Sistema</h2>
@@ -93,7 +87,6 @@
         </div>
     </div>
 
-    <!-- APLICACIÓN PRINCIPAL -->
     <div id="app-container">
         <header>
             <div class="brand-container">
@@ -163,7 +156,21 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Asignación de Instrumentos y Docente</legend>
+                        <legend>Asignación de Docentes y Talleres</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Profesor Académico (Nivel)</label>
+                                <select id="mat-docente-acad" required>
+                                    <option value="">Cargando docentes...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Profesor Artístico Grupal (Solfeo/Danza)</label>
+                                <select id="mat-docente-art-grupal">
+                                    <option value="">Cargando docentes...</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Instrumento Individual Principal</label>
@@ -179,37 +186,9 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Profesor Asignado</label>
+                                <label>Profesor de Instrumento Principal</label>
                                 <select id="mat-docente-asig" required>
                                     <option value="">Cargando docentes...</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>1° Instrumento Opcional (Pago)</label>
-                                <select id="mat-instr-opc1">
-                                    <option value="Ninguno">Ninguno</option>
-                                    <option value="Canto">Canto</option>
-                                    <option value="Piano">Piano</option>
-                                    <option value="Guitarra">Guitarra</option>
-                                    <option value="Ukulele">Ukulele</option>
-                                    <option value="Batería">Batería</option>
-                                    <option value="Bajo">Bajo</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>2° Instrumento Opcional (Pago)</label>
-                                <select id="mat-instr-opc2">
-                                    <option value="Ninguno">Ninguno</option>
-                                    <option value="Canto">Canto</option>
-                                    <option value="Piano">Piano</option>
-                                    <option value="Guitarra">Guitarra</option>
-                                    <option value="Ukulele">Ukulele</option>
-                                    <option value="Batería">Batería</option>
-                                    <option value="Bajo">Bajo</option>
-                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
                         </div>
@@ -294,11 +273,9 @@
                 </div>
             </section>
 
-            <!-- 3. REGISTRO HISTÓRICO (CUADRO MAESTRO) -->
+            <!-- 3. REGISTRO HISTÓRICO -->
             <section id="registro" class="tab-content">
                 <h2>Registro Histórico de Calificaciones</h2>
-                <p style="color: #64748b;">Cuadro general unificado con todas las materias académicas y artísticas, notas de periodos, nota final (50% - 50%) y estado por nivel.</p>
-                
                 <div class="form-group" style="margin-bottom: 20px; max-width: 350px;">
                     <label>Seleccionar Nivel Educativo</label>
                     <select id="reg-nivel-sel" class="form-group" onchange="cargarCuadrosRegistro()">
@@ -319,8 +296,6 @@
             <!-- 4. CALIFICAR -->
             <section id="calificar" class="tab-content">
                 <h2>Calificación por Componentes y Comentarios Individuales</h2>
-                <p style="color: #64748b;">Selecciona el periodo, nivel y asignatura para registrar notas de componentes, nota final y comentarios positivos por estudiante.</p>
-                
                 <fieldset>
                     <legend>Parámetros de Calificación</legend>
                     <div class="form-grid">
@@ -372,7 +347,6 @@
                         </div>
                     </div>
                 </fieldset>
-
                 <div id="contenedor-grupo-calificar">
                     <p style="color: #64748b; text-align: center;">Seleccione Periodo, Nivel y Asignatura para desplegar la planilla.</p>
                 </div>
@@ -412,18 +386,16 @@
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Docente Responsable / Académico (Seleccionar de la lista)</label>
+                            <label>Docente Responsable / Académico</label>
                             <select id="inf-docente-sel" required onchange="actualizarNombreDocenteInforme()">
                                 <option value="">Cargando docentes...</option>
                             </select>
                         </div>
                     </div>
                 </fieldset>
-
                 <div id="contenedor-vista-informe">
                     <p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>
                 </div>
-
                 <div style="margin-top: 20px; text-align: right;">
                     <button class="action-btn" onclick="enviarInformeSimultaneo()">Enviar Informes Simultáneos a Encargados</button>
                     <div id="inf-msg" class="notification"></div>
@@ -437,61 +409,29 @@
                     <fieldset>
                         <legend>Calendario Lectivo y Periodos</legend>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Inicio Primer Periodo</label>
-                                <input type="date" id="cfg-p1-inicio" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Finalización Primer Periodo</label>
-                                <input type="date" id="cfg-p1-fin" required>
-                            </div>
+                            <div class="form-group"><label>Inicio Primer Periodo</label><input type="date" id="cfg-p1-inicio" required></div>
+                            <div class="form-group"><label>Finalización Primer Periodo</label><input type="date" id="cfg-p1-fin" required></div>
                         </div>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Inicio Vacaciones de Medio Año</label>
-                                <input type="date" id="cfg-vac-inicio" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Fin Vacaciones de Medio Año</label>
-                                <input type="date" id="cfg-vac-fin" required>
-                            </div>
+                            <div class="form-group"><label>Inicio Vacaciones de Medio Año</label><input type="date" id="cfg-vac-inicio" required></div>
+                            <div class="form-group"><label>Fin Vacaciones de Medio Año</label><input type="date" id="cfg-vac-fin" required></div>
                         </div>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Inicio Segundo Periodo</label>
-                                <input type="date" id="cfg-p2-inicio" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Finalización Segundo Periodo</label>
-                                <input type="date" id="cfg-p2-fin" required>
-                            </div>
+                            <div class="form-group"><label>Inicio Segundo Periodo</label><input type="date" id="cfg-p2-inicio" required></div>
+                            <div class="form-group"><label>Finalización Segundo Periodo</label><input type="date" id="cfg-p2-fin" required></div>
                         </div>
                     </fieldset>
-
                     <fieldset>
                         <legend>Eventos y Actividades Institucionales</legend>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Fecha del Festival Artístico</label>
-                                <input type="date" id="cfg-festival-fecha">
-                            </div>
-                            <div class="form-group">
-                                <label>Lugar del Festival Artístico</label>
-                                <input type="text" id="cfg-festival-lugar" placeholder="Ej. Auditorio principal">
-                            </div>
+                            <div class="form-group"><label>Fecha del Festival Artístico</label><input type="date" id="cfg-festival-fecha"></div>
+                            <div class="form-group"><label>Lugar del Festival Artístico</label><input type="text" id="cfg-festival-lugar" placeholder="Ej. Auditorio principal"></div>
                         </div>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Fecha de Graduación</label>
-                                <input type="date" id="cfg-graduacion-fecha">
-                            </div>
-                            <div class="form-group">
-                                <label>Lugar de Graduación</label>
-                                <input type="text" id="cfg-graduacion-lugar" placeholder="Ej. Salón institucional">
-                            </div>
+                            <div class="form-group"><label>Fecha de Graduación</label><input type="date" id="cfg-graduacion-fecha"></div>
+                            <div class="form-group"><label>Lugar de Graduación</label><input type="text" id="cfg-graduacion-lugar" placeholder="Ej. Salón institucional"></div>
                         </div>
                     </fieldset>
-
                     <button type="submit" class="action-btn">Guardar Configuración Institucional</button>
                     <div id="cfg-msg" class="notification"></div>
                 </form>
@@ -502,22 +442,10 @@
                 <h2>Directorio de Docentes Académicos</h2>
                 <form id="form-acad" onsubmit="guardarDocente(event, 'academico')">
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="acad-nombre" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Correo Electrónico</label>
-                            <input type="email" id="acad-correo" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Teléfono / Celular</label>
-                            <input type="tel" id="acad-tel" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Especialidad / Materia</label>
-                            <input type="text" id="acad-esp" required placeholder="Ej. Español">
-                        </div>
+                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="acad-nombre" required></div>
+                        <div class="form-group"><label>Correo Electrónico</label><input type="email" id="acad-correo" required></div>
+                        <div class="form-group"><label>Teléfono / Celular</label><input type="tel" id="acad-tel" required></div>
+                        <div class="form-group"><label>Especialidad / Materia</label><input type="text" id="acad-esp" required placeholder="Ej. Español"></div>
                     </div>
                     <button type="submit" class="action-btn">Registrar Docente Académico</button>
                     <div id="acad-msg" class="notification"></div>
@@ -529,22 +457,10 @@
                 <h2>Directorio de Docentes Artísticos</h2>
                 <form id="form-art" onsubmit="guardarDocente(event, 'artistico')">
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="art-nombre" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Correo Electrónico</label>
-                            <input type="email" id="art-correo" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Teléfono / Celular</label>
-                            <input type="tel" id="art-tel" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Disciplina Artística</label>
-                            <input type="text" id="art-esp" required placeholder="Ej. Piano, Danza, Guitarra">
-                        </div>
+                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="art-nombre" required></div>
+                        <div class="form-group"><label>Correo Electrónico</label><input type="email" id="art-correo" required></div>
+                        <div class="form-group"><label>Teléfono / Celular</label><input type="tel" id="art-tel" required></div>
+                        <div class="form-group"><label>Disciplina Artística</label><input type="text" id="art-esp" required placeholder="Ej. Piano, Danza, Guitarra"></div>
                     </div>
                     <button type="submit" class="action-btn">Registrar Docente Artístico</button>
                     <div id="art-msg" class="notification"></div>
@@ -603,22 +519,32 @@
         });
 
         async function cargarDocentesEnMatricula() {
-            const selectDocente = document.getElementById('mat-docente-asig');
-            if (!selectDocente) return;
-            selectDocente.innerHTML = '<option value="">Cargando docentes...</option>';
+            const selAcad = document.getElementById('mat-docente-acad');
+            const selArtGrupal = document.getElementById('mat-docente-art-grupal');
+            const selAsig = document.getElementById('mat-docente-asig');
+            if (!selAcad) return;
 
-            const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad');
-            if (error || !data || data.length === 0) {
-                selectDocente.innerHTML = '<option value="">No hay docentes registrados</option>';
-                return;
-            }
+            selAcad.innerHTML = '<option value="">Cargando académicos...</option>';
+            selArtGrupal.innerHTML = '<option value="">Cargando artísticos...</option>';
+            selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
 
-            selectDocente.innerHTML = '<option value="">Seleccione un profesor</option>';
+            const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad, tipo_docente');
+            if (error || !data) return;
+
+            selAcad.innerHTML = '<option value="">Seleccione profesor académico</option>';
+            selArtGrupal.innerHTML = '<option value="Ninguno">Ninguno</option>';
+            selAsig.innerHTML = '<option value="">Seleccione instructor</option>';
+
             data.forEach(doc => {
                 const opt = document.createElement('option');
                 opt.value = doc.nombre;
                 opt.textContent = `${doc.nombre} (${doc.especialidad})`;
-                selectDocente.appendChild(opt);
+                if (doc.tipo_docente === 'academico') {
+                    selAcad.appendChild(opt);
+                } else {
+                    selArtGrupal.appendChild(opt.cloneNode(true));
+                    selAsig.appendChild(opt);
+                }
             });
         }
 
@@ -628,16 +554,13 @@
             selectDocente.innerHTML = '<option value="">Cargando docentes...</option>';
 
             const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad, tipo_docente');
-            if (error || !data || data.length === 0) {
-                selectDocente.innerHTML = '<option value="">No hay docentes registrados</option>';
-                return;
-            }
+            if (error || !data) return;
 
             selectDocente.innerHTML = '<option value="">Seleccione el docente responsable</option>';
             data.forEach(doc => {
                 const opt = document.createElement('option');
                 opt.value = doc.nombre;
-                opt.textContent = `${doc.nombre} - ${doc.especialidad} (${doc.tipo_docente === 'academico' ? 'Académico' : 'Artístico'})`;
+                opt.textContent = `${doc.nombre} - ${doc.especialidad}`;
                 selectDocente.appendChild(opt);
             });
         }
@@ -813,7 +736,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Estudiante / Instrumento</th>
+                            <th>Estudiante / Asignación</th>
             `;
 
             rubros.forEach(r => {
@@ -836,7 +759,7 @@
 
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${est.nombre}</b><br><small>Inst: ${est.instrumento_principal || 'N/A'}</small></td>
+                        <td style="text-align: left;"><b>${est.nombre}</b><br><small>Inst: ${est.instrumento_principal || 'N/A'} | Acad: ${est.docente_academico || 'N/A'}</small></td>
                 `;
 
                 rubros.forEach(r => {
@@ -933,16 +856,14 @@
             if (notas) {
                 notas.forEach(n => {
                     const estMatch = estudiantes.find(e => e.cedula === n.cedula_estudiante);
-                    if (estMatch) {
-                        materiasSet.add(n.materia);
-                    }
+                    if (estMatch) materiasSet.add(n.materia);
                 });
             }
 
             const listaMaterias = Array.from(materiasSet);
 
             let html = `<h3>Registro Histórico - Nivel: ${nivel}</h3>`;
-            html += `<table class="data-table"><thead><tr><th>Estudiante</th><th>Cédula</th><th>Instrumento / Prof</th>`;
+            html += `<table class="data-table"><thead><tr><th>Estudiante</th><th>Cédula</th><th>Profesores / Inst</th>`;
             
             if (listaMaterias.length === 0) {
                 html += `<th>Sin materias registradas aún</th></tr></thead><tbody>`;
@@ -955,21 +876,18 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Inst: ${est.instrumento_principal || 'N/A'}<br>Prof: ${est.docente_asignado || 'N/A'}</small></td>`;
+                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td>`;
                 
                 if (listaMaterias.length > 0) {
                     listaMaterias.forEach(mat => {
                         const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
                         const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                        
                         const p1 = n1 ? n1.promedio : '-';
                         const p2 = n2 ? n2.promedio : '-';
-                        
                         let finalStr = '-';
                         if (n1 && n2) {
                             finalStr = Number(((n1.promedio * 0.5) + (n2.promedio * 0.5)).toFixed(2));
                         }
-
                         html += `<td>1°P: ${p1}<br>2°P: ${p2}<br><b>Final: ${finalStr}</b></td>`;
                     });
                 }
@@ -1018,7 +936,7 @@
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const docenteSeleccionado = selectDocente && selectDocente.value ? selectDocente.value : (estData.docente_asignado || '[Sin asignar]');
+            const docenteSeleccionado = selectDocente && selectDocente.value ? selectDocente.value : (estData.docente_academico || '[Sin asignar]');
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
@@ -1032,7 +950,6 @@
                 materiasUnicas.forEach(mat => {
                     const notaMatPeriodo = notas.find(n => n.materia === mat && n.periodo === periodoSel);
                     const valNota = notaMatPeriodo ? notaMatPeriodo.promedio : 'Pendiente';
-                    
                     let estado = 'Pendiente';
                     if (valNota !== 'Pendiente') {
                         estado = valNota >= 65 ? 'Aprobado' : 'Reprobado';
@@ -1072,12 +989,12 @@
                     <div style="margin-bottom: 15px; font-size: 14px;">
                         <p><b>Estudiante:</b> ${estData.nombre} (Cédula: ${estData.cedula})</p>
                         <p><b>Nivel:</b> ${estData.nivel}</p>
-                        <p><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'} | <b>Opcionales:</b> ${estData.instrumento_opc1 || 'Ninguno'}, ${estData.instrumento_opc2 || 'Ninguno'}</p>
-                        <p><b>Profesor Asignado:</b> ${estData.docente_asignado || 'Ninguno'}</p>
+                        <p><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'} | <b>Profesor Instrumento:</b> ${estData.docente_asignado || 'Ninguno'}</p>
+                        <p><b>Profesor Académico:</b> ${estData.docente_academico || 'Ninguno'} | <b>Profesor Artístico Grupal:</b> ${estData.docente_artistico_grupal || 'Ninguno'}</p>
                         <p><b>Encargados:</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                         <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
                         <p><b>Directora Institucional:</b> Flor María Jiménez</p>
-                        <p><b>Docente Responsable / Académico:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
+                        <p><b>Docente Responsable del Informe:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
                     </div>
                     <h4>Calificaciones del ${periodoSel}</h4>
                     <table class="data-table">
@@ -1139,7 +1056,6 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
@@ -1154,7 +1070,7 @@
                     <thead>
                         <tr>
                             <th>Cédula</th>
-                            <th>Estudiante / Inst.</th>
+                            <th>Estudiante / Profesores</th>
                             <th>Nivel</th>
                             <th>Materia</th>
                             <th>1° P</th>
@@ -1171,12 +1087,11 @@
                 const materias = [...new Set(notasEst.map(n => n.materia))];
 
                 if (materias.length === 0) {
-                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b><br><small>${est.instrumento_principal || ''}</small></td><td>${est.nivel}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
+                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || ''}</small></td><td>${est.nivel}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
                 } else {
                     materias.forEach((mat, idx) => {
                         const notaP1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
                         const notaP2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                        
                         const p1Val = notaP1 ? notaP1.promedio : null;
                         const p2Val = notaP2 ? notaP2.promedio : null;
                         
@@ -1195,7 +1110,7 @@
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Inst: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
@@ -1259,10 +1174,10 @@
                 cedula: document.getElementById('mat-cedula').value,
                 fecha_nacimiento: document.getElementById('mat-fnac').value,
                 nivel: document.getElementById('mat-nivel').value,
+                docente_academico: document.getElementById('mat-docente-acad').value,
+                docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value,
                 instrumento_principal: document.getElementById('mat-instr-principal').value,
                 docente_asignado: document.getElementById('mat-docente-asig').value,
-                instrumento_opc1: document.getElementById('mat-instr-opc1').value,
-                instrumento_opc2: document.getElementById('mat-instr-opc2').value,
                 provincia: document.getElementById('dir-provincia').value,
                 canton: document.getElementById('dir-canton').value,
                 distrito: document.getElementById('dir-distrito').value,
