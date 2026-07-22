@@ -64,11 +64,23 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Estilos optimizados para papel A4 y control estricto de saltos de página */
+        /* Estilos optimizados para papel A4 y control de saltos */
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
-        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; }
-        .report-header img { width: 60px; height: 60px; object-fit: contain; }
         
+        .report-header { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            text-align: center; 
+            border-bottom: 2px solid var(--border); 
+            padding-bottom: 15px; 
+            margin-bottom: 20px; 
+            position: relative; 
+            z-index: 2; 
+            page-break-inside: avoid; 
+            break-inside: avoid; 
+        }
+
         .seccion-pagina-1 { page-break-inside: avoid; break-inside: avoid; }
         .salto-pagina-forzado { page-break-before: always; break-before: page; margin-top: 20px; }
         .reflexion-item { page-break-inside: avoid; break-inside: avoid; margin-bottom: 12px; }
@@ -1259,28 +1271,26 @@
 
             contenedor.innerHTML = `
                 <div class="report-preview" id="plantilla-informe-oficial">
-                    <!-- Marca de agua integrada como capa absoluta garantizada -->
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
-                        <img src="encabezado%20del%20informe%20final.png" style="width: 450px; height: 450px; object-fit: contain; opacity: 0.08;" onerror="this.style.display='none'">
-                    </div>
                     
-                    <!-- PÁGINA 1: Encabezado, Datos, Notas y Firmas de Directora y Docente -->
-                    <div class="seccion-pagina-1">
+                    <!-- PÁGINA 1: Encabezado Centrado con Marca de Agua, Datos, Notas y Firmas -->
+                    <div class="seccion-pagina-1" style="position: relative;">
+                        <!-- Marca de agua colocada en el fondo absoluto del encabezado y datos generales -->
+                        <div style="position: absolute; top: 20px; left: 0; width: 100%; height: 350px; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
+                            <img src="encabezado%20del%20informe%20final.png" style="width: 320px; height: 320px; object-fit: contain; opacity: 0.08;" onerror="this.style.display='none'">
+                        </div>
+
                         <div class="report-header">
-                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
-                            <div class="school-info" style="flex: 1; margin: 0 15px;">
-                                <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
-                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
-                                <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
-                            </div>
-                            <div style="font-size: 11px; text-align: right; color: #475569;">
-                                <p style="margin: 0;"><b>Remitente Oficial:</b></p>
-                                <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
+                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px;">
+                            <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
+                            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
+                            <div style="font-size: 11px; color: #475569; margin-top: 5px;">
+                                <span><b>Remitente Oficial:</b> educativoshkenuk@gmail.com</span>
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border); position: relative; z-index: 2;">
+                        <div style="margin-bottom: 15px; font-size: 13px; background: rgba(248,250,252,0.9); padding: 12px; border-radius: 6px; border: 1px solid var(--border); position: relative; z-index: 2;">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
