@@ -316,10 +316,10 @@
                 </div>
             </section>
 
-            <!-- 4. CALIFICAR (CON COMPONENTES DE EVALUACIÓN Y CÁLCULO DE NOTA FINAL) -->
+            <!-- 4. CALIFICAR (CON COMPONENTES Y COMENTARIOS INDIVIDUALES) -->
             <section id="calificar" class="tab-content">
-                <h2>Calificación por Componentes y Rubros (Grupo Completo)</h2>
-                <p style="color: #64748b;">Selecciona el periodo, nivel y asignatura para registrar las notas de cada componente con sus porcentajes y ver la nota final calculada de inmediato.</p>
+                <h2>Calificación por Componentes y Comentarios Individuales</h2>
+                <p style="color: #64748b;">Selecciona el periodo, nivel y asignatura para registrar notas de componentes, nota final y comentarios positivos por estudiante.</p>
                 
                 <fieldset>
                     <legend>Parámetros de Calificación</legend>
@@ -374,7 +374,7 @@
                 </fieldset>
 
                 <div id="contenedor-grupo-calificar">
-                    <p style="color: #64748b; text-align: center;">Seleccione Periodo, Nivel y Asignatura para desplegar la planilla con sus componentes de evaluación.</p>
+                    <p style="color: #64748b; text-align: center;">Seleccione Periodo, Nivel y Asignatura para desplegar la planilla.</p>
                 </div>
             </section>
 
@@ -408,8 +408,8 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Comentarios / Observaciones del Docente (Obligatorio)</label>
-                        <textarea id="inf-comentarios" rows="3" required placeholder="Ingrese las observaciones generales o pedagógicas obligatorias para el hogar..."></textarea>
+                        <label>Comentarios / Observaciones Generales del Docente</label>
+                        <textarea id="inf-comentarios" rows="3" placeholder="Ingrese observaciones generales adicionales para el hogar..."></textarea>
                     </div>
                 </fieldset>
 
@@ -696,6 +696,7 @@
             }
 
             const rubros = obtenerRubrosMateria(materia);
+            const esArtistica = materia.includes('[Artística]');
 
             let html = `
                 <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})</h3>
@@ -710,7 +711,8 @@
             });
 
             html += `
-                            <th>Nota Final Periodo</th>
+                            <th>Nota Final</th>
+                            <th>Comentarios / Observaciones ${esArtistica ? '(Obligatorio)' : '(Opcional)'}</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -720,6 +722,7 @@
             estudiantes.forEach(est => {
                 const notaReg = notas ? notas.find(n => n.cedula_estudiante === est.cedula) : null;
                 const promedioGuardado = notaReg ? notaReg.promedio : '-';
+                const comentarioGuardado = notaReg && notaReg.comentario ? notaReg.comentario : '';
 
                 html += `
                     <tr>
@@ -733,7 +736,10 @@
                 html += `
                         <td><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
                         <td>
-                            <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}')">Guardar</button>
+                            <input type="text" id="comentario-est-${est.cedula}" value="${comentarioGuardado}" placeholder="Comentario positivo..." style="width: 200px;" ${esArtistica ? 'required' : ''}>
+                        </td>
+                        <td>
+                            <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}', ${esArtistica})">Guardar</button>
                         </td>
                     </tr>
                 `;
@@ -761,22 +767,36 @@
             }
         }
 
-        async function guardarNotaComponentes(cedula, materia, periodo) {
+        async function guardarNotaComponentes(cedula, materia, periodo, esArtistica) {
             const lblFinal = document.getElementById(`lbl-final-${cedula}`);
             const promedioFinal = parseFloat(lblFinal.innerText);
+            const comentarioInput = document.getElementById(`comentario-est-${cedula}`);
+            const comentario = comentarioInput.value.trim();
 
             if (isNaN(promedioFinal)) {
                 alert('Por favor ingrese las notas en los componentes antes de guardar.');
                 return;
             }
 
-            const datos = { cedula_estudiante: cedula, materia: materia, periodo: periodo, promedio: promedioFinal };
+            if (esArtistica && !comentario) {
+                alert('El comentario positivo es obligatorio en las materias artísticas.');
+                comentarioInput.focus();
+                return;
+            }
+
+            const datos = { 
+                cedula_estudiante: cedula, 
+                materia: materia, 
+                periodo: periodo, 
+                promedio: promedioFinal,
+                comentario: comentario 
+            };
 
             const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
             if (error) {
                 await supabaseClient.from('notas').insert([datos]);
             }
-            alert(`¡Nota final de periodo (${promedioFinal}) guardada exitosamente para la cédula ${cedula}!`);
+            alert(`¡Calificación y comentarios guardados con éxito para la cédula ${cedula}!`);
         }
 
         async function cargarCuadrosRegistro() {
@@ -890,6 +910,7 @@
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
             let tablaMateriasHTML = '';
+            let comentariosDocenteHTML = '';
             const materiasUnicas = notas ? [...new Set(notas.map(n => n.materia))] : [];
 
             if (materiasUnicas.length === 0) {
@@ -924,7 +945,19 @@
                             <td>${estado}</td>
                         </tr>
                     `;
+
+                    // Recopilar comentarios individuales guardados por materia
+                    if (n1 && n1.comentario) {
+                        comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[1° Periodo - ${mat}]:</b> ${n1.comentario}</p>`;
+                    }
+                    if (n2 && n2.comentario) {
+                        comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[2° Periodo - ${mat}]:</b> ${n2.comentario}</p>`;
+                    }
                 });
+            }
+
+            if (!comentariosDocenteHTML) {
+                comentariosDocenteHTML = '<p style="color: #64748b; font-style: italic;">[Sin comentarios individuales registrados todavía]</p>';
             }
 
             contenedor.innerHTML = `
@@ -966,36 +999,19 @@
                         </tbody>
                     </table>
                     <div style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-                        <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones del Docente (Actual / Nuevo):</b></p>
-                        <p id="lbl-comentarios-ver" style="margin: 0; color: #475569; font-style: italic;">[El comentario obligatorio aparecerá aquí al escribirlo]</p>
+                        <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones Positivas Individuales del Docente:</b></p>
+                        ${comentariosDocenteHTML}
                     </div>
                 </div>
             `;
         }
 
-        document.addEventListener('input', function(e) {
-            if (e.target.id === 'inf-comentarios') {
-                const lbl = document.getElementById('lbl-comentarios-ver');
-                if (lbl) lbl.innerText = e.target.value || '[Sin comentarios ingresados]';
-            }
-            if (e.target.id === 'inf-docente') {
-                const lbl = document.getElementById('lbl-docente-ver');
-                if (lbl) lbl.innerText = e.target.value || '[Sin asignar]';
-            }
-        });
-
         async function enviarInformeSimultaneo() {
             const selectEst = document.getElementById('inf-estudiante-sel');
-            const comentarios = document.getElementById('inf-comentarios').value.trim();
             const msg = document.getElementById('inf-msg');
 
             if (!selectEst.value) {
                 mostrarMensaje('inf-msg', 'Por favor seleccione un estudiante.', false);
-                return;
-            }
-
-            if (!comentarios) {
-                mostrarMensaje('inf-msg', 'El campo de Comentarios del Docente es obligatorio.', false);
                 return;
             }
 
