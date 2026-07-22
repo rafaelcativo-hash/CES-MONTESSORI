@@ -80,8 +80,8 @@
         /* Estilos específicos para impresión física limpia */
         @media print {
             body * { visibility: hidden; }
-            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
+            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-constancia-traslado, #plantilla-constancia-traslado * { visibility: visible; }
+            #preview-matricula-impresion, #plantilla-informe-oficial, #plantilla-constancia-traslado { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
             .no-print { display: none !important; }
         }
     </style>
@@ -131,14 +131,14 @@
             <!-- 1. MATRÍCULA Y CORRECCIONES -->
             <section id="matricula" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">Gestión y Corrección de Matrícula Estudiantil</h2>
+                    <h2 style="margin: 0;">Gestión, Corrección y Traslados de Matrícula</h2>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                         <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula (Excel/CSV)</button>
                     </div>
                 </div>
                 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda para Vista Previa</legend>
+                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda para Vista Previa o Traslado</legend>
                     <div class="form-grid" style="align-items: flex-end;">
                         <div class="form-group">
                             <label>Año Lectivo</label>
@@ -149,7 +149,7 @@
                         <div class="form-group">
                             <label>Filtrar por Ciclo / Nivel General</label>
                             <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
-                                <option value="">-- Todos los niveles --</option>
+                                <option value="">-- Todos los niveles (Activos) --</option>
                                 <optgroup label="Primer Ciclo">
                                     <option value="Primero">Primero</option>
                                     <option value="Segundo">Segundo</option>
@@ -288,12 +288,16 @@
                     <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
                         <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
                         <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir o PDF</button>
+                        <button type="button" id="btn-procesar-traslado" class="danger-btn" style="padding: 12px 20px; font-size: 14px; display: none;" onclick="procesarTrasladoEstudiante()">Procesar Traslado / Desmatricular</button>
                     </div>
                     <div id="mat-msg" class="notification"></div>
                 </form>
 
                 <!-- Panel de Vista Previa Interactiva para Revisión, Impresión Física o PDF -->
                 <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px;"></div>
+                
+                <!-- Panel de Constancia de Traslado -->
+                <div id="contenedor-constancia-traslado" style="display: none; margin-top: 30px;"></div>
             </section>
 
             <!-- 2. LISTAS Y PROMOCIÓN -->
@@ -630,7 +634,8 @@
             if (!selectEdit) return;
             selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
+            // Solo mostrar estudiantes activos (estado != 'trasladado')
+            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').neq('estado', 'trasladado').order('nombre');
             if (error || !data) return;
 
             data.forEach(est => {
@@ -648,7 +653,7 @@
 
             selectEdit.innerHTML = '<option value="">-- Cargando por nivel filtrado --</option>';
 
-            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
+            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').neq('estado', 'trasladado').order('nombre');
             if (cicloFiltro) {
                 query = query.eq('nivel', cicloFiltro);
             }
@@ -671,6 +676,7 @@
         async function cargarDatosEstudianteEdicion() {
             const cedula = document.getElementById('select-estudiante-editar').value;
             const btnSubmit = document.getElementById('btn-submit-matricula');
+            const btnTraslado = document.getElementById('btn-procesar-traslado');
             const inputCedula = document.getElementById('mat-cedula');
 
             if (!cedula) {
@@ -707,6 +713,7 @@
 
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
+            btnTraslado.style.display = 'inline-block';
 
             // Generar vista previa automática al seleccionar un estudiante
             generarVistaPreviaMatricula();
@@ -719,8 +726,10 @@
             const btnSubmit = document.getElementById('btn-submit-matricula');
             btnSubmit.innerText = 'Guardar Matrícula Completa';
             btnSubmit.className = 'action-btn';
+            document.getElementById('btn-procesar-traslado').style.display = 'none';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
+            document.getElementById('contenedor-constancia-traslado').style.display = 'none';
         }
 
         async function guardarOActualizarMatricula(e) {
@@ -745,7 +754,8 @@
                 encargado1_cel: document.getElementById('enc1-cel').value,
                 encargado2_nombre: document.getElementById('enc2-nombre').value,
                 encargado2_correo: document.getElementById('enc2-correo').value,
-                encargado2_cel: document.getElementById('enc2-cel').value
+                encargado2_cel: document.getElementById('enc2-cel').value,
+                estado: 'activo'
             };
 
             const { error } = await supabaseClient.from('estudiantes').upsert([datos], { onConflict: 'cedula' });
@@ -757,6 +767,143 @@
                 cargarSelectorEstudiantesEdicion();
                 generarVistaPreviaMatricula();
             }
+        }
+
+        async function procesarTrasladoEstudiante() {
+            const cedulaVal = document.getElementById('mat-cedula').value;
+            const nombreEst = document.getElementById('mat-nombre').value;
+
+            if (!cedulaVal) {
+                alert('No hay un estudiante seleccionado para procesar traslado.');
+                return;
+            }
+
+            if (!confirm(`¿Está seguro de procesar el TRASLADO y DESMATRICULAR al estudiante ${nombreEst} (Cédula: ${cedulaVal})?\n\nEsto ocultará al estudiante de las listas y planillas activas, y generará la Constancia de Traslado oficial con las notas actuales.`)) {
+                return;
+            }
+
+            // Actualizar estado en Supabase a 'trasladado'
+            const { error } = await supabaseClient.from('estudiantes').update({ estado: 'trasladado' }).eq('cedula', cedulaVal);
+
+            if (error) {
+                alert('Error al procesar el traslado: ' + error.message);
+                return;
+            }
+
+            alert(`¡Traslado procesado con éxito para ${nombreEst}! El estudiante ha sido ocultado de los registros activos.`);
+            
+            // Generar y desplegar inmediatamente la Constancia de Traslado Oficial
+            await generarConstanciaTrasladoOficial(cedulaVal);
+
+            // Refrescar selectores
+            cargarSelectorEstudiantesEdicion();
+            document.getElementById('btn-procesar-traslado').style.display = 'none';
+        }
+
+        async function generarConstanciaTrasladoOficial(cedula) {
+            const { data: estData, error: errEst } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', cedula);
+
+            if (errEst || !estData) {
+                alert('Error al cargar datos del estudiante para la constancia.');
+                return;
+            }
+
+            let tablaNotasHTML = '';
+            if (!notas || notas.length === 0) {
+                tablaNotasHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Sin calificaciones registradas al momento del traslado.</td></tr>`;
+            } else {
+                notas.forEach(n => {
+                    tablaNotasHTML += `
+                        <tr>
+                            <td><b>${n.materia}</b></td>
+                            <td>${n.periodo}</td>
+                            <td><b>${n.promedio}</b></td>
+                            <td>${n.comentario || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const fechaActual = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+            const contenedorConstancia = document.getElementById('contenedor-constancia-traslado');
+            contenedorConstancia.style.display = 'block';
+
+            contenedorConstancia.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
+                    <h3 style="margin: 0; color: #166534;">Constancia Oficial de Traslado Generada</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="action-btn" onclick="window.print()">Imprimir Constancia Física</button>
+                        <button type="button" class="warning-btn" onclick="descargarConstanciaPDF()">Guardar Constancia PDF</button>
+                    </div>
+                </div>
+
+                <div class="report-preview" id="plantilla-constancia-traslado">
+                    <div class="report-header">
+                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
+                        <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center;">
+                            <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #166534; font-weight: bold;">CONSTANCIA OFICIAL DE TRASLADO Y NOTAS</p>
+                        </div>
+                    </div>
+
+                    <p style="text-align: right; font-size: 12px; margin-bottom: 15px;">Heredia, Barva, El Carbonal, a ${fechaActual}</p>
+
+                    <p style="font-size: 13px; line-height: 1.6; text-align: justify; margin-bottom: 20px;">
+                        La Dirección del <b>Centro Educativo Shkénuk</b> hace constar que el(la) estudiante <b>${estData.nombre}</b>, portador(a) de la cédula de identidad / identificación <b>${estData.cedula}</b>, cursaba el nivel de <b>${estData.nivel}</b> en esta institución y ha sido <b>TRASLADADO(A)</b> oficialmente en esta fecha. A continuación, se detallan las calificaciones obtenidas en su historial académico hasta el momento de su retiro:
+                    </p>
+
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="color: var(--primary); margin-bottom: 8px;">Desglose de Calificaciones al Momento del Traslado</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Asignatura / Materia</th>
+                                    <th>Periodo</th>
+                                    <th>Calificación</th>
+                                    <th>Observaciones / Comentarios</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tablaNotasHTML}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p style="font-size: 12px; line-height: 1.5; margin-bottom: 35px; color: #475569;">
+                        Se extiende la presente constancia a solicitud de parte interesada para los fines legales y académicos que estime convenientes.
+                    </p>
+
+                    <!-- Firmas Obligatorias: Directora y Profesora de Nivel -->
+                    <div style="display: flex; justify-content: space-around; margin-top: 40px; text-align: center;">
+                        <div style="width: 40%;">
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
+                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Dirección Institucional</p>
+                        </div>
+                        <div style="width: 40%;">
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
+                            <p style="margin: 0; font-size: 12px; font-weight: bold;">${estData.docente_academico || 'Docente de Nivel'}</p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente Responsable / Nivel</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedorConstancia.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function descargarConstanciaPDF() {
+            const elemento = document.getElementById('plantilla-constancia-traslado');
+            const nombreEst = document.getElementById('mat-nombre').value || 'Estudiante';
+            const opciones = {
+                margin:       [10, 10, 10, 10],
+                filename:     `Constancia_Traslado_${nombreEst.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(elemento).set(opciones).save();
         }
 
         function generarVistaPreviaMatricula() {
@@ -863,9 +1010,9 @@
         }
 
         async function descargarMatriculaExcel() {
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').neq('estado', 'trasladado').order('nivel');
             if (error || !data || data.length === 0) {
-                alert('No hay registros de matrícula para exportar.');
+                alert('No hay registros de matrícula activos para exportar.');
                 return;
             }
 
@@ -1204,7 +1351,8 @@
                 }
             });
 
-            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            // Excluir estudiantes trasladados de las planillas de calificación
+            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).neq('estado', 'trasladado');
             const { data: estudiantesRaw } = await queryEstudiantes;
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
 
@@ -1214,16 +1362,11 @@
             }
 
             if (estudiantes.length === 0) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes activos matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
             }
 
             const rubros = obtenerRubrosMateria(materia);
-            
-            // Regla estricta de comentarios: 
-            // 1. Conducta SÍ lleva comentarios (obligatorio).
-            // 2. Solfeo, Taller de Percusión y Materias Académicas (Español, Matemáticas, Ciencias, Estudios Sociales) NO llevan comentarios.
-            // 3. Instrumentos individuales, Inglés, Danza, Plásticas y Edufi SÍ llevan comentarios.
             const esAcademicaPura = materia.includes('Español') || materia.includes('Matemáticas') || materia.includes('Ciencias') || materia.includes('Estudios Sociales');
             const esSolfeoPercusion = materia.includes('Solfeo') || materia.includes('Taller de Percusión');
             const llevaComentario = !esSolfeoPercusion && !esAcademicaPura;
@@ -1350,11 +1493,11 @@
 
             contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).neq('estado', 'trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No hay estudiantes matriculados en ${nivel}.</p>`;
+                contenedor.innerHTML = `<p>No hay estudiantes activos matriculados en ${nivel}.</p>`;
                 return;
             }
 
@@ -1414,9 +1557,9 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).neq('estado', 'trasladado');
             if (error || !data || data.length === 0) {
-                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes matriculados en este nivel</option>';
+                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes activos en este nivel</option>';
                 return;
             }
 
@@ -1497,7 +1640,6 @@
                         </tr>
                     `;
 
-                    // Exclusión en informe: Materias académicas puras (Español, Matemáticas, Ciencias, Estudios Sociales) y Solfeo/Percusión no muestran comentario en página 2
                     const esAcademicaPura = mat.includes('Español') || mat.includes('Matemáticas') || mat.includes('Ciencias') || mat.includes('Estudios Sociales');
                     const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
                     
@@ -1697,11 +1839,12 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
+            // Excluir estudiantes trasladados de las listas oficiales
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).neq('estado', 'trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${ciclo}.</p>`;
+                contenedor.innerHTML = `<p>No se encontraron estudiantes activos matriculados en ${ciclo}.</p>`;
                 return;
             }
 
@@ -1771,7 +1914,7 @@
             const msgSpan = document.getElementById('promocion-msg');
             msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').neq('estado', 'trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || !notas) {
