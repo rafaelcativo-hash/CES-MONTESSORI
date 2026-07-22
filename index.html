@@ -149,7 +149,7 @@
                         <div class="form-group">
                             <label>Filtrar por Ciclo / Nivel General</label>
                             <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
-                                <option value="">-- Todos los niveles (Activos) --</option>
+                                <option value="">-- Todos los niveles vigentes --</option>
                                 <optgroup label="Primer Ciclo">
                                     <option value="Primero">Primero</option>
                                     <option value="Segundo">Segundo</option>
@@ -163,7 +163,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Seleccionar Estudiante Específico</label>
+                            <label>Seleccionar Estudiante Vigente</label>
                             <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
                                 <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
                             </select>
@@ -634,8 +634,8 @@
             if (!selectEdit) return;
             selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
 
-            // Solo mostrar estudiantes activos (estado != 'trasladado')
-            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').neq('estado', 'trasladado').order('nombre');
+            // Cargar estudiantes vigentes (excluyendo únicamente los trasladados)
+            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').or('estado.is.null,estado.neq.trasladado').order('nombre');
             if (error || !data) return;
 
             data.forEach(est => {
@@ -653,7 +653,7 @@
 
             selectEdit.innerHTML = '<option value="">-- Cargando por nivel filtrado --</option>';
 
-            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').neq('estado', 'trasladado').order('nombre');
+            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').or('estado.is.null,estado.neq.trasladado').order('nombre');
             if (cicloFiltro) {
                 query = query.eq('nivel', cicloFiltro);
             }
@@ -664,7 +664,7 @@
                 return;
             }
 
-            selectEdit.innerHTML = '<option value="">-- Seleccione estudiante filtrado --</option>';
+            selectEdit.innerHTML = '<option value="">-- Seleccione estudiante vigente --</option>';
             data.forEach(est => {
                 const opt = document.createElement('option');
                 opt.value = est.cedula;
@@ -782,7 +782,6 @@
                 return;
             }
 
-            // Actualizar estado en Supabase a 'trasladado'
             const { error } = await supabaseClient.from('estudiantes').update({ estado: 'trasladado' }).eq('cedula', cedulaVal);
 
             if (error) {
@@ -792,10 +791,7 @@
 
             alert(`¡Traslado procesado con éxito para ${nombreEst}! El estudiante ha sido ocultado de los registros activos.`);
             
-            // Generar y desplegar inmediatamente la Constancia de Traslado Oficial
             await generarConstanciaTrasladoOficial(cedulaVal);
-
-            // Refrescar selectores
             cargarSelectorEstudiantesEdicion();
             document.getElementById('btn-procesar-traslado').style.display = 'none';
         }
@@ -1010,7 +1006,7 @@
         }
 
         async function descargarMatriculaExcel() {
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').neq('estado', 'trasladado').order('nivel');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').or('estado.is.null,estado.neq.trasladado').order('nivel');
             if (error || !data || data.length === 0) {
                 alert('No hay registros de matrícula activos para exportar.');
                 return;
@@ -1351,8 +1347,8 @@
                 }
             });
 
-            // Excluir estudiantes trasladados de las planillas de calificación
-            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).neq('estado', 'trasladado');
+            // Cargar estudiantes vigentes (excluyendo trasladados)
+            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
             const { data: estudiantesRaw } = await queryEstudiantes;
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
 
@@ -1362,7 +1358,7 @@
             }
 
             if (estudiantes.length === 0) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes activos matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes vigentes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
             }
 
@@ -1493,11 +1489,11 @@
 
             contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).neq('estado', 'trasladado');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No hay estudiantes activos matriculados en ${nivel}.</p>`;
+                contenedor.innerHTML = `<p>No hay estudiantes vigentes matriculados en ${nivel}.</p>`;
                 return;
             }
 
@@ -1557,9 +1553,9 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).neq('estado', 'trasladado');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
             if (error || !data || data.length === 0) {
-                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes activos en este nivel</option>';
+                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes vigentes en este nivel</option>';
                 return;
             }
 
@@ -1839,12 +1835,12 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            // Excluir estudiantes trasladados de las listas oficiales
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).neq('estado', 'trasladado');
+            // Cargar estudiantes vigentes (excluyendo trasladados)
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).or('estado.is.null,estado.neq.trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No se encontraron estudiantes activos matriculados en ${ciclo}.</p>`;
+                contenedor.innerHTML = `<p>No se encontraron estudiantes vigentes matriculados en ${ciclo}.</p>`;
                 return;
             }
 
@@ -1914,7 +1910,7 @@
             const msgSpan = document.getElementById('promocion-msg');
             msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').neq('estado', 'trasladado');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').or('estado.is.null,estado.neq.trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || !notas) {
