@@ -64,7 +64,6 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Estilos optimizados para papel A4 y control estricto de saltos de página */
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
         .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; }
         .report-header img { width: 60px; height: 60px; object-fit: contain; }
@@ -499,8 +498,8 @@
         </main>
     </div>
 
-    <!-- Contenedor visible pero fuera de pantalla para renderizar el PDF individual correctamente -->
-    <div id="pdf-matricula-container" style="position: absolute; left: -9999px; top: 0; background: white;"></div>
+    <!-- Contenedor temporal limpio para la generación del PDF individual -->
+    <div id="pdf-matricula-container" style="position: absolute; left: -9999px; top: 0; background: white; width: 210mm;"></div>
 
     <script>
         const SUPABASE_URL = 'https://sfiutfanfkerrpyejgga.supabase.co';
@@ -767,50 +766,50 @@
 
             const contenedorPDF = document.getElementById('pdf-matricula-container');
             contenedorPDF.innerHTML = `
-                <div style="padding: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white; width: 210mm; box-sizing: border-box; color: #334155;">
-                    <div style="display: flex; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="padding: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white; width: 210mm; box-sizing: border-box; color: #334155;">
+                    <div style="display: flex; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 15px;">
                         <div style="flex: 1; text-align: center;">
-                            <h3 style="margin: 0; color: #1e293b; font-size: 20px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                            <p style="margin: 3px 0; font-size: 12px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil</p>
+                            <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil</p>
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">1. Datos Personales</h4>
-                        <p style="margin: 5px 0;"><b>Nombre Completo:</b> ${est.nombre || ''}</p>
-                        <p style="margin: 5px 0;"><b>Cédula:</b> ${est.cedula || ''}</p>
-                        <p style="margin: 5px 0;"><b>Fecha de Nacimiento:</b> ${est.fecha_nacimiento || ''}</p>
-                        <p style="margin: 5px 0;"><b>Nivel Educativo:</b> ${est.nivel || ''}</p>
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales</h4>
+                        <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${est.nombre || ''}</p>
+                        <p style="margin: 4px 0;"><b>Cédula:</b> ${est.cedula || ''}</p>
+                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${est.fecha_nacimiento || ''}</p>
+                        <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${est.nivel || ''}</p>
                     </div>
 
-                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">2. Asignación Académica y Artística</h4>
-                        <p style="margin: 5px 0;"><b>Profesor Académico:</b> ${est.docente_academico || 'No asignado'}</p>
-                        <p style="margin: 5px 0;"><b>Profesor Artístico Grupal:</b> ${est.docente_artistico_grupal || 'Ninguno'}</p>
-                        <p style="margin: 5px 0;"><b>Instrumento Principal:</b> ${est.instrumento_principal || 'Ninguno'}</p>
-                        <p style="margin: 5px 0;"><b>Profesor de Instrumento:</b> ${est.docente_asignado || 'No asignado'}</p>
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Asignación Académica y Artística</h4>
+                        <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${est.docente_academico || 'No asignado'}</p>
+                        <p style="margin: 4px 0;"><b>Profesor Artístico Grupal:</b> ${est.docente_artistico_grupal || 'Ninguno'}</p>
+                        <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${est.instrumento_principal || 'Ninguno'}</p>
+                        <p style="margin: 4px 0;"><b>Profesor de Instrumento:</b> ${est.docente_asignado || 'No asignado'}</p>
                     </div>
 
-                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">3. Dirección y Ubicación</h4>
-                        <p style="margin: 5px 0;"><b>Provincia / Cantón / Distrito:</b> ${est.provincia || ''}, ${est.canton || ''}, ${est.distrito || ''}</p>
-                        <p style="margin: 5px 0;"><b>Otras Señas:</b> ${est.direccion_detalles || 'N/A'}</p>
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">3. Dirección y Ubicación</h4>
+                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${est.provincia || ''}, ${est.canton || ''}, ${est.distrito || ''}</p>
+                        <p style="margin: 4px 0;"><b>Otras Señas:</b> ${est.direccion_detalles || 'N/A'}</p>
                     </div>
 
-                    <div style="margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">4. Información de Encargados</h4>
-                        <p style="margin: 5px 0;"><b>Primer Encargado:</b> ${est.encargado1_nombre || ''} - Correo: ${est.encargado1_correo || ''} - Tel: ${est.encargado1_cel || ''}</p>
-                        <p style="margin: 5px 0;"><b>Segundo Encargado:</b> ${est.encargado2_nombre || 'N/A'} - Correo: ${est.encargado2_correo || 'N/A'} - Tel: ${est.encargado2_cel || 'N/A'}</p>
+                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">4. Información de Encargados</h4>
+                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${est.encargado1_nombre || ''} - Correo: ${est.encargado1_correo || ''} - Tel: ${est.encargado1_cel || ''}</p>
+                        <p style="margin: 4px 0;"><b>Segundo Encargado:</b> ${est.encargado2_nombre || 'N/A'} - Correo: ${est.encargado2_correo || 'N/A'} - Tel: ${est.encargado2_cel || 'N/A'}</p>
                     </div>
 
-                    <div style="display: flex; justify-content: space-around; margin-top: 40px; text-align: center;">
+                    <div style="display: flex; justify-content: space-around; margin-top: 30px; text-align: center;">
                         <div style="width: 40%;">
-                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
-                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Firma del Encargado</p>
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
+                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Firma del Encargado</p>
                         </div>
                         <div style="width: 40%;">
-                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 35px;"></div>
-                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Sello y Dirección Institucional</p>
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
+                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Sello y Dirección Institucional</p>
                         </div>
                     </div>
                 </div>
@@ -822,13 +821,12 @@
                 margin:       [10, 10, 10, 10],
                 filename:     nombreArchivoLimio,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().from(contenedorPDF).set(opciones).save().then(() => {
-                contenedorPDF.innerHTML = '';
-            });
+            await html2pdf().from(contenedorPDF).set(opciones).save();
+            contenedorPDF.innerHTML = '';
         }
 
         async function cargarDocentesEnInforme() {
