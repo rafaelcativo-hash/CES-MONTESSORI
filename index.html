@@ -316,7 +316,7 @@
                 </div>
             </section>
 
-            <!-- 4. CALIFICAR (CON COMPONENTES Y COMENTARIOS INDIVIDUALES) -->
+            <!-- 4. CALIFICAR -->
             <section id="calificar" class="tab-content">
                 <h2>Calificación por Componentes y Comentarios Individuales</h2>
                 <p style="color: #64748b;">Selecciona el periodo, nivel y asignatura para registrar notas de componentes, nota final y comentarios positivos por estudiante.</p>
@@ -378,12 +378,19 @@
                 </div>
             </section>
 
-            <!-- 5. INFORMES AL HOGAR -->
+            <!-- 5. INFORMES AL HOGAR (CON SELECTOR DE PERIODO) -->
             <section id="hogar" class="tab-content">
                 <h2>Generación y Envío de Informes al Hogar</h2>
                 <fieldset>
-                    <legend>Selección de Estudiante para Informe</legend>
+                    <legend>Selección para Informe Institucional</legend>
                     <div class="form-grid">
+                        <div class="form-group">
+                            <label>Periodo del Informe</label>
+                            <select id="inf-periodo-sel" required onchange="generarInformeHogarVisual()">
+                                <option value="Primer Periodo">Primer Periodo</option>
+                                <option value="Segundo Periodo">Segundo Periodo</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label>Nivel Educativo</label>
                             <select id="inf-nivel-sel" required onchange="cargarEstudiantesInforme()">
@@ -402,19 +409,17 @@
                                 <option value="">Primero seleccione un nivel</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-grid">
                         <div class="form-group">
                             <label>Docente Responsable / Música (Actual o Nuevo)</label>
                             <input type="text" id="inf-docente" required placeholder="Nombre del docente responsable">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Comentarios / Observaciones Generales del Docente</label>
-                        <textarea id="inf-comentarios" rows="3" placeholder="Ingrese observaciones generales adicionales para el hogar..."></textarea>
-                    </div>
                 </fieldset>
 
                 <div id="contenedor-vista-informe">
-                    <p style="color: #64748b; text-align: center;">Seleccione un estudiante para visualizar el informe institucional al hogar.</p>
+                    <p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>
                 </div>
 
                 <div style="margin-top: 20px; text-align: right;">
@@ -897,10 +902,11 @@
 
         async function generarInformeHogarVisual() {
             const selectEst = document.getElementById('inf-estudiante-sel');
+            const periodoSel = document.getElementById('inf-periodo-sel').value;
             const contenedor = document.getElementById('contenedor-vista-informe');
             
             if (!selectEst.value) {
-                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione un estudiante para visualizar el informe institucional al hogar.</p>';
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>';
                 return;
             }
 
@@ -914,50 +920,34 @@
             const materiasUnicas = notas ? [...new Set(notas.map(n => n.materia))] : [];
 
             if (materiasUnicas.length === 0) {
-                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
+                tablaMateriasHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
             } else {
                 materiasUnicas.forEach(mat => {
-                    const n1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                    const n2 = notas.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+                    const notaMatPeriodo = notas.find(n => n.materia === mat && n.periodo === periodoSel);
+                    const valNota = notaMatPeriodo ? notaMatPeriodo.promedio : 'Pendiente';
                     
-                    const p1Val = n1 ? n1.promedio : null;
-                    const p2Val = n2 ? n2.promedio : null;
-                    
-                    let notaFinalStr = 'En Proceso';
-                    let estado = 'En Proceso';
-                    
-                    if (p1Val !== null && p2Val !== null) {
-                        const finalCalc = Number(((p1Val * 0.5) + (p2Val * 0.5)).toFixed(2));
-                        notaFinalStr = finalCalc;
-                        estado = (p1Val >= 65 && p2Val >= 65 && finalCalc >= 65) ? 'Aprobado' : 'Reprobado';
-                    } else if (p1Val !== null) {
-                        notaFinalStr = `${p1Val} (Solo 1° P)`;
-                    } else if (p2Val !== null) {
-                        notaFinalStr = `${p2Val} (Solo 2° P)`;
+                    let estado = 'Pendiente';
+                    if (valNota !== 'Pendiente') {
+                        estado = valNota >= 65 ? 'Aprobado' : 'Reprobado';
                     }
 
                     tablaMateriasHTML += `
                         <tr>
                             <td><b>${mat}</b></td>
-                            <td>${p1Val !== null ? p1Val : 'Pendiente'}</td>
-                            <td>${p2Val !== null ? p2Val : 'Pendiente'}</td>
-                            <td><b>${notaFinalStr}</b></td>
+                            <td>${valNota}</td>
                             <td>${estado}</td>
                         </tr>
                     `;
 
-                    // Recopilar comentarios individuales guardados por materia
-                    if (n1 && n1.comentario) {
-                        comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[1° Periodo - ${mat}]:</b> ${n1.comentario}</p>`;
-                    }
-                    if (n2 && n2.comentario) {
-                        comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[2° Periodo - ${mat}]:</b> ${n2.comentario}</p>`;
+                    // Recopilar comentarios individuales del periodo seleccionado
+                    if (notaMatPeriodo && notaMatPeriodo.comentario) {
+                        comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[${mat}]:</b> ${notaMatPeriodo.comentario}</p>`;
                     }
                 });
             }
 
             if (!comentariosDocenteHTML) {
-                comentariosDocenteHTML = '<p style="color: #64748b; font-style: italic;">[Sin comentarios individuales registrados todavía]</p>';
+                comentariosDocenteHTML = '<p style="color: #64748b; font-style: italic;">[Sin comentarios individuales registrados para este periodo]</p>';
             }
 
             contenedor.innerHTML = `
@@ -967,7 +957,7 @@
                         <div class="school-info">
                             <h3>CES MONTESSORI</h3>
                             <p>Teléfono: 22607806 • Heredia, Costa Rica</p>
-                            <p><b>INFORME OFICIAL AL HOGAR CON NOTA FINAL (50% - 50%)</b></p>
+                            <p><b>INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</b></p>
                         </div>
                         <div style="font-size: 12px; text-align: right;">
                             <p><b>Remitente:</b> educativoshkenuk@gmail.com</p>
@@ -983,14 +973,12 @@
                         <p><b>Directora Institucional:</b> Flor María Jiménez</p>
                         <p><b>Docente Responsable / Nuevo:</b> <span id="lbl-docente-ver">${docenteNivel}</span></p>
                     </div>
-                    <h4>Calificaciones, Periodos y Nota Final</h4>
+                    <h4>Calificaciones del ${periodoSel}</h4>
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Materia / Asignatura</th>
-                                <th>Nota 1° Periodo (50%)</th>
-                                <th>Nota 2° Periodo (50%)</th>
-                                <th>Nota Final</th>
+                                <th>Calificación de Periodo</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -999,7 +987,7 @@
                         </tbody>
                     </table>
                     <div style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-                        <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones Positivas Individuales del Docente:</b></p>
+                        <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones Positivas Individuales (${periodoSel}):</b></p>
                         ${comentariosDocenteHTML}
                     </div>
                 </div>
@@ -1008,6 +996,7 @@
 
         async function enviarInformeSimultaneo() {
             const selectEst = document.getElementById('inf-estudiante-sel');
+            const periodoSel = document.getElementById('inf-periodo-sel').value;
             const msg = document.getElementById('inf-msg');
 
             if (!selectEst.value) {
@@ -1026,11 +1015,11 @@
             }
 
             msg.className = 'notification success';
-            msg.innerText = `Enviando informes simultáneos desde educativoshkenuk@gmail.com a: ${destinatarios.join(', ')}...`;
+            msg.innerText = `Enviando informes de ${periodoSel} desde educativoshkenuk@gmail.com a: ${destinatarios.join(', ')}...`;
             msg.style.display = 'block';
 
             setTimeout(() => {
-                msg.innerText = `¡Informes al Hogar enviados exitosamente y de forma simultánea a los encargados de ${estData.nombre}!`;
+                msg.innerText = `¡Informes de ${periodoSel} enviados exitosamente y de forma simultánea a los encargados de ${estData.nombre}!`;
             }, 2000);
         }
 
