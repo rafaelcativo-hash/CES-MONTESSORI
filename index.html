@@ -362,25 +362,25 @@
                             <select id="cal-materia" required onchange="cargarGrupoParaCalificar()">
                                 <option value="">Seleccione asignatura</option>
                                 <optgroup label="Materias Artísticas y Talleres">
-                                    <option value="[Artística] Solfeo">Solfeo (Grupal - Sin comentario)</option>
-                                    <option value="[Artística] Taller de Percusión">Taller de Percusión (Grupal - Sin comentario)</option>
-                                    <option value="[Artística] Danza">Danza (Con comentario)</option>
-                                    <option value="[Artística] Artes Plásticas">Artes Plásticas (Con comentario)</option>
-                                    <option value="[Artística] Edufi">Edufi (Con comentario)</option>
-                                    <option value="[Artística] Piano">Piano (Individual - Con comentario)</option>
-                                    <option value="[Artística] Guitarra">Guitarra (Individual - Con comentario)</option>
-                                    <option value="[Artística] Ukulele">Ukulele (Individual - Con comentario)</option>
-                                    <option value="[Artística] Batería">Batería (Individual - Con comentario)</option>
-                                    <option value="[Artística] Bajo">Bajo (Individual - Con comentario)</option>
-                                    <option value="[Artística] Canto">Canto (Individual - Con comentario)</option>
+                                    <option value="[Artística] Solfeo">Solfeo (Grupal)</option>
+                                    <option value="[Artística] Taller de Percusión">Taller de Percusión (Grupal)</option>
+                                    <option value="[Artística] Danza">Danza</option>
+                                    <option value="[Artística] Artes Plásticas">Artes Plásticas</option>
+                                    <option value="[Artística] Edufi">Edufi (Educación Física)</option>
+                                    <option value="[Artística] Piano">Piano (Individual/Grupal)</option>
+                                    <option value="[Artística] Guitarra">Guitarra (Individual/Grupal)</option>
+                                    <option value="[Artística] Ukulele">Ukulele</option>
+                                    <option value="[Artística] Batería">Batería</option>
+                                    <option value="[Artística] Bajo">Bajo</option>
+                                    <option value="[Artística] Canto">Canto</option>
                                 </optgroup>
                                 <optgroup label="Materias Académicas y Conducta">
-                                    <option value="[Académica] Español">Español (Con comentario)</option>
-                                    <option value="[Académica] Matemáticas">Matemáticas (Con comentario)</option>
-                                    <option value="[Académica] Ciencias">Ciencias (Con comentario)</option>
-                                    <option value="[Académica] Estudios Sociales">Estudios Sociales (Con comentario)</option>
-                                    <option value="[Académica] Conducta">Conducta (Eje de Comentarios Institucionales)</option>
-                                    <option value="[Académica] Inglés">Inglés (Con comentario)</option>
+                                    <option value="[Académica] Español">Español</option>
+                                    <option value="[Académica] Matemáticas">Matemáticas</option>
+                                    <option value="[Académica] Ciencias">Ciencias</option>
+                                    <option value="[Académica] Estudios Sociales">Estudios Sociales</option>
+                                    <option value="[Académica] Conducta">Conducta (Informe y Comentarios)</option>
+                                    <option value="[Académica] Inglés">Inglés</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -1205,9 +1205,6 @@
             }
 
             const rubros = obtenerRubrosMateria(materia);
-            // Solfeo y Taller de Percusión NO tienen comentario
-            const esSolfeoPercusion = materia.includes('Solfeo') || materia.includes('Taller de Percusión');
-            const llevaComentario = !esSolfeoPercusion;
             const esConducta = materia.includes('Conducta');
 
             let html = `
@@ -1224,7 +1221,7 @@
 
             html += `
                             <th>Nota Final</th>
-                            <th>Comentarios / Observaciones ${esConducta ? '(Obligatorio)' : (llevaComentario ? '(Opcional)' : '(No aplica)')}</th>
+                            <th>Comentarios / Observaciones ${esConducta ? '(Obligatorio para Informe)' : '(Opcional)'}</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -1248,15 +1245,7 @@
                 html += `
                         <td><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
                         <td>
-                `;
-
-                if (llevaComentario) {
-                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${comentarioGuardado}" placeholder="${esConducta ? 'Comentario obligatorio...' : 'Comentario opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
-                } else {
-                    html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
-                }
-
-                html += `
+                            <input type="text" id="comentario-est-${est.cedula}" value="${comentarioGuardado}" placeholder="${esConducta ? 'Comentario formativo obligatorio...' : 'Comentario opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>
                         </td>
                         <td>
                             <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">Guardar</button>
@@ -1466,6 +1455,7 @@
                         estado = valP1 >= 65 ? '<span style="color: #166534; font-weight: bold;">Aprobado (Parcial)</span>' : '<span style="color: #991b1b; font-weight: bold;">Reprobado (Parcial)</span>';
                     }
 
+                    // Seleccionar la nota del periodo activo a mostrar en detalle de reflexiones (SOLO si es Conducta tiene comentario activo)
                     const notaMatPeriodo = periodoSel === 'Primer Periodo' ? notaP1 : notaP2;
 
                     tablaMateriasHTML += `
@@ -1478,25 +1468,15 @@
                         </tr>
                     `;
 
-                    // Se muestran comentarios en la página 2 para Conducta, Instrumentos, Inglés, Danza, Artes Plásticas y Edufi (excluyendo Solfeo y Taller de Percusión)
-                    const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
-                    if (!esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
-                        let docenteCargo = docenteSeleccionado;
-                        if (docentesLista) {
-                            const matLimpia = mat.replace('[Artística]', '').replace('[Académica]', '').trim().toLowerCase();
-                            const docEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes(matLimpia));
-                            if (docEncontrado) {
-                                docenteCargo = docEncontrado.nombre;
-                            }
-                        }
-
+                    // Filtro estricto: Las reflexiones u observaciones en la página 2 solo se muestran si la materia incluye "Conducta"
+                    if (mat.includes('Conducta') && notaMatPeriodo && notaMatPeriodo.comentario) {
                         const estiloColor = coloresElegantes[index % coloresElegantes.length];
 
                         reflexionesDocentesHTML += `
-                            <div class="reflexion-item" style="padding: 12px 15px; border-radius: 6px; border-left: 4px solid ${estiloColor.border}; border: 1px solid ${estiloColor.border}; background-color: ${estiloColor.bg}; margin-bottom: 10px;">
+                            <div class="reflexion-item" style="padding: 12px 15px; border-radius: 6px; border-left: 4px solid ${estiloColor.border}; border: 1px solid ${estiloColor.border}; background-color: ${estiloColor.bg};">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px;">
-                                    <span style="font-weight: bold; color: ${estiloColor.textHeader}; text-transform: uppercase;">Materia / Área: ${mat}</span>
-                                    <span style="font-style: italic; color: #475569;">Docente: <b>${docenteCargo}</b></span>
+                                    <span style="font-weight: bold; color: ${estiloColor.textHeader}; text-transform: uppercase;">Área: ${mat}</span>
+                                    <span style="font-style: italic; color: #475569;">Docente: <b>${docenteSeleccionado}</b></span>
                                 </div>
                                 <p style="margin: 0; font-size: 13px; color: #1e293b;">${notaMatPeriodo.comentario}</p>
                             </div>
@@ -1506,7 +1486,7 @@
             }
 
             if (!reflexionesDocentesHTML) {
-                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios u observaciones docentes registradas para este ${periodoSel}]</p>`;
+                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin observaciones de conducta registradas para este ${periodoSel}]</p>`;
             }
 
             let docenteDanzaEncargado = estData.docente_artistico_grupal || 'No asignado';
@@ -1529,7 +1509,7 @@
 
                 <div class="report-preview" id="plantilla-informe-oficial">
                     
-                    <!-- PÁGINA 1: Encabezado, Datos, Notas y Firmas -->
+                    <!-- PÁGINA 1: Encabezado, Datos, Notas y Firmas de Directora y Docente -->
                     <div class="seccion-pagina-1">
                         <div class="report-header">
                             <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
@@ -1576,7 +1556,7 @@
                             </table>
                         </div>
 
-                        <!-- Bloque de Firmas -->
+                        <!-- Bloque de Firmas al pie de la Página 1 -->
                         <div style="display: flex; justify-content: space-around; margin-top: 35px; text-align: center;">
                             <div style="width: 40%;">
                                 <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
@@ -1591,9 +1571,9 @@
                         </div>
                     </div>
 
-                    <!-- PÁGINA 2: Observaciones y Comentarios -->
+                    <!-- PÁGINA 2: Inicia con las Observaciones de Conducta -->
                     <div class="salto-pagina-forzado">
-                        <h4 style="color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 5px;">Observaciones y Comentarios Docentes (${periodoSel})</h4>
+                        <h4 style="color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 5px;">Observaciones y Comportamiento (${periodoSel})</h4>
                         <div class="reflexiones-container">
                             ${reflexionesDocentesHTML}
                         </div>
