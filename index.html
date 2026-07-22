@@ -881,7 +881,7 @@
             const lblFinal = document.getElementById(`lbl-final-${cedula}`);
             const promedioFinal = parseFloat(lblFinal.innerText);
             const comentarioInput = document.getElementById(`comentario-est-${cedula}`);
-            const comentario = comentarioInput.value.trim();
+            const comentario = comentarioInput ? comentarioInput.value.trim() : '';
 
             if (isNaN(promedioFinal)) {
                 alert('Por favor ingrese las notas en los componentes antes de guardar.');
@@ -895,18 +895,19 @@
             }
 
             const datos = { 
-                cedula_estudiante: cedula, 
-                materia: materia, 
-                periodo: periodo, 
-                promedio: promedioFinal,
-                comentario: comentario 
+                cedula_estudiante: String(cedula), 
+                materia: String(materia), 
+                periodo: String(periodo), 
+                promedio: Number(promedioFinal),
+                comentario: String(comentario) 
             };
 
             const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
             if (error) {
-                await supabaseClient.from('notas').insert([datos]);
+                alert('Error al guardar: ' + error.message);
+            } else {
+                alert(`¡Calificación y comentarios guardados con éxito para la cédula ${cedula}!`);
             }
-            alert(`¡Calificación y comentarios guardados con éxito para la cédula ${cedula}!`);
         }
 
         async function cargarCuadrosRegistro() {
