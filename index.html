@@ -1038,15 +1038,26 @@
             const docenteSeleccionado = selectDocente && selectDocente.value ? selectDocente.value : (estData.docente_academico || '[Sin asignar]');
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
+            const { data: docentesLista } = await supabaseClient.from('docentes').select('*');
 
             let tablaMateriasHTML = '';
-            let comentariosDocenteHTML = '';
+            let reflexionesDocentesHTML = '';
             const materiasUnicas = notas ? [...new Set(notas.map(n => n.materia))] : [];
+
+            // Paleta de colores elegantes para bordes de marcos (random)
+            const coloresElegantes = [
+                { border: '#2563eb', bg: '#eff6ff', textHeader: '#1e40af' }, // Azul
+                { border: '#7c3aed', bg: '#f5f3ff', textHeader: '#5b21b6' }, // Púrpura
+                { border: '#0d9488', bg: '#f0fdfa', textHeader: '#115e59' }, // Teal / Verde agua
+                { border: '#d97706', bg: '#fffbeb', textHeader: '#92400e' }, // Ámbar / Dorado
+                { border: '#db2777', bg: '#fdf2f8', textHeader: '#9d174d' }, // Rosa elegante
+                { border: '#4f46e5', bg: '#eef2ff', textHeader: '#3730a3' }  // Índigo
+            ];
 
             if (materiasUnicas.length === 0) {
                 tablaMateriasHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
             } else {
-                materiasUnicas.forEach(mat => {
+                materiasUnicas.forEach((mat, index) => {
                     const notaMatPeriodo = notas.find(n => n.materia === mat && n.periodo === periodoSel);
                     const valNota = notaMatPeriodo ? notaMatPeriodo.promedio : 'Pendiente';
                     let estado = 'Pendiente';
@@ -1063,13 +1074,34 @@
                     `;
 
                     if (notaMatPeriodo && notaMatPeriodo.comentario) {
-                        comentariosDocenteHTML += `<p style="margin: 4px 0;"><b>[${mat}]:</b> ${notaMatPeriodo.comentario}</p>`;
+                        // Buscar el docente a cargo de esta materia si está registrado en la base de datos
+                        let docenteCargo = docenteSeleccionado;
+                        if (docentesLista) {
+                            const matLimpia = mat.replace('[Artística]', '').replace('[Académica]', '').trim();
+                            const docEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes(matLimpia.toLowerCase()));
+                            if (docEncontrado) {
+                                docenteCargo = docEncontrado.nombre;
+                            }
+                        }
+
+                        // Escoger un color elegante aleatorio / cíclico
+                        const estiloColor = coloresElegantes[index % coloresElegantes.length];
+
+                        reflexionesDocentesHTML += `
+                            <div style="margin-bottom: 12px; padding: 12px 15px; border-radius: 6px; border-left: 4px solid ${estiloColor.border}; border: 1px solid ${estiloColor.border}; background-color: ${estiloColor.bg};">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px;">
+                                    <span style="font-weight: bold; color: ${estiloColor.textHeader}; text-transform: uppercase;">Materia: ${mat}</span>
+                                    <span style="font-style: italic; color: #475569;">Docente: <b>${docenteCargo}</b></span>
+                                </div>
+                                <p style="margin: 0; font-size: 13px; color: #1e293b;">${notaMatPeriodo.comentario}</p>
+                            </div>
+                        `;
                     }
                 });
             }
 
-            if (!comentariosDocenteHTML) {
-                comentariosDocenteHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios individuales registrados para este ${periodoSel}]</p>`;
+            if (!reflexionesDocentesHTML) {
+                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones docentes registradas para este ${periodoSel}]</p>`;
             }
 
             contenedor.innerHTML = `
@@ -1121,9 +1153,9 @@
                                 ${tablaMateriasHTML}
                             </tbody>
                         </table>
-                        <div style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-                            <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones Positivas Individuales (${periodoSel}):</b></p>
-                            ${comentariosDocenteHTML}
+                        <div style="margin-top: 20px;">
+                            <p style="margin: 0 0 10px 0; font-weight: bold; color: var(--primary);">Reflexiones Docentes (${periodoSel}):</p>
+                            ${reflexionesDocentesHTML}
                         </div>
                     </div>
                 </div>
