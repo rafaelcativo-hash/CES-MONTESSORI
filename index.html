@@ -64,17 +64,14 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Reglas de impresión y saltos de página limpios para el informe */
-        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; overflow: hidden; page-break-inside: avoid; }
-        .report-section-block { page-break-inside: avoid; break-inside: avoid; }
-        .reflexiones-container { page-break-inside: auto; }
-        .reflexion-item { page-break-inside: avoid; break-inside: avoid; margin-bottom: 12px; }
-
-        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; }
+        /* Estilos optimizados para papel A4 y control estricto de saltos de página */
+        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; }
         .report-header img { width: 60px; height: 60px; object-fit: contain; }
-        .report-header .school-info { text-align: center; }
-        .report-header .school-info h3 { margin: 0; color: var(--primary); font-size: 18px; }
-        .report-header .school-info p { margin: 3px 0; font-size: 13px; color: #64748b; }
+        
+        .seccion-pagina-1 { page-break-inside: avoid; break-inside: avoid; }
+        .salto-pagina-forzado { page-break-before: always; break-before: page; margin-top: 20px; }
+        .reflexion-item { page-break-inside: avoid; break-inside: avoid; margin-bottom: 12px; }
 
         .age-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; margin-top: 5px; text-align: left; }
         .notification { margin-top: 15px; padding: 12px; border-radius: 6px; font-weight: 600; display: none; font-size: 14px; }
@@ -397,7 +394,7 @@
                         </div>
                     </div>
                 </fieldset>
-                <div id="contenedor-vista-informe">
+                <div id="contenedor-vista-informe" style="overflow-x: auto;">
                     <p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>
                 </div>
                 <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
@@ -1267,55 +1264,70 @@
                         <img src="encabezado%20del%20informe%20final.png" style="width: 450px; height: 450px; object-fit: contain; opacity: 0.08;" onerror="this.style.display='none'">
                     </div>
                     
-                    <div class="report-header">
-                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
-                        <div class="school-info" style="flex: 1; margin: 0 15px;">
-                            <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
-                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
+                    <!-- PÁGINA 1: Encabezado, Datos, Notas y Firmas de Directora y Docente -->
+                    <div class="seccion-pagina-1">
+                        <div class="report-header">
+                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
+                            <div class="school-info" style="flex: 1; margin: 0 15px;">
+                                <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
+                                <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
+                            </div>
+                            <div style="font-size: 11px; text-align: right; color: #475569;">
+                                <p style="margin: 0;"><b>Remitente Oficial:</b></p>
+                                <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
+                            </div>
                         </div>
-                        <div style="font-size: 11px; text-align: right; color: #475569;">
-                            <p style="margin: 0;"><b>Remitente Oficial:</b></p>
-                            <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
+
+                        <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border); position: relative; z-index: 2;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
+                                <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
+                                <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
+                                <p style="margin: 3px 0;"><b>Profesor Académico:</b> ${estData.docente_academico || 'No asignado'}</p>
+                                <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
+                                <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
+                                <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal (Danza/Otros):</b> ${docenteDanzaEncargado}</p>
+                                <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
+                            </div>
+                        </div>
+
+                        <div style="position: relative; z-index: 2; margin-bottom: 25px;">
+                            <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Materia / Asignatura</th>
+                                        <th>Calificación de Periodo</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tablaMateriasHTML}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Bloque de Firmas al pie de la Página 1 -->
+                        <div style="display: flex; justify-content: space-around; margin-top: 35px; position: relative; z-index: 2; text-align: center;">
+                            <div style="width: 40%;">
+                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
+                                <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
+                                <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Dirección Institucional</p>
+                            </div>
+                            <div style="width: 40%;">
+                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
+                                <p style="margin: 0; font-size: 12px; font-weight: bold;"><span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
+                                <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente Responsable / Nivel</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="report-section-block" style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border); position: relative; z-index: 2;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
-                            <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
-                            <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
-                            <p style="margin: 3px 0;"><b>Profesor Académico:</b> ${estData.docente_academico || 'No asignado'}</p>
-                            <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
-                            <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
-                            <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal (Danza/Otros):</b> ${docenteDanzaEncargado}</p>
-                            <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
-                        </div>
-                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <p style="margin: 3px 0;"><b>Dirección Institucional:</b> Flor María Jiménez</p>
-                            <p style="margin: 3px 0;"><b>Docente Responsable:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
-                        </div>
-                    </div>
-
-                    <div class="report-section-block" style="position: relative; z-index: 2;">
-                        <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Materia / Asignatura</th>
-                                    <th>Calificación de Periodo</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tablaMateriasHTML}
-                            </tbody>
-                        </table>
-                        
-                        <div style="margin-top: 20px;" class="reflexiones-container">
-                            <p style="margin: 0 0 10px 0; font-weight: bold; color: var(--primary);">Reflexiones Docentes (${periodoSel}):</p>
+                    <!-- PÁGINA 2: Inicia con las Reflexiones Docentes -->
+                    <div class="salto-pagina-forzado" style="position: relative; z-index: 2;">
+                        <h4 style="color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 5px;">Reflexiones Docentes y Observaciones (${periodoSel})</h4>
+                        <div class="reflexiones-container">
                             ${reflexionesDocentesHTML}
                         </div>
                     </div>
@@ -1338,11 +1350,11 @@
             const nombreArchivo = `Informe_Hogar_${estData.nombre.replace(/\s+/g, '_')}_${periodoSel.replace(/\s+/g, '_')}.pdf`;
 
             msg.className = 'notification success';
-            msg.innerText = 'Generando archivo PDF, por favor espere...';
+            msg.innerText = 'Generando archivo PDF en formato A4, por favor espere...';
             msg.style.display = 'block';
 
             const opciones = {
-                margin:       10,
+                margin:       [10, 10, 10, 10],
                 filename:     nombreArchivo,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
