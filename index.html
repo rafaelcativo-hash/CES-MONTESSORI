@@ -56,8 +56,8 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; }
-        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; overflow: hidden; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; }
         .report-header img { width: 60px; height: 60px; object-fit: contain; }
         .report-header .school-info { text-align: center; }
         .report-header .school-info h3 { margin: 0; color: var(--primary); font-size: 18px; }
@@ -1074,6 +1074,9 @@
 
             contenedor.innerHTML = `
                 <div class="report-preview" id="plantilla-informe-oficial">
+                    <!-- Marca de agua (Fondo de agua con encabezado del informe final.png) -->
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; background-image: url('encabezado%20del%20informe%20final.png'); background-repeat: no-repeat; background-position: center; background-size: contain; opacity: 0.07; z-index: 1; pointer-events: none;"></div>
+                    
                     <div class="report-header" style="border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
                         <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
                         <div class="school-info" style="text-align: center; flex: 1; margin: 0 15px;">
@@ -1087,7 +1090,7 @@
                             <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
                         </div>
                     </div>
-                    <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border); position: relative; z-index: 2;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                             <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
@@ -1104,22 +1107,24 @@
                             <p style="margin: 3px 0;"><b>Docente Responsable:</b> <span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
                         </div>
                     </div>
-                    <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Materia / Asignatura</th>
-                                <th>Calificación de Periodo</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tablaMateriasHTML}
-                        </tbody>
-                    </table>
-                    <div style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-                        <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones Positivas Individuales (${periodoSel}):</b></p>
-                        ${comentariosDocenteHTML}
+                    <div style="position: relative; z-index: 2;">
+                        <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Materia / Asignatura</th>
+                                    <th>Calificación de Periodo</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tablaMateriasHTML}
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                            <p style="margin: 0 0 5px 0;"><b>Comentarios y Observaciones Positivas Individuales (${periodoSel}):</b></p>
+                            ${comentariosDocenteHTML}
+                        </div>
                     </div>
                 </div>
             `;
