@@ -107,7 +107,7 @@
             <button class="tab-btn" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
             <button class="tab-btn" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
             <button class="tab-btn" onclick="cambiarPestana('calificar', event)">Calificar</button>
-            <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
+            <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogار</button>
             <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" onclick="cambiarPestana('academicos', event)">Docentes Académicos</button>
             <button class="tab-btn" onclick="cambiarPestana('artisticos', event)">Docentes Artísticos</button>
@@ -579,7 +579,7 @@
 
             document.getElementById('mat-nombre').value = data.nombre || '';
             inputCedula.value = data.cedula || '';
-            inputCedula.readOnly = true; // No permitir cambiar la cédula primaria para mantener integridad
+            inputCedula.readOnly = true; 
             document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
             calcularEdadExacta();
             document.getElementById('mat-nivel').value = data.nivel || '';
@@ -615,7 +615,6 @@
         async function guardarOActualizarMatricula(e) {
             e.preventDefault();
             const cedulaVal = document.getElementById('mat-cedula').value;
-            const selectEdit = document.getElementById('select-estudiante-editar').value;
 
             const datos = {
                 nombre: document.getElementById('mat-nombre').value,
@@ -638,24 +637,15 @@
                 encargado2_cel: document.getElementById('enc2-cel').value
             };
 
-            let errorSupabase = null;
+            // Usamos upsert basado en la cédula para insertar o actualizar automáticamente sin duplicar claves
+            const { error } = await supabaseClient.from('estudiantes').upsert([datos], { onConflict: 'cedula' });
 
-            if (selectEdit) {
-                // Modo Actualización / Corrección
-                const { error } = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedulaVal);
-                errorSupabase = error;
+            if (error) {
+                mostrarMensaje('mat-msg', 'Error al guardar/actualizar: ' + error.message, false);
             } else {
-                // Modo Inserción Normal
-                const { error } = await supabaseClient.from('estudiantes').insert([datos]);
-                errorSupabase = error;
-            }
-
-            if (errorSupabase) {
-                mostrarMensaje('mat-msg', 'Error al guardar/actualizar: ' + errorSupabase.message, false);
-            } else {
-                mostrarMensaje('mat-msg', selectEdit ? '¡Matrícula actualizada con éxito!' : '¡Matrícula guardada con éxito!', true);
+                mostrarMensaje('mat-msg', '¡Matrícula guardada / actualizada con éxito!', true);
                 cargarSelectorEstudiantesEdicion();
-                if (!selectEdit) limpiarFormularioMatricula();
+                limpiarFormularioMatricula();
             }
         }
 
