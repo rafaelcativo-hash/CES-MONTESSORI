@@ -136,16 +136,38 @@
                 </div>
                 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Modo Corrección / Edición o Vista Previa</legend>
+                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda para Vista Previa</legend>
                     <div class="form-grid" style="align-items: flex-end;">
                         <div class="form-group">
-                            <label>Seleccionar estudiante registrado para cargar datos / Vista Previa</label>
+                            <label>Año Lectivo</label>
+                            <select id="filtro-anio-lectivo">
+                                <!-- Se llena dinámicamente con JS desde 2026 en adelante -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Filtrar por Ciclo / Nivel General</label>
+                            <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
+                                <option value="">-- Todos los niveles --</option>
+                                <optgroup label="Primer Ciclo">
+                                    <option value="Primero">Primero</option>
+                                    <option value="Segundo">Segundo</option>
+                                    <option value="Tercero">Tercero</option>
+                                </optgroup>
+                                <optgroup label="Segundo Ciclo">
+                                    <option value="Cuarto">Cuarto</option>
+                                    <option value="Quinto">Quinto</option>
+                                    <option value="Sexto">Sexto</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Seleccionar Estudiante Específico</label>
                             <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
                                 <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo Registro</button>
+                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
                         </div>
                     </div>
                 </fieldset>
@@ -173,7 +195,7 @@
                         </div>
                         <div class="form-grid" style="margin-top: 15px;">
                             <div class="form-group">
-                                <label>Nivel Educativo</label>
+                                <label>Nivel Educativo (Ciclos)</label>
                                 <select id="mat-nivel" required>
                                     <option value="">Seleccione el nivel</option>
                                     <optgroup label="Primer Ciclo">
@@ -507,12 +529,29 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Inicializar selector de años lectivos dinámicos (2026 en adelante)
+        function inicializarAniosLectivos() {
+            const selectAnio = document.getElementById('filtro-anio-lectivo');
+            if (!selectAnio) return;
+            selectAnio.innerHTML = '';
+            const anioActual = 2026;
+            for (let i = 0; i <= 6; i++) {
+                const anioOpt = anioActual + i;
+                const opt = document.createElement('option');
+                opt.value = anioOpt;
+                opt.textContent = `Año Lectivo ${anioOpt}`;
+                if (anioOpt === 2026) opt.selected = true;
+                selectAnio.appendChild(opt);
+            }
+        }
+
         function cambiarPestana(idSeccion, evt) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(idSeccion).classList.add('active');
             if (evt) evt.currentTarget.classList.add('active');
             if (idSeccion === 'matricula') {
+                inicializarAniosLectivos();
                 cargarDocentesEnMatricula();
                 cargarSelectorEstudiantesEdicion();
             }
@@ -546,6 +585,7 @@
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
+            inicializarAniosLectivos();
             cargarDocentesEnMatricula();
             cargarSelectorEstudiantesEdicion();
             cargarDocentesEnInforme();
@@ -595,6 +635,33 @@
             const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
             if (error || !data) return;
 
+            data.forEach(est => {
+                const opt = document.createElement('option');
+                opt.value = est.cedula;
+                opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})`;
+                selectEdit.appendChild(opt);
+            });
+        }
+
+        async function filtrarEstudiantesPorCiclo() {
+            const cicloFiltro = document.getElementById('filtro-ciclo-general').value;
+            const selectEdit = document.getElementById('select-estudiante-editar');
+            if (!selectEdit) return;
+
+            selectEdit.innerHTML = '<option value="">-- Cargando por nivel filtrado --</option>';
+
+            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
+            if (cicloFiltro) {
+                query = query.eq('nivel', cicloFiltro);
+            }
+
+            const { data, error } = await query;
+            if (error || !data) {
+                selectEdit.innerHTML = '<option value="">-- Sin resultados --</option>';
+                return;
+            }
+
+            selectEdit.innerHTML = '<option value="">-- Seleccione estudiante filtrado --</option>';
             data.forEach(est => {
                 const opt = document.createElement('option');
                 opt.value = est.cedula;
@@ -695,6 +762,7 @@
         }
 
         function generarVistaPreviaMatricula() {
+            const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
             const nombre = document.getElementById('mat-nombre').value;
             const cedula = document.getElementById('mat-cedula').value;
             const fnac = document.getElementById('mat-fnac').value;
@@ -723,7 +791,7 @@
             contenedorPrev.style.display = 'block';
             contenedorPrev.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
-                    <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión</h3>
+                    <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión (Año ${anioLectivo})</h3>
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
                         <button type="button" class="warning-btn" onclick="descargarVistaPreviaPDF()">Guardar como PDF</button>
@@ -735,12 +803,12 @@
                         <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
                         <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center;">
                             <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil</p>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil • Año Lectivo: <b>${anioLectivo}</b></p>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales</h4>
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
                         <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
@@ -774,7 +842,7 @@
                         </div>
                         <div style="width: 40%;">
                             <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
-                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Sello y Dirección Institucional</p>
+                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Sello y Dirección Institucional (${anioLectivo})</p>
                         </div>
                     </div>
                 </div>
@@ -785,9 +853,10 @@
         function descargarVistaPreviaPDF() {
             const elemento = document.getElementById('preview-matricula-impresion');
             const nombreEst = document.getElementById('mat-nombre').value || 'Estudiante';
+            const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
             const opciones = {
                 margin:       [10, 10, 10, 10],
-                filename:     `Matricula_${nombreEst.replace(/\s+/g, '_')}.pdf`,
+                filename:     `Matricula_${nombreEst.replace(/\s+/g, '_')}_${anioLectivo}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
