@@ -132,7 +132,7 @@
         </nav>
 
         <main>
-            <!-- 1. MATRÍCULA Y GESTIÓN DE ESTUDIANTES (Flujo Original) -->
+            <!-- 1. MATRÍCULA Y GESTIÓN DE ESTUDIANTES -->
             <section id="matricula" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                     <h2 style="margin: 0;">Gestión de Matrícula y Control de Estudiantes</h2>
@@ -1542,19 +1542,16 @@
                 </div>
 
                 <div class="report-preview" id="plantilla-informe-oficial">
+                    <!-- Página 1: Con banner de encabezado arriba del todo -->
                     <div class="seccion-pagina-1">
-                        <div class="report-header">
-                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
-                            <div class="school-info" style="flex: 1; margin: 0 15px;">
-                                <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
-                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
-                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
-                                <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
-                            </div>
-                            <div style="font-size: 11px; text-align: right; color: #475569;">
-                                <p style="margin: 0;"><b>Remitente Oficial:</b></p>
-                                <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
-                            </div>
+                        <div style="width: 100%; margin-bottom: 20px;">
+                            <img src="encabezado%20del%20informe.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 120px; object-fit: contain;">
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
+                            <p style="margin: 8px 0 0 0; font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
                         </div>
 
                         <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
@@ -1602,8 +1599,16 @@
                         </div>
                     </div>
 
-                    <div class="salto-pagina-forzado">
-                        <h4 style="color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 5px;">Observaciones y Comentarios Docentes (${periodoSel})</h4>
+                    <!-- Página 2: Comentarios con el logo celeste y texto Centro Educativo Shkénuk -->
+                    <div class="salto-pagina-forzado" style="margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px;">
+                        <div class="report-header" style="display: flex; align-items: center; gap: 15px; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 55px; height: 55px; object-fit: contain;">
+                            <div>
+                                <h3 style="margin: 0; color: var(--primary); font-size: 16px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                                <p style="margin: 3px 0 0 0; font-size: 12px; color: var(--accent); font-weight: bold;">Observaciones y Comentarios Docentes (${periodoSel})</p>
+                            </div>
+                        </div>
+
                         <div class="reflexiones-container">
                             ${reflexionesDocentesHTML}
                         </div>
