@@ -79,8 +79,8 @@
         /* Estilos específicos para impresión física limpia */
         @media print {
             body * { visibility: hidden; }
-            #preview-matricula-impresion, #preview-matricula-impresion * { visibility: visible; }
-            #preview-matricula-impresion { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
+            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial * { visibility: visible; }
+            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
             .no-print { display: none !important; }
         }
     </style>
@@ -433,11 +433,7 @@
                 <div id="contenedor-vista-informe" style="overflow-x: auto;">
                     <p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>
                 </div>
-                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
-                    <button class="warning-btn" onclick="descargarInformePDF()">Descargar Informe en PDF</button>
-                    <button class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informes Simultáneos a Encargados</button>
-                    <div id="inf-msg" class="notification" style="width: 100%; text-align: right;"></div>
-                </div>
+                <div id="inf-msg" class="notification" style="width: 100%; text-align: right;"></div>
             </section>
 
             <!-- 6. CONFIGURACIÓN -->
@@ -1489,6 +1485,15 @@
             }
 
             contenedor.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
+                    <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
+                        <button type="button" class="warning-btn" onclick="descargarInformePDF()">Guardar como PDF</button>
+                        <button type="button" class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informe a Encargados</button>
+                    </div>
+                </div>
+
                 <div class="report-preview" id="plantilla-informe-oficial">
                     
                     <!-- PÁGINA 1: Encabezado, Datos, Notas y Firmas de Directora y Docente -->
