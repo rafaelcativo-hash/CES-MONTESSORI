@@ -125,7 +125,10 @@
         <main>
             <!-- 1. MATRÍCULA Y CORRECCIONES -->
             <section id="matricula" class="tab-content active">
-                <h2>Gestión y Corrección de Matrícula Estudiantil</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Gestión y Corrección de Matrícula Estudiantil</h2>
+                    <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula Completa (Excel/CSV)</button>
+                </div>
                 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
                     <legend style="color: var(--accent);">Modo Corrección / Edición</legend>
@@ -674,6 +677,49 @@
                 cargarSelectorEstudiantesEdicion();
                 limpiarFormularioMatricula();
             }
+        }
+
+        async function descargarMatriculaExcel() {
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
+            if (error || !data || data.length === 0) {
+                alert('No hay registros de matrícula para exportar.');
+                return;
+            }
+
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+
+            data.forEach(est => {
+                const fila = [
+                    `"${est.cedula || ''}"`,
+                    `"${est.nombre || ''}"`,
+                    `"${est.nivel || ''}"`,
+                    `"${est.fecha_nacimiento || ''}"`,
+                    `"${est.docente_academico || ''}"`,
+                    `"${est.docente_artistico_grupal || ''}"`,
+                    `"${est.instrumento_principal || ''}"`,
+                    `"${est.docente_asignado || ''}"`,
+                    `"${est.provincia || ''}"`,
+                    `"${est.canton || ''}"`,
+                    `"${est.distrito || ''}"`,
+                    `"${(est.direccion_detalles || '').replace(/"/g, '""')}"`,
+                    `"${est.encargado1_nombre || ''}"`,
+                    `"${est.encargado1_correo || ''}"`,
+                    `"${est.encargado1_cel || ''}"`,
+                    `"${est.encargado2_nombre || ''}"`,
+                    `"${est.encargado2_correo || ''}"`,
+                    `"${est.encargado2_cel || ''}"`
+                ].join(',');
+                csvContent += fila + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'Matricula_Estudiantil_Shkenuk.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function cargarDocentesEnInforme() {
