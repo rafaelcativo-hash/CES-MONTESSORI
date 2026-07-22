@@ -1431,20 +1431,39 @@
             ];
 
             if (materiasUnicas.length === 0) {
-                tablaMateriasHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
+                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
             } else {
                 materiasUnicas.forEach((mat, index) => {
-                    const notaMatPeriodo = notas.find(n => n.materia === mat && n.periodo === periodoSel);
-                    const valNota = notaMatPeriodo ? notaMatPeriodo.promedio : 'Pendiente';
+                    const notaP1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
+                    const notaP2 = notas.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+                    
+                    const valP1 = notaP1 ? notaP1.promedio : '-';
+                    const valP2 = notaP2 ? notaP2.promedio : '-';
+                    
+                    let valAnual = '-';
                     let estado = 'Pendiente';
-                    if (valNota !== 'Pendiente') {
-                        estado = valNota >= 65 ? 'Aprobado' : 'Reprobado';
+
+                    if (notaP1 && notaP2) {
+                        valAnual = Number(((notaP1.promedio * 0.5) + (notaP2.promedio * 0.5)).toFixed(2));
+                        if (notaP1.promedio >= 65 && notaP2.promedio >= 65 && valAnual >= 65) {
+                            estado = '<span style="color: #166534; font-weight: bold;">Aprobado</span>';
+                        } else {
+                            estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado</span>';
+                        }
+                    } else if (periodoSel === 'Primer Periodo' && notaP1) {
+                        valAnual = valP1;
+                        estado = valP1 >= 65 ? '<span style="color: #166534; font-weight: bold;">Aprobado (Parcial)</span>' : '<span style="color: #991b1b; font-weight: bold;">Reprobado (Parcial)</span>';
                     }
+
+                    // Seleccionar la nota del periodo activo a mostrar en detalle de reflexiones
+                    const notaMatPeriodo = periodoSel === 'Primer Periodo' ? notaP1 : notaP2;
 
                     tablaMateriasHTML += `
                         <tr>
                             <td><b>${mat}</b></td>
-                            <td>${valNota}</td>
+                            <td>${valP1}</td>
+                            <td>${valP2}</td>
+                            <td><b>${valAnual}</b></td>
                             <td>${estado}</td>
                         </tr>
                     `;
@@ -1528,13 +1547,15 @@
                         </div>
 
                         <div style="margin-bottom: 25px;">
-                            <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
+                            <h4 style="color: var(--primary); margin-bottom: 8px;">Rendimiento Académico y Artístico Consolidado</h4>
                             <table class="data-table">
                                 <thead>
                                     <tr>
                                         <th>Materia / Asignatura</th>
-                                        <th>Calificación de Periodo</th>
-                                        <th>Estado</th>
+                                        <th>1° Periodo</th>
+                                        <th>2° Periodo</th>
+                                        <th>Promedio Anual</th>
+                                        <th>Condición</th>
                                     </tr>
                                 </thead>
                                 <tbody>
