@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión Académica - Centro Educativo Shkénuk</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería html2pdf para exportar a PDF con estilos exactos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary: #1e293b;
@@ -50,6 +52,9 @@
 
         button.warning-btn { background-color: #d97706; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
         button.warning-btn:hover { background-color: #b45309; }
+
+        button.success-btn { background-color: #166534; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
+        button.success-btn:hover { background-color: #14532d; }
 
         table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; overflow-x: auto; display: block; }
         table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
@@ -346,7 +351,7 @@
 
             <!-- 5. INFORMES AL HOGAR -->
             <section id="hogar" class="tab-content">
-                <h2>Generación y Envío de Informes al Hogar</h2>
+                <h2>Generación, Envío y Descarga de Informes al Hogar</h2>
                 <fieldset>
                     <legend>Selección para Informe Institucional</legend>
                     <div class="form-grid">
@@ -388,9 +393,10 @@
                 <div id="contenedor-vista-informe">
                     <p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>
                 </div>
-                <div style="margin-top: 20px; text-align: right;">
-                    <button class="action-btn" onclick="enviarInformeSimultaneo()">Enviar Informes Simultáneos a Encargados</button>
-                    <div id="inf-msg" class="notification"></div>
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                    <button class="warning-btn" onclick="descargarInformePDF()">Descargar Informe en PDF</button>
+                    <button class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informes Simultáneos a Encargados</button>
+                    <div id="inf-msg" class="notification" style="width: 100%; text-align: right;"></div>
                 </div>
             </section>
 
@@ -1074,7 +1080,6 @@
                     `;
 
                     if (notaMatPeriodo && notaMatPeriodo.comentario) {
-                        // Buscar el docente a cargo de esta materia si está registrado en la base de datos
                         let docenteCargo = docenteSeleccionado;
                         if (docentesLista) {
                             const matLimpia = mat.replace('[Artística]', '').replace('[Académica]', '').trim();
@@ -1084,7 +1089,6 @@
                             }
                         }
 
-                        // Escoger un color elegante aleatorio / cíclico
                         const estiloColor = coloresElegantes[index % coloresElegantes.length];
 
                         reflexionesDocentesHTML += `
@@ -1160,6 +1164,41 @@
                     </div>
                 </div>
             `;
+        }
+
+        function descargarInformePDF() {
+            const elementoInforme = document.getElementById('plantilla-informe-oficial');
+            const selectEst = document.getElementById('inf-estudiante-sel');
+            const periodoSel = document.getElementById('inf-periodo-sel').value;
+            const msg = document.getElementById('inf-msg');
+
+            if (!elementoInforme || !selectEst.value) {
+                alert('Por favor genere y visualice primero el informe de un estudiante antes de descargarlo.');
+                return;
+            }
+
+            const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
+            const nombreArchivo = `Informe_Hogar_${estData.nombre.replace(/\s+/g, '_')}_${periodoSel.replace(/\s+/g, '_')}.pdf`;
+
+            msg.className = 'notification success';
+            msg.innerText = 'Generando archivo PDF, por favor espere...';
+            msg.style.display = 'block';
+
+            const opciones = {
+                margin:       10,
+                filename:     nombreArchivo,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(elementoInforme).set(opciones).save().then(() => {
+                msg.innerText = `¡El informe se ha descargado exitosamente como "${nombreArchivo}"!`;
+                setTimeout(() => { msg.style.display = 'none'; }, 5000);
+            }).catch(err => {
+                msg.className = 'notification error';
+                msg.innerText = 'Error al generar el PDF: ' + err;
+            });
         }
 
         async function enviarInformeSimultaneo() {
