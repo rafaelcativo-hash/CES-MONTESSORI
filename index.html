@@ -67,10 +67,6 @@
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
         .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; }
         .report-header img { width: 60px; height: 60px; object-fit: contain; }
-        
-        .seccion-pagina-1 { page-break-inside: avoid; break-inside: avoid; }
-        .salto-pagina-forzado { page-break-before: always; break-before: page; margin-top: 20px; }
-        .reflexion-item { page-break-inside: avoid; break-inside: avoid; margin-bottom: 12px; }
 
         .age-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; margin-top: 5px; text-align: left; }
         .notification { margin-top: 15px; padding: 12px; border-radius: 6px; font-weight: 600; display: none; font-size: 14px; }
@@ -79,6 +75,14 @@
         
         .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
         .logout-btn:hover { background: #dc2626; }
+
+        /* Estilos específicos para impresión física limpia */
+        @media print {
+            body * { visibility: hidden; }
+            #preview-matricula-impresion, #preview-matricula-impresion * { visibility: visible; }
+            #preview-matricula-impresion { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -263,9 +267,15 @@
                         </div>
                     </fieldset>
 
-                    <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
+                        <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
+                        <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Generar Vista Previa de Matrícula</button>
+                    </div>
                     <div id="mat-msg" class="notification"></div>
                 </form>
+
+                <!-- Panel de Vista Previa Interactiva para Revisión, Impresión Física o PDF -->
+                <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px;"></div>
             </section>
 
             <!-- 2. LISTAS Y PROMOCIÓN -->
@@ -498,7 +508,7 @@
         </main>
     </div>
 
-    <!-- Contenedor temporal limpio para la generación del PDF individual -->
+    <!-- Contenedor oculto para la descarga limpia de PDF individual -->
     <div id="pdf-matricula-container" style="position: absolute; left: -9999px; top: 0; background: white; width: 210mm;"></div>
 
     <script>
@@ -669,6 +679,7 @@
             btnSubmit.innerText = 'Guardar Matrícula Completa';
             btnSubmit.className = 'action-btn';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
+            document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
         }
 
         async function guardarOActualizarMatricula(e) {
@@ -704,8 +715,108 @@
                 mostrarMensaje('mat-msg', '¡Matrícula guardada / actualizada con éxito!', true);
                 cargarSelectorEstudiantesEdicion();
                 cargarSelectorEstudiantesPDF();
-                limpiarFormularioMatricula();
             }
+        }
+
+        function generarVistaPreviaMatricula() {
+            const nombre = document.getElementById('mat-nombre').value;
+            const cedula = document.getElementById('mat-cedula').value;
+            const fnac = document.getElementById('mat-fnac').value;
+            const nivel = document.getElementById('mat-nivel').value;
+            const docenteAcad = document.getElementById('mat-docente-acad').value;
+            const docenteArt = document.getElementById('mat-docente-art-grupal').value;
+            const instr = document.getElementById('mat-instr-principal').value;
+            const docenteInstr = document.getElementById('mat-docente-asig').value;
+            const prov = document.getElementById('dir-provincia').value;
+            const canton = document.getElementById('dir-canton').value;
+            const distrito = document.getElementById('dir-distrito').value;
+            const detalles = document.getElementById('dir-detalles').value;
+            const enc1Nom = document.getElementById('enc1-nombre').value;
+            const enc1Correo = document.getElementById('enc1-correo').value;
+            const enc1Cel = document.getElementById('enc1-cel').value;
+            const enc2Nom = document.getElementById('enc2-nombre').value;
+            const enc2Correo = document.getElementById('enc2-correo').value;
+            const enc2Cel = document.getElementById('enc2-cel').value;
+
+            if (!nombre || !cedula || !nivel || !fnac) {
+                alert('Por favor complete al menos los datos personales obligatorios para generar la vista previa.');
+                return;
+            }
+
+            const contenedorPrev = document.getElementById('contenedor-vista-previa-matricula');
+            contenedorPrev.style.display = 'block';
+            contenedorPrev.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
+                    <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
+                        <button type="button" class="warning-btn" onclick="descargarVistaPreviaPDF()">Guardar como PDF</button>
+                    </div>
+                </div>
+
+                <div class="report-preview" id="preview-matricula-impresion">
+                    <div class="report-header">
+                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
+                        <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center;">
+                            <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales</h4>
+                        <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
+                        <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
+                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
+                        <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
+                    </div>
+
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Asignación Académica y Artística</h4>
+                        <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${docenteAcad || 'No asignado'}</p>
+                        <p style="margin: 4px 0;"><b>Profesor Artístico Grupal:</b> ${docenteArt || 'Ninguno'}</p>
+                        <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'}</p>
+                        <p style="margin: 4px 0;"><b>Profesor de Instrumento:</b> ${docenteInstr || 'No asignado'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">3. Dirección y Ubicación</h4>
+                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${prov}, ${canton}, ${distrito}</p>
+                        <p style="margin: 4px 0;"><b>Otras Señas:</b> ${detalles || 'N/A'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">4. Información de Encargados</h4>
+                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${enc1Nom} - Correo: ${enc1Correo} - Tel: ${enc1Cel}</p>
+                        <p style="margin: 4px 0;"><b>Segundo Encargado:</b> ${enc2Nom || 'N/A'} - Correo: ${enc2Correo || 'N/A'} - Tel: ${enc2Cel || 'N/A'}</p>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-around; margin-top: 30px; text-align: center;">
+                        <div style="width: 40%;">
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
+                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Firma del Encargado</p>
+                        </div>
+                        <div style="width: 40%;">
+                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
+                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Sello y Dirección Institucional</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedorPrev.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function descargarVistaPreviaPDF() {
+            const elemento = document.getElementById('preview-matricula-impresion');
+            const nombreEst = document.getElementById('mat-nombre').value || 'Estudiante';
+            const opciones = {
+                margin:       [10, 10, 10, 10],
+                filename:     `Matricula_${nombreEst.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(elemento).set(opciones).save();
         }
 
         async function descargarMatriculaExcel() {
