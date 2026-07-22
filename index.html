@@ -178,25 +178,40 @@
 
                 <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
                     <fieldset>
-                        <legend>Datos Personales del Estudiante</legend>
-                        <div class="form-grid">
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label>Nombre Completo</label>
-                                <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
+                        <legend>Datos Personales y Fotografía del Estudiante</legend>
+                        <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 280px;">
+                                <div class="form-grid">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Nombre Completo</label>
+                                        <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Número de Cédula (Llave única)</label>
+                                        <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Fecha de Nacimiento</label>
+                                        <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-top: 5px;">
+                                    <label>Edad Exacta Calculada</label>
+                                    <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Número de Cédula (Llave única)</label>
-                                <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
-                            </div>
-                            <div class="form-group">
-                                <label>Fecha de Nacimiento</label>
-                                <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+
+                            <div style="width: 180px; text-align: center; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                                <label style="display: block; margin-bottom: 8px;">Fotografía</label>
+                                <div id="preview-foto-container" style="width: 100px; height: 120px; border: 2px dashed var(--border); border-radius: 6px; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
+                                    <img id="img-preview-foto" src="" alt="Sin foto" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                    <span id="txt-sin-foto" style="font-size: 11px; color: #94a3b8;">Sin foto</span>
+                                </div>
+                                <input type="file" id="mat-foto-file" accept="image/*" onchange="procesarArchivoFoto(event)" style="font-size: 11px; width: 100%;">
+                                <input type="hidden" id="mat-foto-url">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Edad Exacta Calculada</label>
-                            <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
-                        </div>
+
                         <div class="form-grid" style="margin-top: 15px;">
                             <div class="form-group">
                                 <label>Nivel Educativo (Ciclos)</label>
@@ -431,6 +446,11 @@
                                 <option value="">Cargando docentes...</option>
                             </select>
                         </div>
+                        <!-- Selector directo para subir/seleccionar el banner del encabezado -->
+                        <div class="form-group">
+                            <label>Imagen del Encabezado del Informe</label>
+                            <input type="file" id="input-archivo-encabezado" accept="image/*" onchange="actualizarImagenEncabezado(event)" style="font-size: 13px; padding: 6px;">
+                        </div>
                     </div>
                 </fieldset>
                 <div id="contenedor-vista-informe" style="overflow-x: auto;">
@@ -528,6 +548,22 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        let urlBannerEncabezadoDinamico = '';
+
+        function actualizarImagenEncabezado(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                urlBannerEncabezadoDinamico = e.target.result;
+                const imgBannerPreview = document.getElementById('img-banner-informe-preview');
+                if (imgBannerPreview) {
+                    imgBannerPreview.src = urlBannerEncabezadoDinamico;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
             if (!selectAnio) return;
@@ -594,6 +630,22 @@
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
             if (session) iniciarSesionUI(session.user.email);
         });
+
+        function procesarArchivoFoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                document.getElementById('mat-foto-url').value = base64Data;
+                const imgPrev = document.getElementById('img-preview-foto');
+                const txtPrev = document.getElementById('txt-sin-foto');
+                imgPrev.src = base64Data;
+                imgPrev.style.display = 'block';
+                txtPrev.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
 
         async function cargarDocentesEnMatricula() {
             const selAcad = document.getElementById('mat-docente-acad');
@@ -705,6 +757,19 @@
             document.getElementById('enc2-correo').value = data.encargado2_correo || '';
             document.getElementById('enc2-cel').value = data.encargado2_cel || '';
 
+            const fotoUrl = data.foto_url || '';
+            document.getElementById('mat-foto-url').value = fotoUrl;
+            const imgPrev = document.getElementById('img-preview-foto');
+            const txtPrev = document.getElementById('txt-sin-foto');
+            if (fotoUrl) {
+                imgPrev.src = fotoUrl;
+                imgPrev.style.display = 'block';
+                txtPrev.style.display = 'none';
+            } else {
+                imgPrev.style.display = 'none';
+                txtPrev.style.display = 'block';
+            }
+
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
 
@@ -715,6 +780,9 @@
             document.getElementById('form-matricula').reset();
             document.getElementById('select-estudiante-editar').value = '';
             document.getElementById('mat-cedula').readOnly = false;
+            document.getElementById('mat-foto-url').value = '';
+            document.getElementById('img-preview-foto').style.display = 'none';
+            document.getElementById('txt-sin-foto').style.display = 'block';
             const btnSubmit = document.getElementById('btn-submit-matricula');
             btnSubmit.innerText = 'Guardar Matrícula Completa';
             btnSubmit.className = 'action-btn';
@@ -744,7 +812,8 @@
                 encargado1_cel: document.getElementById('enc1-cel').value,
                 encargado2_nombre: document.getElementById('enc2-nombre').value,
                 encargado2_correo: document.getElementById('enc2-correo').value,
-                encargado2_cel: document.getElementById('enc2-cel').value
+                encargado2_cel: document.getElementById('enc2-cel').value,
+                foto_url: document.getElementById('mat-foto-url').value
             };
 
             const { error } = await supabaseClient.from('estudiantes').upsert([datos], { onConflict: 'cedula' });
@@ -778,6 +847,7 @@
             const enc2Nom = document.getElementById('enc2-nombre').value;
             const enc2Correo = document.getElementById('enc2-correo').value;
             const enc2Cel = document.getElementById('enc2-cel').value;
+            const fotoUrl = document.getElementById('mat-foto-url').value;
 
             if (!nombre || !cedula || !nivel || !fnac) {
                 alert('Por favor complete al menos los datos personales obligatorios para generar la vista previa.');
@@ -801,6 +871,9 @@
                         <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center;">
                             <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
                             <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil • Año Lectivo: <b>${anioLectivo}</b></p>
+                        </div>
+                        <div style="width: 70px; height: 85px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center;">
+                            ${fotoUrl ? `<img src="${fotoUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : `<span style="font-size: 9px; color: #94a3b8; text-align: center;">Sin Foto</span>`}
                         </div>
                     </div>
 
@@ -1544,8 +1617,8 @@
                 <div class="report-preview" id="plantilla-informe-oficial">
                     <!-- Página 1: Con banner de encabezado arriba del todo -->
                     <div class="seccion-pagina-1">
-                        <div style="width: 100%; margin-bottom: 20px;">
-                            <img src="encabezado%20del%20informe.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 120px; object-fit: contain;">
+                        <div style="width: 100%; margin-bottom: 20px; text-align: center;">
+                            <img id="img-banner-informe-preview" src="${urlBannerEncabezadoDinamico}" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 120px; object-fit: contain;">
                         </div>
 
                         <div style="text-align: center; margin-bottom: 20px;">
@@ -1779,7 +1852,7 @@
             for (const est of estudiantes) {
                 const notasEst = notas.filter(n => n.cedula_estudiante === est.cedula);
                 const materias = [...new Set(notasEst.map(n => n.materia))];
-                if (materias.length === 0) continue;
+                if (materias.length === 1) continue;
 
                 let pasaTodas = true;
                 for (const mat of materias) {
