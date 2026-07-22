@@ -446,11 +446,6 @@
                                 <option value="">Cargando docentes...</option>
                             </select>
                         </div>
-                        <!-- Selector directo para subir/seleccionar el banner del encabezado -->
-                        <div class="form-group">
-                            <label>Imagen del Encabezado del Informe</label>
-                            <input type="file" id="input-archivo-encabezado" accept="image/*" onchange="actualizarImagenEncabezado(event)" style="font-size: 13px; padding: 6px;">
-                        </div>
                     </div>
                 </fieldset>
                 <div id="contenedor-vista-informe" style="overflow-x: auto;">
@@ -547,22 +542,6 @@
         const SUPABASE_URL = 'https://sfiutfanfkerrpyejgga.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let urlBannerEncabezadoDinamico = '';
-
-        function actualizarImagenEncabezado(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                urlBannerEncabezadoDinamico = e.target.result;
-                const imgBannerPreview = document.getElementById('img-banner-informe-preview');
-                if (imgBannerPreview) {
-                    imgBannerPreview.src = urlBannerEncabezadoDinamico;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -1615,10 +1594,10 @@
                 </div>
 
                 <div class="report-preview" id="plantilla-informe-oficial">
-                    <!-- Página 1: Con banner de encabezado arriba del todo -->
+                    <!-- Página 1: Con banner de encabezado automático -->
                     <div class="seccion-pagina-1">
                         <div style="width: 100%; margin-bottom: 20px; text-align: center;">
-                            <img id="img-banner-informe-preview" src="${urlBannerEncabezadoDinamico}" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 120px; object-fit: contain;">
+                            <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 120px; object-fit: contain; margin: 0 auto;">
                         </div>
 
                         <div style="text-align: center; margin-bottom: 20px;">
@@ -1852,7 +1831,7 @@
             for (const est of estudiantes) {
                 const notasEst = notas.filter(n => n.cedula_estudiante === est.cedula);
                 const materias = [...new Set(notasEst.map(n => n.materia))];
-                if (materias.length === 1) continue;
+                if (materias.length === 0) continue;
 
                 let pasaTodas = true;
                 for (const mat of materias) {
