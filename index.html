@@ -48,6 +48,9 @@
         button.action-btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
         button.action-btn:hover { background-color: var(--accent-hover); }
 
+        button.warning-btn { background-color: #d97706; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
+        button.warning-btn:hover { background-color: #b45309; }
+
         table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; overflow-x: auto; display: block; }
         table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
         table.data-table th { background-color: var(--primary); color: white; }
@@ -111,10 +114,27 @@
         </nav>
 
         <main>
-            <!-- 1. MATRÍCULA -->
+            <!-- 1. MATRÍCULA Y CORRECCIONES -->
             <section id="matricula" class="tab-content active">
-                <h2>Gestión de Matrícula Estudiantil</h2>
-                <form id="form-matricula" onsubmit="guardarMatricula(event)">
+                <h2>Gestión y Corrección de Matrícula Estudiantil</h2>
+                
+                <!-- Buscador de Corrección -->
+                <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                    <legend style="color: var(--accent);">Modo Corrección / Edición</legend>
+                    <div class="form-grid" style="align-items: flex-end;">
+                        <div class="form-group">
+                            <label>Buscar estudiante matriculado por Cédula para corregir datos</label>
+                            <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
+                                <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo Registro</button>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
                     <fieldset>
                         <legend>Datos Personales del Estudiante</legend>
                         <div class="form-grid">
@@ -123,7 +143,7 @@
                                 <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
                             </div>
                             <div class="form-group">
-                                <label>Número de Cédula</label>
+                                <label>Número de Cédula (Llave única)</label>
                                 <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
                             </div>
                             <div class="form-group">
@@ -156,18 +176,18 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Asignación de Docentes y Talleres</legend>
+                        <legend>Asignación de Docentes, Talleres y Cursos Artísticos</legend>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Profesor Académico (Nivel)</label>
                                 <select id="mat-docente-acad" required>
-                                    <option value="">Cargando docentes...</option>
+                                    <option value="">Cargando docentes académicos...</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Profesor Artístico Grupal (Solfeo/Danza)</label>
+                                <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
                                 <select id="mat-docente-art-grupal">
-                                    <option value="">Cargando docentes...</option>
+                                    <option value="">Cargando docentes artísticos...</option>
                                 </select>
                             </div>
                         </div>
@@ -188,7 +208,7 @@
                             <div class="form-group">
                                 <label>Profesor de Instrumento Principal</label>
                                 <select id="mat-docente-asig" required>
-                                    <option value="">Cargando docentes...</option>
+                                    <option value="">Cargando instructores...</option>
                                 </select>
                             </div>
                         </div>
@@ -197,18 +217,9 @@
                     <fieldset>
                         <legend>Ubicación / Dirección</legend>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Provincia</label>
-                                <input type="text" id="dir-provincia" required placeholder="Ej. Heredia">
-                            </div>
-                            <div class="form-group">
-                                <label>Cantón</label>
-                                <input type="text" id="dir-canton" required placeholder="Ej. Heredia">
-                            </div>
-                            <div class="form-group">
-                                <label>Distrito</label>
-                                <input type="text" id="dir-distrito" required placeholder="Ej. Ulloa">
-                            </div>
+                            <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
+                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Heredia"></div>
+                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. Ulloa"></div>
                         </div>
                         <div class="form-group">
                             <label>Otras señas / Dirección exacta</label>
@@ -219,40 +230,22 @@
                     <fieldset>
                         <legend>Primer Encargado</legend>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Nombre Completo</label>
-                                <input type="text" id="enc1-nombre" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Correo Electrónico</label>
-                                <input type="email" id="enc1-correo" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Contacto Celular</label>
-                                <input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888">
-                            </div>
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre" required></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo" required></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888"></div>
                         </div>
                     </fieldset>
 
                     <fieldset>
                         <legend>Segundo Encargado</legend>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Nombre Completo</label>
-                                <input type="text" id="enc2-nombre">
-                            </div>
-                            <div class="form-group">
-                                <label>Correo Electrónico</label>
-                                <input type="email" id="enc2-correo">
-                            </div>
-                            <div class="form-group">
-                                <label>Contacto Celular</label>
-                                <input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888">
-                            </div>
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888"></div>
                         </div>
                     </fieldset>
 
-                    <button type="submit" class="action-btn">Guardar Matrícula Completa</button>
+                    <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
                     <div id="mat-msg" class="notification"></div>
                 </form>
             </section>
@@ -460,7 +453,7 @@
                         <div class="form-group"><label>Nombre Completo</label><input type="text" id="art-nombre" required></div>
                         <div class="form-group"><label>Correo Electrónico</label><input type="email" id="art-correo" required></div>
                         <div class="form-group"><label>Teléfono / Celular</label><input type="tel" id="art-tel" required></div>
-                        <div class="form-group"><label>Disciplina Artística</label><input type="text" id="art-esp" required placeholder="Ej. Piano, Danza, Guitarra"></div>
+                        <div class="form-group"><label>Disciplina Artística</label><input type="text" id="art-esp" required placeholder="Ej. Solfeo, Danza, Percusión, Plásticas"></div>
                     </div>
                     <button type="submit" class="action-btn">Registrar Docente Artístico</button>
                     <div id="art-msg" class="notification"></div>
@@ -479,7 +472,10 @@
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(idSeccion).classList.add('active');
             if (evt) evt.currentTarget.classList.add('active');
-            if (idSeccion === 'matricula') cargarDocentesEnMatricula();
+            if (idSeccion === 'matricula') {
+                cargarDocentesEnMatricula();
+                cargarSelectorEstudiantesEdicion();
+            }
             if (idSeccion === 'hogar') cargarDocentesEnInforme();
             if (idSeccion === 'configuracion') cargarConfiguracion();
         }
@@ -510,6 +506,7 @@
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
             cargarDocentesEnMatricula();
+            cargarSelectorEstudiantesEdicion();
             cargarDocentesEnInforme();
             cargarConfiguracion();
         }
@@ -525,7 +522,7 @@
             if (!selAcad) return;
 
             selAcad.innerHTML = '<option value="">Cargando académicos...</option>';
-            selArtGrupal.innerHTML = '<option value="">Cargando artísticos...</option>';
+            selArtGrupal.innerHTML = '<option value="">Cargando artísticos grupales...</option>';
             selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
 
             const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad, tipo_docente');
@@ -546,6 +543,120 @@
                     selAsig.appendChild(opt);
                 }
             });
+        }
+
+        async function cargarSelectorEstudiantesEdicion() {
+            const selectEdit = document.getElementById('select-estudiante-editar');
+            if (!selectEdit) return;
+            selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
+            if (error || !data) return;
+
+            data.forEach(est => {
+                const opt = document.createElement('option');
+                opt.value = est.cedula;
+                opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})`;
+                selectEdit.appendChild(opt);
+            });
+        }
+
+        async function cargarDatosEstudianteEdicion() {
+            const cedula = document.getElementById('select-estudiante-editar').value;
+            const btnSubmit = document.getElementById('btn-submit-matricula');
+            const inputCedula = document.getElementById('mat-cedula');
+
+            if (!cedula) {
+                limpiarFormularioMatricula();
+                return;
+            }
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
+            if (error || !data) {
+                alert('No se pudo cargar la información del estudiante.');
+                return;
+            }
+
+            document.getElementById('mat-nombre').value = data.nombre || '';
+            inputCedula.value = data.cedula || '';
+            inputCedula.readOnly = true; // No permitir cambiar la cédula primaria para mantener integridad
+            document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
+            calcularEdadExacta();
+            document.getElementById('mat-nivel').value = data.nivel || '';
+            document.getElementById('mat-docente-acad').value = data.docente_academico || '';
+            document.getElementById('mat-docente-art-grupal').value = data.docente_artistico_grupal || 'Ninguno';
+            document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
+            document.getElementById('mat-docente-asig').value = data.docente_asignado || '';
+            document.getElementById('dir-provincia').value = data.provincia || '';
+            document.getElementById('dir-canton').value = data.canton || '';
+            document.getElementById('dir-distrito').value = data.distrito || '';
+            document.getElementById('dir-detalles').value = data.direccion_detalles || '';
+            document.getElementById('enc1-nombre').value = data.encargado1_nombre || '';
+            document.getElementById('enc1-correo').value = data.encargado1_correo || '';
+            document.getElementById('enc1-cel').value = data.encargado1_cel || '';
+            document.getElementById('enc2-nombre').value = data.encargado2_nombre || '';
+            document.getElementById('enc2-correo').value = data.encargado2_correo || '';
+            document.getElementById('enc2-cel').value = data.encargado2_cel || '';
+
+            btnSubmit.innerText = 'Actualizar Datos de Matrícula';
+            btnSubmit.className = 'action-btn warning-btn';
+        }
+
+        function limpiarFormularioMatricula() {
+            document.getElementById('form-matricula').reset();
+            document.getElementById('select-estudiante-editar').value = '';
+            document.getElementById('mat-cedula').readOnly = false;
+            const btnSubmit = document.getElementById('btn-submit-matricula');
+            btnSubmit.innerText = 'Guardar Matrícula Completa';
+            btnSubmit.className = 'action-btn';
+            document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
+        }
+
+        async function guardarOActualizarMatricula(e) {
+            e.preventDefault();
+            const cedulaVal = document.getElementById('mat-cedula').value;
+            const selectEdit = document.getElementById('select-estudiante-editar').value;
+
+            const datos = {
+                nombre: document.getElementById('mat-nombre').value,
+                cedula: cedulaVal,
+                fecha_nacimiento: document.getElementById('mat-fnac').value,
+                nivel: document.getElementById('mat-nivel').value,
+                docente_academico: document.getElementById('mat-docente-acad').value,
+                docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value,
+                instrumento_principal: document.getElementById('mat-instr-principal').value,
+                docente_asignado: document.getElementById('mat-docente-asig').value,
+                provincia: document.getElementById('dir-provincia').value,
+                canton: document.getElementById('dir-canton').value,
+                distrito: document.getElementById('dir-distrito').value,
+                direccion_detalles: document.getElementById('dir-detalles').value,
+                encargado1_nombre: document.getElementById('enc1-nombre').value,
+                encargado1_correo: document.getElementById('enc1-correo').value,
+                encargado1_cel: document.getElementById('enc1-cel').value,
+                encargado2_nombre: document.getElementById('enc2-nombre').value,
+                encargado2_correo: document.getElementById('enc2-correo').value,
+                encargado2_cel: document.getElementById('enc2-cel').value
+            };
+
+            let errorSupabase = null;
+
+            if (selectEdit) {
+                // Modo Actualización / Corrección
+                const { error } = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedulaVal);
+                errorSupabase = error;
+            } else {
+                // Modo Inserción Normal
+                const { error } = await supabaseClient.from('estudiantes').insert([datos]);
+                errorSupabase = error;
+            }
+
+            if (errorSupabase) {
+                mostrarMensaje('mat-msg', 'Error al guardar/actualizar: ' + errorSupabase.message, false);
+            } else {
+                mostrarMensaje('mat-msg', selectEdit ? '¡Matrícula actualizada con éxito!' : '¡Matrícula guardada con éxito!', true);
+                cargarSelectorEstudiantesEdicion();
+                if (!selectEdit) limpiarFormularioMatricula();
+            }
         }
 
         async function cargarDocentesEnInforme() {
@@ -1165,36 +1276,6 @@
                 }
             }
             msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
-        }
-
-        async function guardarMatricula(e) {
-            e.preventDefault();
-            const datos = {
-                nombre: document.getElementById('mat-nombre').value,
-                cedula: document.getElementById('mat-cedula').value,
-                fecha_nacimiento: document.getElementById('mat-fnac').value,
-                nivel: document.getElementById('mat-nivel').value,
-                docente_academico: document.getElementById('mat-docente-acad').value,
-                docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value,
-                instrumento_principal: document.getElementById('mat-instr-principal').value,
-                docente_asignado: document.getElementById('mat-docente-asig').value,
-                provincia: document.getElementById('dir-provincia').value,
-                canton: document.getElementById('dir-canton').value,
-                distrito: document.getElementById('dir-distrito').value,
-                direccion_detalles: document.getElementById('dir-detalles').value,
-                encargado1_nombre: document.getElementById('enc1-nombre').value,
-                encargado1_correo: document.getElementById('enc1-correo').value,
-                encargado1_cel: document.getElementById('enc1-cel').value,
-                encargado2_nombre: document.getElementById('enc2-nombre').value,
-                encargado2_correo: document.getElementById('enc2-correo').value,
-                encargado2_cel: document.getElementById('enc2-cel').value
-            };
-            const { error } = await supabaseClient.from('estudiantes').insert([datos]);
-            if (error) mostrarMensaje('mat-msg', 'Error: ' + error.message, false);
-            else {
-                mostrarMensaje('mat-msg', '¡Matrícula guardada con éxito!', true);
-                document.getElementById('form-matricula').reset();
-            }
         }
 
         async function guardarDocente(e, tipo) {
