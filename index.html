@@ -36,6 +36,11 @@
         .tab-btn:hover { color: white; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); background-color: rgba(255,255,255,0.03); }
 
+        .sub-panel-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .sub-tab-btn { background: #e2e8f0; border: none; color: var(--primary); padding: 8px 16px; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .sub-tab-btn:hover { background: #cbd5e1; }
+        .sub-tab-btn.active { background: var(--accent); color: white; }
+
         main { flex: 1; padding: 30px; overflow-y: auto; max-width: 1500px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .tab-content { display: none; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .tab-content.active { display: block; }
@@ -128,78 +133,37 @@
         </nav>
 
         <main>
-            <!-- 1. MATRÍCULA Y CORRECCIONES -->
+            <!-- 1. MATRÍCULA Y GESTIÓN DE ESTUDIANTES -->
             <section id="matricula" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">Gestión, Corrección y Traslados de Matrícula</h2>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                        <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula (Excel/CSV)</button>
-                    </div>
+                    <h2 style="margin: 0;">Gestión de Matrícula y Control de Estudiantes</h2>
                 </div>
-                
-                <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda para Vista Previa o Traslado</legend>
-                    <div class="form-grid" style="align-items: flex-end;">
-                        <div class="form-group">
-                            <label>Año Lectivo</label>
-                            <select id="filtro-anio-lectivo">
-                                <!-- Se llena dinámicamente con JS desde 2026 en adelante -->
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Filtrar por Ciclo / Nivel General</label>
-                            <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
-                                <option value="">-- Todos los niveles vigentes --</option>
-                                <optgroup label="Primer Ciclo">
-                                    <option value="Primero">Primero</option>
-                                    <option value="Segundo">Segundo</option>
-                                    <option value="Tercero">Tercero</option>
-                                </optgroup>
-                                <optgroup label="Segundo Ciclo">
-                                    <option value="Cuarto">Cuarto</option>
-                                    <option value="Quinto">Quinto</option>
-                                    <option value="Sexto">Sexto</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Seleccionar Estudiante Vigente</label>
-                            <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
-                                <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
-                        </div>
-                    </div>
-                </fieldset>
 
-                <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
-                    <fieldset>
-                        <legend>Datos Personales del Estudiante</legend>
-                        <div class="form-grid">
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label>Nombre Completo</label>
-                                <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
+                <!-- Pestañas internas para separar Estudiantes Vigentes y Estudiantes de Traslado -->
+                <div class="sub-panel-tabs">
+                    <button class="sub-tab-btn active" onclick="cambiarSubPestanaMatricula('vigentes', event)">Estudiantes Regulares Vigentes</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaMatricula('traslados', event)">Estudiantes de Traslado (Ocultos)</button>
+                </div>
+
+                <!-- Vista 1: Estudiantes Regulares Vigentes (Formulario y Gestión) -->
+                <div id="sub-panel-vigentes" class="sub-matricula-content">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                        <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula Vigente (Excel/CSV)</button>
+                    </div>
+
+                    <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                        <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda Vigente</legend>
+                        <div class="form-grid" style="align-items: flex-end;">
+                            <div class="form-group">
+                                <label>Año Lectivo</label>
+                                <select id="filtro-anio-lectivo">
+                                    <!-- Se llena dinámicamente con JS desde 2026 en adelante -->
+                                </select>
                             </div>
                             <div class="form-group">
-                                <label>Número de Cédula (Llave única)</label>
-                                <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
-                            </div>
-                            <div class="form-group">
-                                <label>Fecha de Nacimiento</label>
-                                <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Edad Exacta Calculada</label>
-                            <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
-                        </div>
-                        <div class="form-grid" style="margin-top: 15px;">
-                            <div class="form-group">
-                                <label>Nivel Educativo (Ciclos)</label>
-                                <select id="mat-nivel" required>
-                                    <option value="">Seleccione el nivel</option>
+                                <label>Filtrar por Ciclo / Nivel General</label>
+                                <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
+                                    <option value="">-- Todos los niveles vigentes --</option>
                                     <optgroup label="Primer Ciclo">
                                         <option value="Primero">Primero</option>
                                         <option value="Segundo">Segundo</option>
@@ -212,92 +176,153 @@
                                     </optgroup>
                                 </select>
                             </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Asignación de Docentes, Talleres y Cursos Artísticos</legend>
-                        <div class="form-grid">
                             <div class="form-group">
-                                <label>Profesor Académico (Nivel)</label>
-                                <select id="mat-docente-acad" required>
-                                    <option value="">Cargando docentes académicos...</option>
+                                <label>Seleccionar Estudiante Vigente</label>
+                                <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
+                                    <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
-                                <select id="mat-docente-art-grupal">
-                                    <option value="">Cargando docentes artísticos...</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Instrumento Individual Principal</label>
-                                <select id="mat-instr-principal" required>
-                                    <option value="">Seleccione instrumento</option>
-                                    <option value="Canto">Canto</option>
-                                    <option value="Piano">Piano</option>
-                                    <option value="Guitarra">Guitarra</option>
-                                    <option value="Ukulele">Ukulele</option>
-                                    <option value="Batería">Batería</option>
-                                    <option value="Bajo">Bajo</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Profesor de Instrumento Principal</label>
-                                <select id="mat-docente-asig" required>
-                                    <option value="">Cargando instructores...</option>
-                                </select>
+                                <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
                             </div>
                         </div>
                     </fieldset>
 
-                    <fieldset>
-                        <legend>Ubicación / Dirección</legend>
-                        <div class="form-grid">
-                            <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
-                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Barva"></div>
-                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. El Carbonal"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Otras señas / Dirección exacta</label>
-                            <textarea id="dir-detalles" rows="2" placeholder="Calle El Pedregal 40205"></textarea>
-                        </div>
-                    </fieldset>
+                    <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
+                        <fieldset>
+                            <legend>Datos Personales del Estudiante</legend>
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Nombre Completo</label>
+                                    <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
+                                </div>
+                                <div class="form-group">
+                                    <label>Número de Cédula (Llave única)</label>
+                                    <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha de Nacimiento</label>
+                                    <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Edad Exacta Calculada</label>
+                                <div id="edad-resultado" class="age-badge">Seleccione una fecha de nacimiento</div>
+                            </div>
+                            <div class="form-grid" style="margin-top: 15px;">
+                                <div class="form-group">
+                                    <label>Nivel Educativo (Ciclos)</label>
+                                    <select id="mat-nivel" required>
+                                        <option value="">Seleccione el nivel</option>
+                                        <optgroup label="Primer Ciclo">
+                                            <option value="Primero">Primero</option>
+                                            <option value="Segundo">Segundo</option>
+                                            <option value="Tercero">Tercero</option>
+                                        </optgroup>
+                                        <optgroup label="Segundo Ciclo">
+                                            <option value="Cuarto">Cuarto</option>
+                                            <option value="Quinto">Quinto</option>
+                                            <option value="Sexto">Sexto</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
 
-                    <fieldset>
-                        <legend>Primer Encargado</legend>
-                        <div class="form-grid">
-                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre" required></div>
-                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo" required></div>
-                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888"></div>
-                        </div>
-                    </fieldset>
+                        <fieldset>
+                            <legend>Asignación de Docentes, Talleres y Cursos Artísticos</legend>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Profesor Académico (Nivel)</label>
+                                    <select id="mat-docente-acad" required>
+                                        <option value="">Cargando docentes académicos...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
+                                    <select id="mat-docente-art-grupal">
+                                        <option value="">Cargando docentes artísticos...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Instrumento Individual Principal</label>
+                                    <select id="mat-instr-principal" required>
+                                        <option value="">Seleccione instrumento</option>
+                                        <option value="Canto">Canto</option>
+                                        <option value="Piano">Piano</option>
+                                        <option value="Guitarra">Guitarra</option>
+                                        <option value="Ukulele">Ukulele</option>
+                                        <option value="Batería">Batería</option>
+                                        <option value="Bajo">Bajo</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Profesor de Instrumento Principal</label>
+                                    <select id="mat-docente-asig" required>
+                                        <option value="">Cargando instructores...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
 
-                    <fieldset>
-                        <legend>Segundo Encargado</legend>
-                        <div class="form-grid">
-                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
-                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
-                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888"></div>
-                        </div>
-                    </fieldset>
+                        <fieldset>
+                            <legend>Ubicación / Dirección</legend>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
+                                <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Barva"></div>
+                                <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. El Carbonal"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Otras señas / Dirección exacta</label>
+                                <textarea id="dir-detalles" rows="2" placeholder="Calle El Pedregal 40205"></textarea>
+                            </div>
+                        </fieldset>
 
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
-                        <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
-                        <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir o PDF</button>
-                        <button type="button" id="btn-procesar-traslado" class="danger-btn" style="padding: 12px 20px; font-size: 14px; display: none;" onclick="procesarTrasladoEstudiante()">Procesar Traslado / Desmatricular</button>
+                        <fieldset>
+                            <legend>Primer Encargado</legend>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre" required></div>
+                                <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo" required></div>
+                                <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888"></div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>Segundo Encargado</legend>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
+                                <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
+                                <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888"></div>
+                            </div>
+                        </fieldset>
+
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
+                            <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
+                            <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir o PDF</button>
+                            <button type="button" id="btn-procesar-traslado" class="danger-btn" style="padding: 12px 20px; font-size: 14px; display: none;" onclick="procesarTrasladoEstudiante()">Procesar Traslado / Desmatricular</button>
+                        </div>
+                        <div id="mat-msg" class="notification"></div>
+                    </form>
+
+                    <!-- Panel de Vista Previa Interactiva para Revisión, Impresión Física o PDF -->
+                    <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px;"></div>
+                    
+                    <!-- Panel de Constancia de Traslado -->
+                    <div id="contenedor-constancia-traslado" style="display: none; margin-top: 30px;"></div>
+                </div>
+
+                <!-- Vista 2: Estudiantes de Traslado (Ocultos de registros activos pero revisables) -->
+                <div id="sub-panel-traslados" class="sub-matricula-content" style="display: none;">
+                    <h3 style="color: var(--primary);">Historial de Estudiantes de Traslado (Ocultos del Proceso Activo)</h3>
+                    <p style="color: #64748b; font-size: 13px;">Aquí puede revisar los estudiantes que han sido desmatriculados por traslado, consultar su constancia oficial con notas y verificar sus datos históricos.</p>
+                    <div id="contenedor-tabla-traslados" style="overflow-x: auto; margin-top: 20px;">
+                        <p>Cargando lista de traslados...</p>
                     </div>
-                    <div id="mat-msg" class="notification"></div>
-                </form>
-
-                <!-- Panel de Vista Previa Interactiva para Revisión, Impresión Física o PDF -->
-                <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px;"></div>
-                
-                <!-- Panel de Constancia de Traslado -->
-                <div id="contenedor-constancia-traslado" style="display: none; margin-top: 30px;"></div>
+                    <div id="contenedor-constancia-historial" style="margin-top: 30px;"></div>
+                </div>
             </section>
 
             <!-- 2. LISTAS Y PROMOCIÓN -->
@@ -562,6 +587,20 @@
             if (idSeccion === 'docentes') cargarTablaDocentesGeneral();
         }
 
+        function cambiarSubPestanaMatricula(subId, evt) {
+            document.querySelectorAll('.sub-matricula-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#matricula .sub-tab-btn').forEach(el => el.classList.remove('active'));
+            
+            if (subId === 'vigentes') {
+                document.getElementById('sub-panel-vigentes').style.display = 'block';
+                cargarSelectorEstudiantesEdicion();
+            } else if (subId === 'traslados') {
+                document.getElementById('sub-panel-traslados').style.display = 'block';
+                cargarTablaEstudiantesTrasladados();
+            }
+            if (evt) evt.currentTarget.classList.add('active');
+        }
+
         async function realizarLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -634,7 +673,7 @@
             if (!selectEdit) return;
             selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
 
-            // Cargar estudiantes vigentes (excluyendo únicamente los trasladados)
+            // Cargar estudiantes regulares vigentes (excluyendo trasladados)
             const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel, estado').or('estado.is.null,estado.neq.trasladado').order('nombre');
             if (error || !data) return;
 
@@ -715,7 +754,6 @@
             btnSubmit.className = 'action-btn warning-btn';
             btnTraslado.style.display = 'inline-block';
 
-            // Generar vista previa automática al seleccionar un estudiante
             generarVistaPreviaMatricula();
         }
 
@@ -789,11 +827,60 @@
                 return;
             }
 
-            alert(`¡Traslado procesado con éxito para ${nombreEst}! El estudiante ha sido ocultado de los registros activos.`);
+            alert(`¡Traslado procesado con éxito para ${nombreEst}! El estudiante ha sido movido a la pestaña de traslados.`);
             
             await generarConstanciaTrasladoOficial(cedulaVal);
             cargarSelectorEstudiantesEdicion();
             document.getElementById('btn-procesar-traslado').style.display = 'none';
+        }
+
+        async function cargarTablaEstudiantesTrasladados() {
+            const contenedor = document.getElementById('contenedor-tabla-traslados');
+            contenedor.innerHTML = '<p>Cargando estudiantes de traslado...</p>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('estado', 'trasladado').order('nombre');
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar traslados: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b;">No hay estudiantes registrados con estado de traslado.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th>
+                            <th>Nombre Completo</th>
+                            <th>Nivel</th>
+                            <th>Docente Académico</th>
+                            <th>Encargado / Contacto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(est => {
+                html += `
+                    <tr>
+                        <td><b>${est.cedula}</b></td>
+                        <td style="text-align: left;">${est.nombre}</td>
+                        <td>${est.nivel}</td>
+                        <td>${est.docente_academico || 'N/A'}</td>
+                        <td>${est.encargado1_nombre} (${est.encargado1_cel || 'N/A'})</td>
+                        <td>
+                            <button class="action-btn" style="padding: 5px 10px; font-size: 11px;" onclick="generarConstanciaTrasladoOficial('${est.cedula}')">Ver Constancia y Notas</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
         }
 
         async function generarConstanciaTrasladoOficial(cedula) {
@@ -822,12 +909,17 @@
             }
 
             const fechaActual = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
-            const contenedorConstancia = document.getElementById('contenedor-constancia-traslado');
+            
+            // Decidir dónde mostrar la constancia (en la pestaña activa o en el panel de traslados)
+            let contenedorConstancia = document.getElementById('contenedor-constancia-traslado');
+            if (document.getElementById('sub-panel-traslados').style.display === 'block') {
+                contenedorConstancia = document.getElementById('contenedor-constancia-historial');
+            }
             contenedorConstancia.style.display = 'block';
 
             contenedorConstancia.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
-                    <h3 style="margin: 0; color: #166534;">Constancia Oficial de Traslado Generada</h3>
+                    <h3 style="margin: 0; color: #166534;">Constancia Oficial de Traslado - ${estData.nombre}</h3>
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir Constancia Física</button>
                         <button type="button" class="warning-btn" onclick="descargarConstanciaPDF()">Guardar Constancia PDF</button>
@@ -891,10 +983,9 @@
 
         function descargarConstanciaPDF() {
             const elemento = document.getElementById('plantilla-constancia-traslado');
-            const nombreEst = document.getElementById('mat-nombre').value || 'Estudiante';
             const opciones = {
                 margin:       [10, 10, 10, 10],
-                filename:     `Constancia_Traslado_${nombreEst.replace(/\s+/g, '_')}.pdf`,
+                filename:     `Constancia_Traslado_Estudiante.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -1008,7 +1099,7 @@
         async function descargarMatriculaExcel() {
             const { data, error } = await supabaseClient.from('estudiantes').select('*').or('estado.is.null,estado.neq.trasladado').order('nivel');
             if (error || !data || data.length === 0) {
-                alert('No hay registros de matrícula activos para exportar.');
+                alert('No hay registros de matrícula vigentes para exportar.');
                 return;
             }
 
@@ -1347,7 +1438,6 @@
                 }
             });
 
-            // Cargar estudiantes vigentes (excluyendo trasladados)
             let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).or('estado.is.null,estado.neq.trasladado');
             const { data: estudiantesRaw } = await queryEstudiantes;
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
@@ -1835,7 +1925,6 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            // Cargar estudiantes vigentes (excluyendo trasladados)
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).or('estado.is.null,estado.neq.trasladado');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
@@ -1923,7 +2012,7 @@
 
             for (const est of estudiantes) {
                 const notasEst = notas.filter(n => n.cedula_estudiante === est.cedula);
-                const materias = [...new Set(notasEst.map(n => n.materia))];
+                const materias = [...new Set(notasEst.map(n => n.mative))];
                 if (materias.length === 0) continue;
 
                 let pasaTodas = true;
