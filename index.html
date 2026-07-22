@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión Académica e Institucional - CES Montessori</title>
+    <title>Sistema de Gestión Académica - Centro Educativo Shkénuk</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -94,7 +94,7 @@
         <header>
             <div class="brand-container">
                 <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Escuela" class="school-logo">
-                <h1>CES Montessori - Heredia</h1>
+                <h1>Centro Educativo Shkénuk</h1>
             </div>
             <div>
                 <span id="user-email-display" style="margin-right: 15px; font-size: 14px;"></span>
@@ -217,12 +217,12 @@
                         <legend>Ubicación / Dirección</legend>
                         <div class="form-grid">
                             <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
-                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Heredia"></div>
-                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. Ulloa"></div>
+                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Barva"></div>
+                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. El Carbonal"></div>
                         </div>
                         <div class="form-group">
                             <label>Otras señas / Dirección exacta</label>
-                            <textarea id="dir-detalles" rows="2" placeholder="Detalle de la ubicación"></textarea>
+                            <textarea id="dir-detalles" rows="2" placeholder="Calle El Pedregal 40205"></textarea>
                         </div>
                     </fieldset>
 
@@ -1075,10 +1075,10 @@
             contenedor.innerHTML = `
                 <div class="report-preview" id="plantilla-informe-oficial">
                     <div class="report-header" style="border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo CES Montessori" style="width: 60px; height: 60px; object-fit: contain;">
+                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
                         <div class="school-info" style="text-align: center; flex: 1; margin: 0 15px;">
-                            <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Escuela CES Montessori</h3>
-                            <p style="margin: 3px 0; font-size: 12px; color: #64748b;">Heredia, Costa Rica • Teléfono: 2260-7806</p>
+                            <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal, 40205 • Teléfono: 2260-7806</p>
                             <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
                         </div>
                         <div style="font-size: 11px; text-align: right; color: #475569;">
