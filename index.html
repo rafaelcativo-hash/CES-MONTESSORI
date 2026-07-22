@@ -127,7 +127,10 @@
             <section id="matricula" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                     <h2 style="margin: 0;">Gestión y Corrección de Matrícula Estudiantil</h2>
-                    <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula Completa (Excel/CSV)</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="success-btn" onclick="descargarMatriculaExcel()">Descargar Matrícula (Excel/CSV)</button>
+                        <button class="warning-btn" onclick="descargarMatriculaPDF()">Descargar Matrícula (PDF)</button>
+                    </div>
                 </div>
                 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
@@ -491,6 +494,9 @@
         </main>
     </div>
 
+    <!-- Contenedor oculto para la generación limpia del PDF de Matrícula -->
+    <div id="pdf-matricula-container" style="display: none;"></div>
+
     <script>
         const SUPABASE_URL = 'https://sfiutfanfkerrpyejgga.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
@@ -720,6 +726,65 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        async function descargarMatriculaPDF() {
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
+            if (error || !data || data.length === 0) {
+                alert('No hay registros de matrícula para exportar.');
+                return;
+            }
+
+            let filasHTML = '';
+            data.forEach(est => {
+                filasHTML += `
+                    <tr>
+                        <td><b>${est.cedula || ''}</b></td>
+                        <td style="text-align: left;">${est.nombre || ''}</td>
+                        <td>${est.nivel || ''}</td>
+                        <td>${est.instrumento_principal || 'N/A'}</td>
+                        <td style="text-align: left;">${est.encargado1_nombre || ''} (${est.encargado1_cel || ''})</td>
+                    </tr>
+                `;
+            });
+
+            const contenedorPDF = document.getElementById('pdf-matricula-container');
+            contenedorPDF.innerHTML = `
+                <div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white; width: 210mm; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 15px;">
+                        <div style="flex: 1; text-align: center;">
+                            <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Archivo Oficial de Matrícula Estudiantil</p>
+                        </div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                        <thead>
+                            <tr style="background-color: #1e293b; color: white;">
+                                <th style="border: 1px solid #cbd5e1; padding: 6px;">Cédula</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Nombre del Estudiante</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 6px;">Nivel</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 6px;">Instrumento</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Encargado y Teléfono</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filasHTML}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            const opciones = {
+                margin:       [10, 10, 10, 10],
+                filename:     'Archivo_Matricula_Shkenuk.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(contenedorPDF).set(opciones).save().then(() => {
+                contenedorPDF.innerHTML = '';
+            });
         }
 
         async function cargarDocentesEnInforme() {
