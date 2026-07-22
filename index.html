@@ -64,21 +64,11 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Estilos optimizados y elegantes para papel A4 */
-        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 30px; background: #fff; margin-top: 20px; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
+        /* Estilos optimizados para papel A4 y control estricto de saltos de página */
+        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; }
+        .report-header img { width: 60px; height: 60px; object-fit: contain; }
         
-        .report-header { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            text-align: center; 
-            border-bottom: 2px solid var(--border); 
-            padding-bottom: 18px; 
-            margin-bottom: 20px; 
-            page-break-inside: avoid; 
-            break-inside: avoid; 
-        }
-
         .seccion-pagina-1 { page-break-inside: avoid; break-inside: avoid; }
         .salto-pagina-forzado { page-break-before: always; break-before: page; margin-top: 20px; }
         .reflexion-item { page-break-inside: avoid; break-inside: avoid; margin-bottom: 12px; }
@@ -1270,20 +1260,23 @@
             contenedor.innerHTML = `
                 <div class="report-preview" id="plantilla-informe-oficial">
                     
-                    <!-- PÁGINA 1: Encabezado Centrado con Logo Oficial Ampliado, Datos, Notas y Firmas -->
+                    <!-- PÁGINA 1: Encabezado, Datos, Notas y Firmas de Directora y Docente -->
                     <div class="seccion-pagina-1">
                         <div class="report-header">
-                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 85px; height: 85px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; padding: 4px; border: 1px solid var(--border);">
-                            <h3 style="margin: 0; color: var(--primary); font-size: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Centro Educativo Shkénuk</h3>
-                            <p style="margin: 4px 0; font-size: 12px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
-                            <p style="margin: 4px 0; font-size: 12px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
-                            <p style="margin: 8px 0 0 0; font-size: 14px; color: var(--accent); font-weight: bold; letter-spacing: 0.5px;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
-                            <div style="font-size: 12px; color: #475569; margin-top: 6px;">
-                                <span><b>Remitente Oficial:</b> educativoshkenuk@gmail.com</span>
+                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 60px; height: 60px; object-fit: contain;">
+                            <div class="school-info" style="flex: 1; margin: 0 15px;">
+                                <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
+                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                                <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
+                                <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
+                            </div>
+                            <div style="font-size: 11px; text-align: right; color: #475569;">
+                                <p style="margin: 0;"><b>Remitente Oficial:</b></p>
+                                <p style="margin: 2px 0 0 0;">educativoshkenuk@gmail.com</p>
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 20px; font-size: 13px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
@@ -1297,7 +1290,7 @@
                         </div>
 
                         <div style="margin-bottom: 25px;">
-                            <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
+                            <h4 style="color: var(--primary); margin-bottom: 8px;">Calificaciones y Rendimiento del ${periodoSel}</h4>
                             <table class="data-table">
                                 <thead>
                                     <tr>
@@ -1313,15 +1306,15 @@
                         </div>
 
                         <!-- Bloque de Firmas al pie de la Página 1 -->
-                        <div style="display: flex; justify-content: space-around; margin-top: 40px; text-align: center;">
+                        <div style="display: flex; justify-content: space-around; margin-top: 35px; text-align: center;">
                             <div style="width: 40%;">
-                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 8px; height: 35px;"></div>
-                                <p style="margin: 0; font-size: 13px; font-weight: bold;">Flor María Jiménez</p>
+                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
+                                <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
                                 <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Dirección Institucional</p>
                             </div>
                             <div style="width: 40%;">
-                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 8px; height: 35px;"></div>
-                                <p style="margin: 0; font-size: 13px; font-weight: bold;"><span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
+                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
+                                <p style="margin: 0; font-size: 12px; font-weight: bold;"><span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
                                 <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente Responsable / Nivel</p>
                             </div>
                         </div>
@@ -1329,7 +1322,7 @@
 
                     <!-- PÁGINA 2: Inicia con las Reflexiones Docentes -->
                     <div class="salto-pagina-forzado">
-                        <h4 style="color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; font-size: 15px;">Reflexiones Docentes y Observaciones (${periodoSel})</h4>
+                        <h4 style="color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 5px;">Reflexiones Docentes y Observaciones (${periodoSel})</h4>
                         <div class="reflexiones-container">
                             ${reflexionesDocentesHTML}
                         </div>
