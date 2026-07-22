@@ -435,7 +435,7 @@
                 <h2>Configuración de Periodos e Institución</h2>
                 <form id="form-config" onsubmit="guardarConfiguracion(event)">
                     <fieldset>
-                        <legend>Calendario Lectivo</legend>
+                        <legend>Calendario Lectivo y Periodos</legend>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Inicio Primer Periodo</label>
@@ -456,8 +456,43 @@
                                 <input type="date" id="cfg-vac-fin" required>
                             </div>
                         </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Inicio Segundo Periodo</label>
+                                <input type="date" id="cfg-p2-inicio" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Finalización Segundo Periodo</label>
+                                <input type="date" id="cfg-p2-fin" required>
+                            </div>
+                        </div>
                     </fieldset>
-                    <button type="submit" class="action-btn">Guardar Configuración</button>
+
+                    <fieldset>
+                        <legend>Eventos y Actividades Institucionales</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Fecha del Festival Artístico</label>
+                                <input type="date" id="cfg-festival-fecha">
+                            </div>
+                            <div class="form-group">
+                                <label>Lugar del Festival Artístico</label>
+                                <input type="text" id="cfg-festival-lugar" placeholder="Ej. Auditorio principal">
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Fecha de Graduación</label>
+                                <input type="date" id="cfg-graduacion-fecha">
+                            </div>
+                            <div class="form-group">
+                                <label>Lugar de Graduación</label>
+                                <input type="text" id="cfg-graduacion-lugar" placeholder="Ej. Salón institucional">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="action-btn">Guardar Configuración Institucional</button>
                     <div id="cfg-msg" class="notification"></div>
                 </form>
             </section>
@@ -530,6 +565,7 @@
             if (evt) evt.currentTarget.classList.add('active');
             if (idSeccion === 'matricula') cargarDocentesEnMatricula();
             if (idSeccion === 'hogar') cargarDocentesEnInforme();
+            if (idSeccion === 'configuracion') cargarConfiguracion();
         }
 
         async function realizarLogin() {
@@ -559,6 +595,7 @@
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
             cargarDocentesEnMatricula();
             cargarDocentesEnInforme();
+            cargarConfiguracion();
         }
 
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
@@ -611,6 +648,42 @@
             if (lblDocenteVer && selectDocente.value) {
                 lblDocenteVer.innerText = selectDocente.value;
             }
+        }
+
+        async function cargarConfiguracion() {
+            const { data, error } = await supabaseClient.from('configuracion_periodos').select('*').eq('id', 1).single();
+            if (error || !data) return;
+
+            if (data.p1_inicio) document.getElementById('cfg-p1-inicio').value = data.p1_inicio;
+            if (data.p1_fin) document.getElementById('cfg-p1-fin').value = data.p1_fin;
+            if (data.vac_inicio) document.getElementById('cfg-vac-inicio').value = data.vac_inicio;
+            if (data.vac_fin) document.getElementById('cfg-vac-fin').value = data.vac_fin;
+            if (data.p2_inicio) document.getElementById('cfg-p2-inicio').value = data.p2_inicio;
+            if (data.p2_fin) document.getElementById('cfg-p2-fin').value = data.p2_fin;
+            if (data.festival_fecha) document.getElementById('cfg-festival-fecha').value = data.festival_fecha;
+            if (data.festival_lugar) document.getElementById('cfg-festival-lugar').value = data.festival_lugar;
+            if (data.graduacion_fecha) document.getElementById('cfg-graduacion-fecha').value = data.graduacion_fecha;
+            if (data.graduacion_lugar) document.getElementById('cfg-graduacion-lugar').value = data.graduacion_lugar;
+        }
+
+        async function guardarConfiguracion(e) {
+            e.preventDefault();
+            const datos = {
+                id: 1,
+                p1_inicio: document.getElementById('cfg-p1-inicio').value,
+                p1_fin: document.getElementById('cfg-p1-fin').value,
+                vac_inicio: document.getElementById('cfg-vac-inicio').value,
+                vac_fin: document.getElementById('cfg-vac-fin').value,
+                p2_inicio: document.getElementById('cfg-p2-inicio').value,
+                p2_fin: document.getElementById('cfg-p2-fin').value,
+                festival_fecha: document.getElementById('cfg-festival-fecha').value,
+                festival_lugar: document.getElementById('cfg-festival-lugar').value,
+                graduacion_fecha: document.getElementById('cfg-graduacion-fecha').value,
+                graduacion_lugar: document.getElementById('cfg-graduacion-lugar').value
+            };
+            const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
+            if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
+            else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
         }
 
         function calcularEdadExacta() {
@@ -1206,20 +1279,6 @@
                 mostrarMensaje('mat-msg', '¡Matrícula guardada con éxito!', true);
                 document.getElementById('form-matricula').reset();
             }
-        }
-
-        async function guardarConfiguracion(e) {
-            e.preventDefault();
-            const datos = {
-                id: 1,
-                p1_inicio: document.getElementById('cfg-p1-inicio').value,
-                p1_fin: document.getElementById('cfg-p1-fin').value,
-                vac_inicio: document.getElementById('cfg-vac-inicio').value,
-                vac_fin: document.getElementById('cfg-vac-fin').value
-            };
-            const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
-            if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
-            else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
         }
 
         async function guardarDocente(e, tipo) {
