@@ -56,6 +56,9 @@
         button.success-btn { background-color: #166534; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
         button.success-btn:hover { background-color: #14532d; }
 
+        button.danger-btn { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        button.danger-btn:hover { background-color: #dc2626; }
+
         table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; overflow-x: auto; display: block; }
         table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
         table.data-table th { background-color: var(--primary); color: white; }
@@ -114,8 +117,7 @@
             <button class="tab-btn" onclick="cambiarPestana('calificar', event)">Calificar</button>
             <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración</button>
-            <button class="tab-btn" onclick="cambiarPestana('academicos', event)">Docentes Académicos</button>
-            <button class="tab-btn" onclick="cambiarPestana('artisticos', event)">Docentes Artísticos</button>
+            <button class="tab-btn" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
         </nav>
 
         <main>
@@ -435,34 +437,51 @@
                 </form>
             </section>
 
-            <!-- 7. DOCENTES ACADÉMICOS -->
-            <section id="academicos" class="tab-content">
-                <h2>Directorio de Docentes Académicos</h2>
-                <form id="form-acad" onsubmit="guardarDocente(event, 'academico')">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="acad-nombre" required></div>
-                        <div class="form-group"><label>Correo Electrónico</label><input type="email" id="acad-correo" required></div>
-                        <div class="form-group"><label>Teléfono / Celular</label><input type="tel" id="acad-tel" required></div>
-                        <div class="form-group"><label>Especialidad / Materia</label><input type="text" id="acad-esp" required placeholder="Ej. Español"></div>
-                    </div>
-                    <button type="submit" class="action-btn">Registrar Docente Académico</button>
-                    <div id="acad-msg" class="notification"></div>
-                </form>
-            </section>
+            <!-- 7. DIRECTORIO Y GESTIÓN DE DOCENTES -->
+            <section id="docentes" class="tab-content">
+                <h2>Directorio General y Gestión de Docentes (Académicos y Artísticos)</h2>
+                
+                <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                    <legend id="docente-legend-title" style="color: var(--accent);">Registrar Nuevo Docente</legend>
+                    <form id="form-docente-general" onsubmit="guardarOActualizarDocente(event)">
+                        <input type="hidden" id="doc-id">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Tipo de Docente</label>
+                                <select id="doc-tipo" required>
+                                    <option value="academico">Académico</option>
+                                    <option value="artistico">Artístico</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="doc-nombre" required placeholder="Nombre y Apellidos">
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input type="email" id="doc-correo" required placeholder="correo@institucion.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono / Celular</label>
+                                <input type="tel" id="doc-tel" required placeholder="Ej. 8888-8888">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Especialidad / Materia / Disciplina</label>
+                                <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Solfeo, Inglés">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" id="btn-submit-docente" class="action-btn">Registrar Docente</button>
+                            <button type="button" class="warning-btn" onclick="limpiarFormularioDocente()">Cancelar / Nuevo</button>
+                        </div>
+                        <div id="doc-msg" class="notification"></div>
+                    </form>
+                </fieldset>
 
-            <!-- 8. DOCENTES ARTÍSTICOS -->
-            <section id="artisticos" class="tab-content">
-                <h2>Directorio de Docentes Artísticos</h2>
-                <form id="form-art" onsubmit="guardarDocente(event, 'artistico')">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="art-nombre" required></div>
-                        <div class="form-group"><label>Correo Electrónico</label><input type="email" id="art-correo" required></div>
-                        <div class="form-group"><label>Teléfono / Celular</label><input type="tel" id="art-tel" required></div>
-                        <div class="form-group"><label>Disciplina Artística</label><input type="text" id="art-esp" required placeholder="Ej. Solfeo, Danza, Percusión, Plásticas"></div>
-                    </div>
-                    <button type="submit" class="action-btn">Registrar Docente Artístico</button>
-                    <div id="art-msg" class="notification"></div>
-                </form>
+                <h3 style="color: var(--primary); margin-top: 30px;">Personal Registrado en el Sistema</h3>
+                <div id="contenedor-tabla-docentes" style="overflow-x: auto;">
+                    <p>Cargando lista de docentes...</p>
+                </div>
             </section>
         </main>
     </div>
@@ -483,6 +502,7 @@
             }
             if (idSeccion === 'hogar') cargarDocentesEnInforme();
             if (idSeccion === 'configuracion') cargarConfiguracion();
+            if (idSeccion === 'docentes') cargarTablaDocentesGeneral();
         }
 
         async function realizarLogin() {
@@ -514,6 +534,7 @@
             cargarSelectorEstudiantesEdicion();
             cargarDocentesEnInforme();
             cargarConfiguracion();
+            cargarTablaDocentesGeneral();
         }
 
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
@@ -530,7 +551,7 @@
             selArtGrupal.innerHTML = '<option value="">Cargando artísticos grupales...</option>';
             selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
 
-            const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad, tipo_docente');
+            const { data, error } = await supabaseClient.from('docentes').select('id, nombre, especialidad, tipo_docente');
             if (error || !data) return;
 
             selAcad.innerHTML = '<option value="">Seleccione profesor académico</option>';
@@ -658,7 +679,7 @@
             if (!selectDocente) return;
             selectDocente.innerHTML = '<option value="">Cargando docentes...</option>';
 
-            const { data, error } = await supabaseClient.from('docentes').select('nombre, especialidad, tipo_docente');
+            const { data, error } = await supabaseClient.from('docentes').select('id, nombre, especialidad, tipo_docente');
             if (error || !data) return;
 
             selectDocente.innerHTML = '<option value="">Seleccione el docente responsable</option>';
@@ -712,6 +733,128 @@
             const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
             if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
             else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
+        }
+
+        // --- GESTIÓN DE DOCENTES (CREAR, EDITAR, ACTUALIZAR, ELIMINAR) ---
+        async function cargarTablaDocentesGeneral() {
+            const contenedor = document.getElementById('contenedor-tabla-docentes');
+            if (!contenedor) return;
+            contenedor.innerHTML = '<p>Cargando lista de docentes...</p>';
+
+            const { data, error } = await supabaseClient.from('docentes').select('*').order('nombre');
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar docentes: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b;">No hay docentes registrados en el sistema.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre Completo</th>
+                            <th>Tipo</th>
+                            <th>Especialidad / Materia</th>
+                            <th>Correo Electrónico</th>
+                            <th>Teléfono</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(doc => {
+                html = html + `
+                    <tr>
+                        <td style="text-align: left;"><b>${doc.nombre}</b></td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${doc.tipo_docente === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${doc.tipo_docente.toUpperCase()}</span></td>
+                        <td>${doc.especialidad}</td>
+                        <td>${doc.correo}</td>
+                        <td>${doc.telefono}</td>
+                        <td>
+                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicion('${doc.id}', '${doc.nombre}', '${doc.correo}', '${doc.telefono}', '${doc.especialidad}', '${doc.tipo_docente}')">Editar</button>
+                            <button class="danger-btn" onclick="eliminarDocente('${doc.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
+        }
+
+        function cargarDocenteParaEdicion(id, nombre, correo, telefono, especialidad, tipo) {
+            document.getElementById('doc-id').value = id;
+            document.getElementById('doc-nombre').value = nombre;
+            document.getElementById('doc-correo').value = correo;
+            document.getElementById('doc-tel').value = telefono;
+            document.getElementById('doc-esp').value = especialidad;
+            document.getElementById('doc-tipo').value = tipo;
+
+            document.getElementById('docente-legend-title').innerText = `Editando Docente: ${nombre}`;
+            document.getElementById('btn-submit-docente').innerText = 'Actualizar Datos del Docente';
+            document.getElementById('btn-submit-docente').className = 'action-btn warning-btn';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limpiarFormularioDocente() {
+            document.getElementById('form-docente-general').reset();
+            document.getElementById('doc-id').value = '';
+            document.getElementById('docente-legend-title').innerText = 'Registrar Nuevo Docente';
+            document.getElementById('btn-submit-docente').innerText = 'Registrar Docente';
+            document.getElementById('btn-submit-docente').className = 'action-btn';
+        }
+
+        async function guardarOActualizarDocente(e) {
+            e.preventDefault();
+            const id = document.getElementById('doc-id').value;
+            const datos = {
+                nombre: document.getElementById('doc-nombre').value,
+                correo: document.getElementById('doc-correo').value,
+                telefono: document.getElementById('doc-tel').value,
+                especialidad: document.getElementById('doc-esp').value,
+                tipo_docente: document.getElementById('doc-tipo').value
+            };
+
+            let error = null;
+            if (id) {
+                // Actualizar existente
+                const res = await supabaseClient.from('docentes').update(datos).eq('id', id);
+                error = res.error;
+            } else {
+                // Insertar nuevo
+                const res = await supabaseClient.from('docentes').insert([datos]);
+                error = res.error;
+            }
+
+            if (error) {
+                mostrarMensaje('doc-msg', 'Error: ' + error.message, false);
+            } else {
+                mostrarMensaje('doc-msg', id ? '¡Docente actualizado exitosamente!' : '¡Docente registrado exitosamente!', true);
+                limpiarFormularioDocente();
+                cargarTablaDocentesGeneral();
+                cargarDocentesEnMatricula();
+                cargarDocentesEnInforme();
+            }
+        }
+
+        async function eliminarDocente(id) {
+            if (!confirm('¿Está seguro de que desea eliminar este docente del sistema?')) return;
+
+            const { error } = await supabaseClient.from('docentes').delete().eq('id', id);
+            if (error) {
+                alert('Error al eliminar: ' + error.message);
+            } else {
+                alert('Docente eliminado correctamente.');
+                cargarTablaDocentesGeneral();
+                cargarDocentesEnMatricula();
+                cargarDocentesEnInforme();
+            }
         }
 
         function calcularEdadExacta() {
@@ -1108,7 +1251,6 @@
                 reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones docentes registradas para este ${periodoSel}]</p>`;
             }
 
-            // Búsqueda dinámica del docente de Danza o materia artística asociada en el membrete superior del reporte
             let docenteDanzaEncargado = estData.docente_artistico_grupal || 'No asignado';
             if (docentesLista) {
                 const docDanzaEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes('danza'));
@@ -1360,26 +1502,6 @@
                 }
             }
             msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
-        }
-
-        async function guardarDocente(e, tipo) {
-            e.preventDefault();
-            const prefijo = tipo === 'academico' ? 'acad' : 'art';
-            const datos = {
-                nombre: document.getElementById(`${prefijo}-nombre`).value,
-                correo: document.getElementById(`${prefijo}-correo`).value,
-                telefono: document.getElementById(`${prefijo}-tel`).value,
-                especialidad: document.getElementById(`${prefijo}-esp`).value,
-                tipo_docente: tipo
-            };
-            const { error } = await supabaseClient.from('docentes').insert([datos]);
-            if (error) mostrarMensaje(`${prefijo}-msg`, 'Error: ' + error.message, false);
-            else {
-                mostrarMensaje(`${prefijo}-msg`, '¡Docente registrado exitosamente!', true);
-                document.getElementById(`form-${prefijo === 'acad' ? 'acad' : 'art'}`).reset();
-                cargarDocentesEnMatricula();
-                cargarDocentesEnInforme();
-            }
         }
     </script>
 </body>
