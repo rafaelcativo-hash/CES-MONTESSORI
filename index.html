@@ -771,36 +771,46 @@
 
         async function guardarOActualizarMatricula(e) {
             e.preventDefault();
-            const cedulaVal = document.getElementById('mat-cedula').value;
+            const cedulaVal = document.getElementById('mat-cedula').value.trim();
 
             const datos = {
-                nombre: document.getElementById('mat-nombre').value,
+                nombre: document.getElementById('mat-nombre').value.trim(),
                 cedula: cedulaVal,
                 fecha_nacimiento: document.getElementById('mat-fnac').value,
                 nivel: document.getElementById('mat-nivel').value,
                 docente_academico: document.getElementById('mat-docente-acad').value,
-                docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value,
+                docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value || 'Ninguno',
                 instrumento_principal: document.getElementById('mat-instr-principal').value,
                 docente_asignado: document.getElementById('mat-docente-asig').value,
-                provincia: document.getElementById('dir-provincia').value,
-                canton: document.getElementById('dir-canton').value,
-                distrito: document.getElementById('dir-distrito').value,
-                direccion_detalles: document.getElementById('dir-detalles').value,
-                encargado1_nombre: document.getElementById('enc1-nombre').value,
-                encargado1_correo: document.getElementById('enc1-correo').value,
-                encargado1_cel: document.getElementById('enc1-cel').value,
-                encargado2_nombre: document.getElementById('enc2-nombre').value,
-                encargado2_correo: document.getElementById('enc2-correo').value,
-                encargado2_cel: document.getElementById('enc2-cel').value,
-                foto_url: document.getElementById('mat-foto-url').value
+                provincia: document.getElementById('dir-provincia').value.trim(),
+                canton: document.getElementById('dir-canton').value.trim(),
+                distrito: document.getElementById('dir-distrito').value.trim(),
+                direccion_detalles: document.getElementById('dir-detalles').value.trim(),
+                encargado1_nombre: document.getElementById('enc1-nombre').value.trim(),
+                encargado1_correo: document.getElementById('enc1-correo').value.trim(),
+                encargado1_cel: document.getElementById('enc1-cel').value.trim(),
+                encargado2_nombre: document.getElementById('enc2-nombre').value.trim(),
+                encargado2_correo: document.getElementById('enc2-correo').value.trim(),
+                encargado2_cel: document.getElementById('enc2-cel').value.trim(),
+                foto_url: document.getElementById('mat-foto-url').value.trim()
             };
 
-            const { error } = await supabaseClient.from('estudiantes').upsert([datos], { onConflict: 'cedula' });
+            // Usamos insert o update directamente según si la cédula es nueva o existente para evitar fallos de upsert
+            const { data: existing } = await supabaseClient.from('estudiantes').select('cedula').eq('cedula', cedulaVal).maybeSingle();
+
+            let error = null;
+            if (existing) {
+                const res = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedulaVal);
+                error = res.error;
+            } else {
+                const res = await supabaseClient.from('estudiantes').insert([datos]);
+                error = res.error;
+            }
 
             if (error) {
-                mostrarMensaje('mat-msg', 'Error al guardar/actualizar: ' + error.message, false);
+                mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
             } else {
-                mostrarMensaje('mat-msg', '¡Matrícula guardada / actualizada con éxito!', true);
+                mostrarMensaje('mat-msg', '¡Matrícula guardada y registrada con éxito en el sistema!', true);
                 cargarSelectorEstudiantesEdicion();
                 generarVistaPreviaMatricula();
             }
