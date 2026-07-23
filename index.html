@@ -71,8 +71,8 @@
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
-        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; }
-        .report-header img { width: 75px; height: 75px; object-fit: contain; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; gap: 15px; box-sizing: border-box; }
+        .report-header img { width: 90px; height: 90px; object-fit: contain; flex-shrink: 0; }
 
         .age-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; margin-top: 5px; text-align: left; }
         .notification { margin-top: 15px; padding: 12px; border-radius: 6px; font-weight: 600; display: none; font-size: 14px; }
@@ -85,7 +85,7 @@
         @media print {
             body * { visibility: hidden; }
             #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; }
+            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; box-sizing: border-box; }
             .no-print { display: none !important; }
         }
     </style>
@@ -844,12 +844,12 @@
 
                 <div class="report-preview" id="preview-matricula-impresion">
                     <div class="report-header">
-                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 75px; height: 75px; object-fit: contain;">
-                        <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center;">
+                        <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 90px; height: 90px; object-fit: contain; flex-shrink: 0;">
+                        <div class="school-info" style="flex: 1; margin: 0 15px; text-align: center; min-width: 0;">
                             <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
                             <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil • Año Lectivo: <b>${anioLectivo}</b></p>
                         </div>
-                        <div style="width: 70px; height: 85px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center;">
+                        <div style="width: 70px; height: 85px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                             ${fotoUrl ? `<img src="${fotoUrl}" style="width: 100%; height: 100%; object-fit: contain;">` : `<span style="font-size: 9px; color: #94a3b8; text-align: center;">Sin Foto</span>`}
                         </div>
                     </div>
@@ -1652,7 +1652,7 @@
                     <!-- Página 2: Comentarios con logo más grande y alineación mejorada -->
                     <div class="salto-pagina-forzado" style="margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px;">
                         <div class="report-header" style="display: flex; align-items: center; justify-content: flex-start; gap: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
-                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 75px; height: 75px; object-fit: contain;">
+                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 90px; height: 90px; object-fit: contain; flex-shrink: 0;">
                             <div>
                                 <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
                                 <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Observaciones y Comentarios Docentes (${periodoSel})</p>
