@@ -543,7 +543,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Columnas oficiales permitidas de la tabla estudiantes (sin foto_url)
+        // Columnas oficiales permitidas de la tabla estudiantes (excluyendo foto_url para evitar errores 400)
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel';
 
         function inicializarAniosLectivos() {
