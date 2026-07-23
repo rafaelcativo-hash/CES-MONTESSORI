@@ -543,8 +543,8 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Columnas oficiales permitidas de la tabla estudiantes (excluyendo foto_url para evitar errores 400)
-        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel';
+        // Columnas oficiales permitidas de la tabla estudiantes (incluyendo foto_url)
+        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -739,6 +739,21 @@
             document.getElementById('enc2-correo').value = data.encargado2_correo || '';
             document.getElementById('enc2-cel').value = data.encargado2_cel || '';
 
+            // Cargar foto guardada desde Supabase
+            const fotoUrlVal = data.foto_url || '';
+            document.getElementById('mat-foto-url').value = fotoUrlVal;
+            const imgPrev = document.getElementById('img-preview-foto');
+            const txtPrev = document.getElementById('txt-sin-foto');
+            if (fotoUrlVal) {
+                imgPrev.src = fotoUrlVal;
+                imgPrev.style.display = 'block';
+                txtPrev.style.display = 'none';
+            } else {
+                imgPrev.src = '';
+                imgPrev.style.display = 'none';
+                txtPrev.style.display = 'block';
+            }
+
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
 
@@ -781,7 +796,8 @@
                 encargado1_cel: document.getElementById('enc1-cel').value.trim(),
                 encargado2_nombre: document.getElementById('enc2-nombre').value.trim(),
                 encargado2_correo: document.getElementById('enc2-correo').value.trim(),
-                encargado2_cel: document.getElementById('enc2-cel').value.trim()
+                encargado2_cel: document.getElementById('enc2-cel').value.trim(),
+                foto_url: document.getElementById('mat-foto-url').value.trim()
             };
 
             const { data: existing } = await supabaseClient.from('estudiantes').select('cedula').eq('cedula', cedulaVal).maybeSingle();
