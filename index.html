@@ -791,11 +791,9 @@
                 encargado1_cel: document.getElementById('enc1-cel').value.trim(),
                 encargado2_nombre: document.getElementById('enc2-nombre').value.trim(),
                 encargado2_correo: document.getElementById('enc2-correo').value.trim(),
-                encargado2_cel: document.getElementById('enc2-cel').value.trim(),
-                foto_url: document.getElementById('mat-foto-url').value.trim()
+                encargado2_cel: document.getElementById('enc2-cel').value.trim()
             };
 
-            // Usamos insert o update directamente según si la cédula es nueva o existente para evitar fallos de upsert
             const { data: existing } = await supabaseClient.from('estudiantes').select('cedula').eq('cedula', cedulaVal).maybeSingle();
 
             let error = null;
