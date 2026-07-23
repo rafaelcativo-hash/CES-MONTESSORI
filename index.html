@@ -543,6 +543,9 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Columnas oficiales permitidas de la tabla estudiantes (sin foto_url)
+        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel';
+
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
             if (!selectAnio) return;
@@ -709,7 +712,7 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
+            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('cedula', cedula).single();
             if (error || !data) {
                 alert('No se pudo cargar la información del estudiante.');
                 return;
@@ -735,19 +738,6 @@
             document.getElementById('enc2-nombre').value = data.encargado2_nombre || '';
             document.getElementById('enc2-correo').value = data.encargado2_correo || '';
             document.getElementById('enc2-cel').value = data.encargado2_cel || '';
-
-            const fotoUrl = data.foto_url || '';
-            document.getElementById('mat-foto-url').value = fotoUrl;
-            const imgPrev = document.getElementById('img-preview-foto');
-            const txtPrev = document.getElementById('txt-sin-foto');
-            if (fotoUrl) {
-                imgPrev.src = fotoUrl;
-                imgPrev.style.display = 'block';
-                txtPrev.style.display = 'none';
-            } else {
-                imgPrev.style.display = 'none';
-                txtPrev.style.display = 'block';
-            }
 
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
@@ -922,7 +912,7 @@
         }
 
         async function descargarMatriculaExcel() {
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
+            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).order('nivel');
             if (error || !data || data.length === 0) {
                 alert('No hay registros de matrícula para exportar.');
                 return;
@@ -1263,7 +1253,7 @@
                 }
             });
 
-            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            let queryEstudiantes = supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
             const { data: estudiantesRaw } = await queryEstudiantes;
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
 
@@ -1404,7 +1394,7 @@
 
             contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
@@ -1468,7 +1458,7 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
             if (error || !data || data.length === 0) {
                 selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
                 return;
@@ -1751,7 +1741,7 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).in('nivel', niveles);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
@@ -1825,7 +1815,7 @@
             const msgSpan = document.getElementById('promocion-msg');
             msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || !notas) {
