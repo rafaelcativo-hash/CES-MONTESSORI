@@ -70,7 +70,8 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 210mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
+        /* Ajuste estricto del ancho de la vista previa de matrícula y PDF para evitar desbordes a la derecha */
+        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 100%; max-width: 190mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
         .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; gap: 15px; box-sizing: border-box; }
         .report-header img { width: 90px; height: 90px; object-fit: contain; flex-shrink: 0; }
 
@@ -85,7 +86,7 @@
         @media print {
             body * { visibility: hidden; }
             #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 15px; box-sizing: border-box; }
+            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
             .no-print { display: none !important; }
         }
     </style>
@@ -439,14 +440,6 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Docente Responsable / Académico</label>
-                            <select id="inf-docente-sel" required onchange="actualizarNombreDocenteInforme()">
-                                <option value="">Cargando docentes...</option>
-                            </select>
-                        </div>
-                    </div>
                 </fieldset>
                 <div id="contenedor-vista-informe" style="overflow-x: auto;">
                     <p style="color: #64748b; text-align: center;">Seleccione el periodo y estudiante para visualizar el informe institucional al hogar.</p>
@@ -571,7 +564,6 @@
                 cargarDocentesEnMatricula();
                 cargarSelectorEstudiantesEdicion();
             }
-            if (idSeccion === 'hogar') cargarDocentesEnInforme();
             if (idSeccion === 'configuracion') cargarConfiguracion();
             if (idSeccion === 'docentes') cargarTablaDocentesGeneral();
         }
@@ -604,7 +596,6 @@
             inicializarAniosLectivos();
             cargarDocentesEnMatricula();
             cargarSelectorEstudiantesEdicion();
-            cargarDocentesEnInforme();
             cargarConfiguracion();
             cargarTablaDocentesGeneral();
         }
@@ -970,31 +961,6 @@
             document.body.removeChild(link);
         }
 
-        async function cargarDocentesEnInforme() {
-            const selectDocente = document.getElementById('inf-docente-sel');
-            if (!selectDocente) return;
-            selectDocente.innerHTML = '<option value="">Cargando docentes...</option>';
-
-            const { data, error } = await supabaseClient.from('docentes').select('id, nombre, especialidad, tipo_docente');
-            if (error || !data) return;
-
-            selectDocente.innerHTML = '<option value="">Seleccione el docente responsable</option>';
-            data.forEach(doc => {
-                const opt = document.createElement('option');
-                opt.value = doc.nombre;
-                opt.textContent = `${doc.nombre} - ${doc.especialidad}`;
-                selectDocente.appendChild(opt);
-            });
-        }
-
-        function actualizarNombreDocenteInforme() {
-            const selectDocente = document.getElementById('inf-docente-sel');
-            const lblDocenteVer = document.getElementById('lbl-docente-ver');
-            if (lblDocenteVer && selectDocente.value) {
-                lblDocenteVer.innerText = selectDocente.value;
-            }
-        }
-
         async function cargarConfiguracion() {
             const { data, error } = await supabaseClient.from('configuracion_periodos').select('*').eq('id', 1).single();
             if (error || !data) return;
@@ -1132,7 +1098,6 @@
                 limpiarFormularioDocente();
                 cargarTablaDocentesGeneral();
                 cargarDocentesEnMatricula();
-                cargarDocentesEnInforme();
             }
         }
 
@@ -1146,7 +1111,6 @@
                 alert('Docente eliminado correctamente.');
                 cargarTablaDocentesGeneral();
                 cargarDocentesEnMatricula();
-                cargarDocentesEnInforme();
             }
         }
 
@@ -1493,7 +1457,6 @@
         async function generarInformeHogarVisual() {
             const selectEst = document.getElementById('inf-estudiante-sel');
             const periodoSel = document.getElementById('inf-periodo-sel').value;
-            const selectDocente = document.getElementById('inf-docente-sel');
             const contenedor = document.getElementById('contenedor-vista-informe');
             
             if (!selectEst.value) {
@@ -1502,7 +1465,8 @@
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const docenteSeleccionado = selectDocente && selectDocente.value ? selectDocente.value : (estData.docente_academico || '[Sin asignar]');
+            // El docente responsable se toma directamente del docente académico asignado al estudiante en su matrícula
+            const docenteSeleccionado = estData.docente_academico || '[Sin asignar]';
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
             const { data: docentesLista } = await supabaseClient.from('docentes').select('*');
@@ -1625,7 +1589,7 @@
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
-                                <p style="margin: 3px 0;"><b>Profesor Académico:</b> ${estData.docente_academico || 'No asignado'}</p>
+                                <p style="margin: 3px 0;"><b>Profesor Académico:</b> ${docenteSeleccionado}</p>
                                 <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
                                 <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
                                 <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal (Danza/Otros):</b> ${docenteDanzaEncargado}</p>
@@ -1659,7 +1623,7 @@
                             </div>
                             <div style="width: 40%;">
                                 <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
-                                <p style="margin: 0; font-size: 12px; font-weight: bold;"><span id="lbl-docente-ver">${docenteSeleccionado}</span></p>
+                                <p style="margin: 0; font-size: 12px; font-weight: bold;"><span>${docenteSeleccionado}</span></p>
                                 <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente Responsable / Nivel</p>
                             </div>
                         </div>
@@ -1852,6 +1816,7 @@
                     const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
                     const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
                     if (!n1 || !n2 || n1.promedio < 65 || n2.promedio < 65) {
+                        pasa_todas = false;
                         pasaTodas = false;
                         break;
                     }
