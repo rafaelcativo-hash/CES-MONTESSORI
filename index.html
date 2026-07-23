@@ -177,7 +177,7 @@
                     </div>
                 </fieldset>
 
-                <form id="form-matricula" onsubmit="guardarOActualizarMatricula(event)">
+                <form id="form-matricula" onsubmit="confirmarYGuardarMatricula(event)">
                     <fieldset>
                         <legend>Datos Personales y Fotografía del Estudiante</legend>
                         <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
@@ -450,7 +450,7 @@
             <!-- 6. CONFIGURACIÓN -->
             <section id="configuracion" class="tab-content">
                 <h2>Configuración de Periodos e Institución</h2>
-                <form id="form-config" onsubmit="guardarConfiguracion(event)">
+                <form id="form-config" onsubmit="confirmarYGuardarConfiguracion(event)">
                     <fieldset>
                         <legend>Calendario Lectivo y Periodos</legend>
                         <div class="form-grid">
@@ -488,7 +488,7 @@
                 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
                     <legend id="docente-legend-title" style="color: var(--accent);">Registrar Nuevo Docente</legend>
-                    <form id="form-docente-general" onsubmit="guardarOActualizarDocente(event)">
+                    <form id="form-docente-general" onsubmit="confirmarYGuardarDocente(event)">
                         <input type="hidden" id="doc-id">
                         <div class="form-grid">
                             <div class="form-group">
@@ -765,8 +765,14 @@
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
         }
 
-        async function guardarOActualizarMatricula(e) {
+        function confirmarYGuardarMatricula(e) {
             e.preventDefault();
+            if (confirm('¿Estás seguro que quieres realizar el cambio?')) {
+                guardarOActualizarMatricula();
+            }
+        }
+
+        async function guardarOActualizarMatricula() {
             const cedulaVal = document.getElementById('mat-cedula').value.trim();
 
             const datos = {
@@ -977,8 +983,14 @@
             if (data.graduacion_lugar) document.getElementById('cfg-graduacion-lugar').value = data.graduacion_lugar;
         }
 
-        async function guardarConfiguracion(e) {
+        function confirmarYGuardarConfiguracion(e) {
             e.preventDefault();
+            if (confirm('¿Estás seguro que quieres realizar el cambio?')) {
+                guardarConfiguracion();
+            }
+        }
+
+        async function guardarConfiguracion() {
             const datos = {
                 id: 1,
                 p1_inicio: document.getElementById('cfg-p1-inicio').value,
@@ -1037,7 +1049,7 @@
                         <td>${doc.correo}</td>
                         <td>${doc.telefono}</td>
                         <td>
-                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicion('${doc.id}', '${doc.nombre}', '${doc.correo}', '${doc.telefono}', '${doc.especialidad}', '${doc.tipo_docente}')">Editar</button>
+                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicion('${doc.id}', '${doc.nombre.replace(/'/g, "\\'")}', '${doc.correo.replace(/'/g, "\\'")}', '${doc.telefono.replace(/'/g, "\\'")}', '${doc.especialidad.replace(/'/g, "\\'")}', '${doc.tipo_docente}')">Editar</button>
                             <button class="danger-btn" onclick="eliminarDocente('${doc.id}')">Eliminar</button>
                         </td>
                     </tr>
@@ -1071,8 +1083,14 @@
             document.getElementById('btn-submit-docente').className = 'action-btn';
         }
 
-        async function guardarOActualizarDocente(e) {
+        function confirmarYGuardarDocente(e) {
             e.preventDefault();
+            if (confirm('¿Estás seguro que quieres realizar el cambio?')) {
+                guardarOActualizarDocente();
+            }
+        }
+
+        async function guardarOActualizarDocente() {
             const id = document.getElementById('doc-id').value;
             const datos = {
                 nombre: document.getElementById('doc-nombre').value,
@@ -1465,7 +1483,6 @@
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            // El docente responsable se toma directamente del docente académico asignado al estudiante en su matrícula
             const docenteSeleccionado = estData.docente_academico || '[Sin asignar]';
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
@@ -1816,7 +1833,6 @@
                     const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
                     const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
                     if (!n1 || !n2 || n1.promedio < 65 || n2.promedio < 65) {
-                        pasa_todas = false;
                         pasaTodas = false;
                         break;
                     }
