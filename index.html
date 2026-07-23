@@ -865,8 +865,8 @@
                             <h3 style="margin: 0; color: #1e293b; font-size: 18px; text-transform: uppercase;">Centro Educativo Shkénuk</h3>
                             <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Ficha Oficial de Matrícula Estudiantil • Año Lectivo: <b>${anioLectivo}</b></p>
                         </div>
-                        <div style="width: 70px; height: 85px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            ${fotoUrl ? `<img src="${fotoUrl}" style="width: 100%; height: 100%; object-fit: contain;">` : `<span style="font-size: 9px; color: #94a3b8; text-align: center;">Sin Foto</span>`}
+                        <div style="width: 70px; height: 85px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #f8fafc; flex-shrink: 0; text-align: center;">
+                            ${fotoUrl ? `<img src="${fotoUrl}" style="width: 70px; height: 85px; object-fit: cover; display: block; margin: 0 auto;">` : `<span style="font-size: 9px; color: #94a3b8; line-height: 85px;">Sin Foto</span>`}
                         </div>
                     </div>
 
