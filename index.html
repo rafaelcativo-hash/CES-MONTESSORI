@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIA-Shkénuk - CES Montessori</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería html2pdf para exportar a PDF con estilos exactos -->
+    <!-- Librería html2pdf para exportar a PDF en informes al hogar -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -70,7 +70,6 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Ajuste estricto del ancho de la vista previa de matrícula y PDF para evitar desbordes a la derecha */
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 100%; max-width: 190mm; box-sizing: border-box; margin-left: auto; margin-right: auto; }
         .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; gap: 15px; box-sizing: border-box; }
         .report-header img { width: 90px; height: 90px; object-fit: contain; flex-shrink: 0; }
@@ -306,7 +305,7 @@
 
                     <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
                         <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
-                        <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir o PDF</button>
+                        <button type="button" class="action-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir</button>
                     </div>
                     <div id="mat-msg" class="notification"></div>
                 </form>
@@ -537,7 +536,6 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Columnas oficiales permitidas de la tabla estudiantes (incluyendo foto_url)
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         function inicializarAniosLectivos() {
@@ -731,7 +729,6 @@
             document.getElementById('enc2-correo').value = data.encargado2_correo || '';
             document.getElementById('enc2-cel').value = data.encargado2_cel || '';
 
-            // Cargar foto guardada desde Supabase
             const fotoUrlVal = data.foto_url || '';
             document.getElementById('mat-foto-url').value = fotoUrlVal;
             const imgPrev = document.getElementById('img-preview-foto');
@@ -850,9 +847,8 @@
             contenedorPrev.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión (Año ${anioLectivo})</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
-                        <button type="button" class="warning-btn" onclick="descargarVistaPreviaPDF()">Guardar como PDF</button>
+                    <div>
+                        <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
                     </div>
                 </div>
 
@@ -909,20 +905,6 @@
                 </div>
             `;
             contenedorPrev.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function descargarVistaPreviaPDF() {
-            const elemento = document.getElementById('preview-matricula-impresion');
-            const nombreEst = document.getElementById('mat-nombre').value || 'Estudiante';
-            const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
-            const opciones = {
-                margin:       [10, 10, 10, 10],
-                filename:     `Matricula_${nombreEst.replace(/\s+/g, '_')}_${anioLectivo}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().from(elemento).set(opciones).save();
         }
 
         async function descargarMatriculaExcel() {
@@ -1590,7 +1572,6 @@
                 </div>
 
                 <div class="report-preview" id="plantilla-informe-oficial">
-                    <!-- Página 1: Con banner de encabezado más grande -->
                     <div class="seccion-pagina-1">
                         <div style="width: 100%; margin-bottom: 20px; text-align: center;">
                             <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 150px; object-fit: contain; margin: 0 auto;">
@@ -1646,7 +1627,6 @@
                         </div>
                     </div>
 
-                    <!-- Página 2: Comentarios con logo más grande y alineación mejorada -->
                     <div class="salto-pagina-forzado" style="margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px;">
                         <div class="report-header" style="display: flex; align-items: center; justify-content: flex-start; gap: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
                             <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 90px; height: 90px; object-fit: contain; flex-shrink: 0;">
