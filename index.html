@@ -270,6 +270,28 @@
                                 </select>
                             </div>
                         </div>
+                        <!-- NUEVO: Segundo Instrumento Opcional de Pago -->
+                        <div class="form-grid" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed var(--border); margin-top: 10px;">
+                            <div class="form-group">
+                                <label style="color: var(--accent);">Segundo Instrumento Opcional (Pago)</label>
+                                <select id="mat-instr-segundo">
+                                    <option value="Ninguno">Ninguno (Opcional)</option>
+                                    <option value="Canto">Canto</option>
+                                    <option value="Piano">Piano</option>
+                                    <option value="Guitarra">Guitarra</option>
+                                    <option value="Ukulele">Ukulele</option>
+                                    <option value="Batería">Batería</option>
+                                    <option value="Bajo">Bajo</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="color: var(--accent);">Profesor de 2do Instrumento (Pago)</label>
+                                <select id="mat-docente-segundo">
+                                    <option value="Ninguno">Ninguno / No aplica</option>
+                                </select>
+                            </div>
+                        </div>
                     </fieldset>
 
                     <fieldset>
@@ -536,7 +558,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
+        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -623,11 +645,13 @@
             const selAcad = document.getElementById('mat-docente-acad');
             const selArtGrupal = document.getElementById('mat-docente-art-grupal');
             const selAsig = document.getElementById('mat-docente-asig');
+            const selSegundoDoc = document.getElementById('mat-docente-segundo');
             if (!selAcad) return;
 
             selAcad.innerHTML = '<option value="">Cargando académicos...</option>';
             selArtGrupal.innerHTML = '<option value="">Cargando artísticos grupales...</option>';
             selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
+            selSegundoDoc.innerHTML = '<option value="Ninguno">Ninguno / No aplica</option>';
 
             const { data, error } = await supabaseClient.from('docentes').select('id, nombre, especialidad, tipo_docente');
             if (error || !data) return;
@@ -645,6 +669,7 @@
                 } else {
                     selArtGrupal.appendChild(opt.cloneNode(true));
                     selAsig.appendChild(opt);
+                    selSegundoDoc.appendChild(opt.cloneNode(true));
                 }
             });
         }
@@ -718,6 +743,8 @@
             document.getElementById('mat-docente-art-grupal').value = data.docente_artistico_grupal || 'Ninguno';
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
             document.getElementById('mat-docente-asig').value = data.docente_asignado || '';
+            document.getElementById('mat-instr-segundo').value = data.instrumento_segundo || 'Ninguno';
+            document.getElementById('mat-docente-segundo').value = data.docente_segundo || 'Ninguno';
             document.getElementById('dir-provincia').value = data.provincia || '';
             document.getElementById('dir-canton').value = data.canton || '';
             document.getElementById('dir-distrito').value = data.distrito || '';
@@ -782,6 +809,8 @@
                 docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value || 'Ninguno',
                 instrumento_principal: document.getElementById('mat-instr-principal').value,
                 docente_asignado: document.getElementById('mat-docente-asig').value,
+                instrumento_segundo: document.getElementById('mat-instr-segundo').value || 'Ninguno',
+                docente_segundo: document.getElementById('mat-docente-segundo').value || 'Ninguno',
                 provincia: document.getElementById('dir-provincia').value.trim(),
                 canton: document.getElementById('dir-canton').value.trim(),
                 distrito: document.getElementById('dir-distrito').value.trim(),
@@ -825,6 +854,8 @@
             const docenteArt = document.getElementById('mat-docente-art-grupal').value;
             const instr = document.getElementById('mat-instr-principal').value;
             const docenteInstr = document.getElementById('mat-docente-asig').value;
+            const instrSegundo = document.getElementById('mat-instr-segundo').value;
+            const docenteSegundo = document.getElementById('mat-docente-segundo').value;
             const prov = document.getElementById('dir-provincia').value;
             const canton = document.getElementById('dir-canton').value;
             const distrito = document.getElementById('dir-distrito').value;
@@ -877,7 +908,8 @@
                         <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${docenteAcad || 'No asignado'}</p>
                         <p style="margin: 4px 0;"><b>Profesor Artístico Grupal:</b> ${docenteArt || 'Ninguno'}</p>
                         <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'}</p>
-                        <p style="margin: 4px 0;"><b>Profesor de Instrumento:</b> ${docenteInstr || 'No asignado'}</p>
+                        <p style="margin: 4px 0;"><b>Profesor de Instrumento Principal:</b> ${docenteInstr || 'No asignado'}</p>
+                        <p style="margin: 4px 0;"><b>Segundo Instrumento (Pago):</b> ${instrSegundo && instrSegundo !== 'Ninguno' ? `${instrSegundo} (Profesor: ${docenteSegundo})` : 'Ninguno'}</p>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
@@ -914,7 +946,7 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
@@ -926,6 +958,8 @@
                     `"${est.docente_artistico_grupal || ''}"`,
                     `"${est.instrumento_principal || ''}"`,
                     `"${est.docente_asignado || ''}"`,
+                    `"${est.instrumento_segundo || ''}"`,
+                    `"${est.docente_segundo || ''}"`,
                     `"${est.provincia || ''}"`,
                     `"${est.canton || ''}"`,
                     `"${est.distrito || ''}"`,
@@ -1240,7 +1274,7 @@
 
             let estudiantes = estudiantesRaw || [];
             if (instrumentoEspecifico && estudiantes.length > 0) {
-                estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico);
+                estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico || est.instrumento_segundo === instrumentoEspecifico);
             }
 
             if (estudiantes.length === 0) {
@@ -1282,7 +1316,7 @@
 
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${est.nombre}</b><br><small>Inst: ${est.instrumento_principal || 'N/A'} | Acad: ${est.docente_academico || 'N/A'}</small></td>
+                        <td style="text-align: left;"><b>${est.nombre}</b><br><small>Inst. Princ: ${est.instrumento_principal || 'N/A'} | Inst. 2do: ${est.instrumento_segundo || 'Ninguno'}</small></td>
                 `;
 
                 rubros.forEach(r => {
@@ -1407,7 +1441,7 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td>`;
+                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td>`;
                 
                 if (listaMaterias.length > 0) {
                     listaMaterias.forEach(mat => {
@@ -1590,6 +1624,7 @@
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
                                 <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
                                 <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
+                                <p style="margin: 3px 0; grid-column: span 2;"><b>Segundo Instrumento (Pago):</b> ${estData.instrumento_segundo && estData.instrumento_segundo !== 'Ninguno' ? `${estData.instrumento_segundo} (Profesor: ${estData.docente_segundo})` : 'Ninguno'}</p>
                                 <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal (Danza/Otros):</b> ${docenteDanzaEncargado}</p>
                                 <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                             </div>
@@ -1772,7 +1807,7 @@
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
