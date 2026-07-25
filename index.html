@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIA-Shkénuk - CES Montessori</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería html2pdf para exportar a PDF en informes y listas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -742,7 +741,7 @@
         }
 
         async function verificarRolUsuario(email) {
-            // 1. Consultar rol general en user_roles
+            // 1. Consultar rol general en user_roles PRIMERO (Prioridad absoluta)
             const { data: roleData } = await supabaseClient
                 .from('user_roles')
                 .select('role')
@@ -826,7 +825,6 @@
             }
 
             if (!encontradaSeleccionable) {
-                // Si no tiene materia artística directa asignada, permitir ver asignaturas generales o académico si aplica
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
                     opt.style.display = '';
