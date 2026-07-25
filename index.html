@@ -192,8 +192,28 @@
                                         <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
                                     </div>
                                     <div class="form-group">
+                                        <label>Nacionalidad</label>
+                                        <input type="text" id="mat-nacionalidad" required placeholder="Ej. Costarricense, Nicaragüense, Colombiana">
+                                    </div>
+                                    <div class="form-group">
                                         <label>Fecha de Nacimiento</label>
                                         <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nivel Educativo (Ciclos)</label>
+                                        <select id="mat-nivel" required>
+                                            <option value="">Seleccione el nivel</option>
+                                            <optgroup label="Primer Ciclo">
+                                                <option value="Primero">Primero</option>
+                                                <option value="Segundo">Segundo</option>
+                                                <option value="Tercero">Tercero</option>
+                                            </optgroup>
+                                            <optgroup label="Segundo Ciclo">
+                                                <option value="Cuarto">Cuarto</option>
+                                                <option value="Quinto">Quinto</option>
+                                                <option value="Sexto">Sexto</option>
+                                            </optgroup>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="form-group" style="margin-top: 5px;">
@@ -210,25 +230,6 @@
                                 </div>
                                 <input type="file" id="mat-foto-file" accept="image/*" onchange="procesarArchivoFoto(event)" style="font-size: 11px; width: 100%;">
                                 <input type="hidden" id="mat-foto-url">
-                            </div>
-                        </div>
-
-                        <div class="form-grid" style="margin-top: 15px;">
-                            <div class="form-group">
-                                <label>Nivel Educativo (Ciclos)</label>
-                                <select id="mat-nivel" required>
-                                    <option value="">Seleccione el nivel</option>
-                                    <optgroup label="Primer Ciclo">
-                                        <option value="Primero">Primero</option>
-                                        <option value="Segundo">Segundo</option>
-                                        <option value="Tercero">Tercero</option>
-                                    </optgroup>
-                                    <optgroup label="Segundo Ciclo">
-                                        <option value="Cuarto">Cuarto</option>
-                                        <option value="Quinto">Quinto</option>
-                                        <option value="Sexto">Sexto</option>
-                                    </optgroup>
-                                </select>
                             </div>
                         </div>
                     </fieldset>
@@ -270,7 +271,6 @@
                                 </select>
                             </div>
                         </div>
-                        <!-- NUEVO: Segundo Instrumento Opcional de Pago -->
                         <div class="form-grid" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed var(--border); margin-top: 10px;">
                             <div class="form-group">
                                 <label style="color: var(--accent);">Segundo Instrumento Opcional (Pago)</label>
@@ -558,7 +558,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
+        const CAMPOS_ESTUDIANTES = 'cedula, nombre, nacionalidad, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -736,6 +736,7 @@
             document.getElementById('mat-nombre').value = data.nombre || '';
             inputCedula.value = data.cedula || '';
             inputCedula.readOnly = true; 
+            document.getElementById('mat-nacionalidad').value = data.nacionalidad || '';
             document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
             calcularEdadExacta();
             document.getElementById('mat-nivel').value = data.nivel || '';
@@ -803,6 +804,7 @@
             const datos = {
                 nombre: document.getElementById('mat-nombre').value.trim(),
                 cedula: cedulaVal,
+                nacionalidad: document.getElementById('mat-nacionalidad').value.trim(),
                 fecha_nacimiento: document.getElementById('mat-fnac').value,
                 nivel: document.getElementById('mat-nivel').value,
                 docente_academico: document.getElementById('mat-docente-acad').value,
@@ -848,6 +850,7 @@
             const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
             const nombre = document.getElementById('mat-nombre').value;
             const cedula = document.getElementById('mat-cedula').value;
+            const nacionalidad = document.getElementById('mat-nacionalidad').value;
             const fnac = document.getElementById('mat-fnac').value;
             const nivel = document.getElementById('mat-nivel').value;
             const docenteAcad = document.getElementById('mat-docente-acad').value;
@@ -899,6 +902,7 @@
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
+                        <p style="margin: 4px 0;"><b>Nacionalidad:</b> ${nacionalidad || 'No especificada'}</p>
                         <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
                         <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
                     </div>
@@ -946,12 +950,13 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nacionalidad,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
                     `"${est.cedula || ''}"`,
                     `"${est.nombre || ''}"`,
+                    `"${est.nacionalidad || ''}"`,
                     `"${est.nivel || ''}"`,
                     `"${est.fecha_nacimiento || ''}"`,
                     `"${est.docente_academico || ''}"`,
@@ -1377,7 +1382,7 @@
             }
 
             if (esConducta && !comentario) {
-                alert('El comentario formativo en Conducta es obligatorio para el informe al hogar.');
+                alert('El comentario formativo en Conducta is obligatorio para el informe al hogar.');
                 comentarioInput.focus();
                 return;
             }
@@ -1621,6 +1626,7 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
+                                <p style="margin: 3px 0;"><b>Nacionalidad:</b> ${estData.nacionalidad || 'No especificada'}</p>
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
                                 <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
                                 <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
