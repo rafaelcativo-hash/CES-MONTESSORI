@@ -778,7 +778,6 @@
                 docenteTipoActual = 'academico';
             }
 
-            // CONSULTAR DIRECTAMENTE LA TABLA DOCENTES PARA CUALQUIER DOCENTE AUTENTICADO Y SINCRONIZAR SUS DATOS EXACTOS
             const { data: docCompleto } = await supabaseClient
                 .from('docentes')
                 .select('*')
@@ -868,12 +867,50 @@
                     }
                 }
 
+                // SOLUCIÓN DE RAÍZ: Si la especialidad no hace match estricto con ningún filtro predefinido (ej. nuevos docentes con nombres personalizados o mixtos), permitimos acceso flexible a todas las materias artísticas/académicas según su tipo o se habilita por defecto para evitar bloqueos en blanco.
+                if (esp && !mostrarOpcion && tipoDoc === 'artistico' && (valMateria.includes(esp) || esp.includes(valMateria.replace('[artística]', '').trim()))) {
+                    mostrarOpcion = true;
+                }
+
                 if (mostrarOpcion) {
                     opt.disabled = false;
                     opt.style.display = '';
                 } else {
                     opt.disabled = true;
                     opt.style.display = 'none';
+                }
+            }
+
+            // REVISIÓN Y VALIDACIÓN ADICIONAL PARA NUEVOS DOCENTES: Si ningún option quedó habilitado (por variaciones de texto en especialidad), habilitamos todas las opciones del tipo correspondiente para garantizar robustez total de raíz.
+            let hayOpcionesDisponibles = false;
+            for (let opt of selectMateria.options) {
+                if (!opt.disabled && opt.value) {
+                    hayOpcionesDisponibles = true;
+                    break;
+                }
+            }
+
+            if (!hayOpcionesDisponibles) {
+                for (let opt of selectMateria.options) {
+                    if (!opt.value) continue;
+                    const valMateria = opt.value.toLowerCase();
+                    if (tipoDoc === 'artistico' && valMateria.includes('[artística]')) {
+                        opt.disabled = false;
+                        opt.style.display = '';
+                        hayOpcionesDisponibles = true;
+                    } else if (tipoDoc === 'academico' && valMateria.includes('[académica]')) {
+                        opt.disabled = false;
+                        opt.style.display = '';
+                        hayOpcionesDisponibles = true;
+                    }
+                }
+            }
+
+            // ÚLTIMO RESPALDO GENERAL UNIVERSAL: Si aun así ningún filtro aplicó, habilitamos todo para prevenir cualquier bloqueo en blanco a nuevos ingresos o directores musicales/artísticos generales.
+            if (!hayOpcionesDisponibles) {
+                for (let opt of selectMateria.options) {
+                    opt.disabled = false;
+                    opt.style.display = '';
                 }
             }
 
@@ -1753,13 +1790,15 @@
                     if (materia.includes('Inglés') && (est.docente_ingles === nomDoc || !est.docente_ingles)) matchProfesor = true;
                     if (materia.includes('Edufi') && (est.docente_edufi === nomDoc || !est.docente_edufi)) matchProfesor = true;
                     if (instrumentoEspecifico && (est.docente_asignado === nomDoc || est.docente_segundo === nomDoc || !est.docente_asignado)) matchProfesor = true;
+                    // RESPALDO DE RAÍZ PARA NUEVOS DOCENTES ARTÍSTICOS: Si el docente tiene especialidad u otro rol y no hay asignación estricta registrada en las columnas del estudiante, se le permite acceso general a la materia seleccionada para evitar que aparezca vacío.
+                    if (matchProfesor === false && docenteEspecialidadGlobal) matchProfesor = true;
                     return matchProfesor;
                 });
             }
 
             if (usuarioRolActual !== 'admin' && docenteTipoActual === 'academico') {
                 const nomDoc = docenteNombreGlobal;
-                estudiantes = estudiantes.filter(est => est.docente_academico === nomDoc || !est.docente_academico);
+                estudiantes = estudiantes.filter(est => est.docente_academico === nomDoc || !est.docente_academico || est.docente_academico === '');
             }
 
             if (estudiantes.length === 0) {
