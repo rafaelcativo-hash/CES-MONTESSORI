@@ -192,14 +192,10 @@
                                         <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
                                     </div>
                                     <div class="form-group">
-                                        <label>Nacionalidad</label>
-                                        <input type="text" id="mat-nacionalidad" required placeholder="Ej. Costarricense, Nicaragüense, Colombiana">
-                                    </div>
-                                    <div class="form-group">
                                         <label>Fecha de Nacimiento</label>
                                         <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="grid-column: span 2;">
                                         <label>Nivel Educativo (Ciclos)</label>
                                         <select id="mat-nivel" required>
                                             <option value="">Seleccione el nivel</option>
@@ -850,7 +846,6 @@
             const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
             const nombre = document.getElementById('mat-nombre').value;
             const cedula = document.getElementById('mat-cedula').value;
-            const nacionalidad = document.getElementById('mat-nacionalidad').value;
             const fnac = document.getElementById('mat-fnac').value;
             const nivel = document.getElementById('mat-nivel').value;
             const docenteAcad = document.getElementById('mat-docente-acad').value;
@@ -1590,6 +1585,10 @@
                 reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios u observaciones docentes registradas para este ${periodoSel}]</p>`;
             }
 
+            const tituloInformeHogar = periodoSel === 'Primer Periodo' 
+                ? 'INFORME OFICIAL AL HOGAR - PRIMER PERIODO' 
+                : 'INFORME OFICIAL AL HOGAR - SEGUNDO PERIODO Y ANUAL';
+
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
@@ -1609,7 +1608,7 @@
                         <div style="text-align: center; margin-bottom: 20px;">
                             <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
                             <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
-                            <p style="margin: 8px 0 0 0; font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
+                            <p style="margin: 8px 0 0 0; font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase;">${tituloInformeHogar}</p>
                         </div>
 
                         <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
