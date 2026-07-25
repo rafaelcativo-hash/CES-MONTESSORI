@@ -1596,7 +1596,6 @@
             const docenteSeleccionado = estData.docente_academico || '[Sin asignar]';
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
-            const { data: docentesLista } = await supabaseClient.from('docentes').select('*');
 
             let tablaMateriasHTML = '';
             let reflexionesDocentesHTML = '';
@@ -1652,11 +1651,14 @@
                     const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
                     
                     if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
+                        // Asignación estricta y limpia del docente según el profesor con el que se matriculó el estudiante en cada área
                         let docenteCargo = docenteSeleccionado;
                         if (mat.includes('Danza')) docenteCargo = estData.docente_danza || 'Vanesa De La O Jimenez';
                         else if (mat.includes('Plásticas')) docenteCargo = estData.docente_plasticas || 'Mirta Castro';
                         else if (mat.includes('Edufi')) docenteCargo = estData.docente_edufi || 'Santiago Jimenez';
                         else if (mat.includes('Inglés')) docenteCargo = estData.docente_ingles || 'Ulises';
+                        else if (mat.includes('Solfeo')) docenteCargo = estData.docente_solfeo || 'Rafael Cativo Romero';
+                        else if (mat.includes('Percusión')) docenteCargo = estData.docente_percursion || 'Luis De La O Jimenez';
 
                         const estiloColor = coloresElegantes[index % coloresElegantes.length];
 
