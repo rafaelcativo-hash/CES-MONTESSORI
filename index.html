@@ -902,7 +902,6 @@
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
-                        <p style="margin: 4px 0;"><b>Nacionalidad:</b> ${nacionalidad || 'No especificada'}</p>
                         <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
                         <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
                     </div>
@@ -950,13 +949,12 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nacionalidad,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
                     `"${est.cedula || ''}"`,
                     `"${est.nombre || ''}"`,
-                    `"${est.nacionalidad || ''}"`,
                     `"${est.nivel || ''}"`,
                     `"${est.fecha_nacimiento || ''}"`,
                     `"${est.docente_academico || ''}"`,
@@ -1604,25 +1602,27 @@
 
                 <div class="report-preview" id="plantilla-informe-oficial">
                     <div class="seccion-pagina-1">
-                        <!-- ENCABEZADO EXACTO SOLICITADO -->
-                        <div style="width: 100%; margin-bottom: 15px; text-align: center;">
-                            <img src="encabezado%20del%20informe%20final.png" alt="Encabezado Centro Educativo Shkénuk" style="width: 100%; height: auto; display: block; max-height: 110px; object-fit: contain; margin: 0 auto;">
+                        <div style="width: 100%; margin-bottom: 20px; text-align: center;">
+                            <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 150px; object-fit: contain; margin: 0 auto;">
                         </div>
 
                         <div style="text-align: center; margin-bottom: 20px;">
-                            <p style="margin: 3px 0; font-size: 13px; color: #000; font-weight: bold;">Dirección Regional de Heredia</p>
-                            <p style="margin: 3px 0; font-size: 13px; color: #000; font-weight: bold;">Circuito Escolar 04</p>
-                            <p style="margin: 3px 0; font-size: 13px; color: #000; font-weight: bold;">Centro Educativo Shkénuk</p>
-                            <p style="margin: 12px 0 0 0; font-size: 14px; color: #000; font-weight: bold; text-transform: uppercase;">Reporte de Calificaciones</p>
-                            <p style="margin: 3px 0 0 0; font-size: 14px; color: #000; font-weight: bold;">${periodoSel === 'Primer Periodo' ? 'Primer Semestre 2026' : 'Segundo Semestre 2026'}</p>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                            <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
+                            <p style="margin: 8px 0 0 0; font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase;">INFORME OFICIAL AL HOGAR - ${periodoSel.toUpperCase()}</p>
                         </div>
 
-                        <div style="margin-bottom: 20px; font-size: 14px; text-align: left; padding-left: 20px;">
-                            <p style="margin: 4px 0; color: #000;"><b>Estudiante:</b> ${estData.nombre}</p>
-                            <p style="margin: 4px 0; color: #000;"><b>Nivel:</b> ${estData.nivel}</p>
+                        <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
+                                <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
+                                <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
+                                <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
+                            </div>
                         </div>
 
                         <div style="margin-bottom: 25px;">
+                            <h4 style="color: var(--primary); margin-bottom: 8px;">Rendimiento Académico y Artístico Consolidado</h4>
                             <table class="data-table">
                                 <thead>
                                     <tr>
@@ -1641,12 +1641,12 @@
 
                         <div style="display: flex; justify-content: space-around; margin-top: 35px; text-align: center;">
                             <div style="width: 40%;">
-                                <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
+                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
                                 <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
                                 <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Dirección Institucional</p>
                             </div>
                             <div style="width: 40%;">
-                                <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
+                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
                                 <p style="margin: 0; font-size: 12px; font-weight: bold;"><span>${docenteSeleccionado}</span></p>
                                 <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente de Nivel</p>
                             </div>
