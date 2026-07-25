@@ -240,9 +240,9 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Profesor Artístico Grupal (Danza, Edufi, Solfeo, Taller de Percusión, Artes Plásticas)</label>
+                                <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
                                 <select id="mat-docente-art-grupal">
-                                    <option value="Ninguno">Ninguno</option>
+                                    <option value="">Cargando docentes artísticos...</option>
                                 </select>
                             </div>
                         </div>
@@ -645,7 +645,7 @@
             if (!selAcad) return;
 
             selAcad.innerHTML = '<option value="">Cargando académicos...</option>';
-            selArtGrupal.innerHTML = '<option value="Ninguno">Ninguno</option>';
+            selArtGrupal.innerHTML = '<option value="">Cargando artísticos grupales...</option>';
             selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
             selSegundoDoc.innerHTML = '<option value="Ninguno">Ninguno / No aplica</option>';
 
@@ -653,20 +653,19 @@
             if (error || !data) return;
 
             selAcad.innerHTML = '<option value="">Seleccione profesor académico</option>';
+            selArtGrupal.innerHTML = '<option value="Ninguno">Ninguno</option>';
             selAsig.innerHTML = '<option value="">Seleccione instructor</option>';
 
             data.forEach(doc => {
                 const opt = document.createElement('option');
                 opt.value = doc.nombre;
                 opt.textContent = `${doc.nombre} (${doc.especialidad})`;
-                
                 if (doc.tipo_docente === 'academico') {
                     selAcad.appendChild(opt);
                 } else {
-                    // Docentes artísticos disponibles tanto para grupal como individual/instrumentos
                     selArtGrupal.appendChild(opt.cloneNode(true));
-                    selAsig.appendChild(opt.cloneNode(true));
-                    selSegundoDoc.appendChild(opt);
+                    selAsig.appendChild(opt);
+                    selSegundoDoc.appendChild(opt.cloneNode(true));
                 }
             });
         }
@@ -847,6 +846,7 @@
             const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
             const nombre = document.getElementById('mat-nombre').value;
             const cedula = document.getElementById('mat-cedula').value;
+            const nacionalidad = document.getElementById('mat-nacionalidad').value;
             const fnac = document.getElementById('mat-fnac').value;
             const nivel = document.getElementById('mat-nivel').value;
             const docenteAcad = document.getElementById('mat-docente-acad').value;
@@ -905,7 +905,7 @@
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Asignación Académica y Artística</h4>
                         <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${docenteAcad || 'No asignado'}</p>
-                        <p style="margin: 4px 0;"><b>Profesor Artístico Grupal (Danza, Edufi, Solfeo, Percusión, Plásticas):</b> ${docenteArt || 'Ninguno'}</p>
+                        <p style="margin: 4px 0;"><b>Profesor Artístico Grupal:</b> ${docenteArt || 'Ninguno'}</p>
                         <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'}</p>
                         <p style="margin: 4px 0;"><b>Profesor de Instrumento Principal:</b> ${docenteInstr || 'No asignado'}</p>
                         <p style="margin: 4px 0;"><b>Segundo Instrumento (Pago):</b> ${instrSegundo && instrSegundo !== 'Ninguno' ? `${instrSegundo} (Profesor: ${docenteSegundo})` : 'Ninguno'}</p>
@@ -945,12 +945,13 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nacionalidad,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
                     `"${est.cedula || ''}"`,
                     `"${est.nombre || ''}"`,
+                    `"${est.nacionalidad || ''}"`,
                     `"${est.nivel || ''}"`,
                     `"${est.fecha_nacimiento || ''}"`,
                     `"${est.docente_academico || ''}"`,
@@ -1440,7 +1441,7 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Art. Grupal: ${est.docente_artistico_grupal || 'Ninguno'}<br>Inst: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td>`;
+                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td>`;
                 
                 if (listaMaterias.length > 0) {
                     listaMaterias.forEach(mat => {
@@ -1798,7 +1799,7 @@
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Art. Grupal: ${est.docente_artistico_grupal || 'Ninguno'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
@@ -1837,7 +1838,7 @@
                 let pasaTodas = true;
                 for (const mat of materias) {
                     const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                    const n2 = notasEst.find(n => n.metal === mat && n.periodo === 'Segundo Periodo');
+                    const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
                     if (!n1 || !n2 || n1.promedio < 65 || n2.promedio < 65) {
                         pasaTodas = false;
                         break;
