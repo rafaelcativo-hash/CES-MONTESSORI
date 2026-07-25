@@ -778,11 +778,17 @@
                 docenteTipoActual = 'academico';
             }
 
-            // ASEGURAR PERFIL CORRECTO PARA LUIS INDEPENDIENTEMENTE DE SUPABASE
-            if (email.toLowerCase() === 'delaodrums@gmail.com') {
-                docenteTipoActual = 'artistico';
-                docenteEspecialidadGlobal = 'batería y taller de percusión';
-                docenteNombreGlobal = 'Luis De La O Jimenez';
+            // CONSULTAR DIRECTAMENTE LA TABLA DOCENTES PARA CUALQUIER DOCENTE AUTENTICADO Y SINCRONIZAR SUS DATOS EXACTOS
+            const { data: docCompleto } = await supabaseClient
+                .from('docentes')
+                .select('*')
+                .eq('correo', email)
+                .maybeSingle();
+
+            if (docCompleto) {
+                docenteNombreGlobal = (docCompleto.nombre || '').trim();
+                docenteTipoActual = (docCompleto.tipo_docente || 'academico').toLowerCase();
+                docenteEspecialidadGlobal = (docCompleto.especialidad || '').toLowerCase();
             }
 
             document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
