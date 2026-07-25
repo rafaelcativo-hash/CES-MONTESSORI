@@ -256,7 +256,7 @@
                             <div class="form-group">
                                 <label>Taller de Percusión</label>
                                 <select id="mat-doc-percursion" class="select-docente-predefinido" data-materia="Taller de Percusión">
-                                    <option value="Rafael Cativo Romero">Rafael Cativo Romero</option>
+                                    <option value="Luis De La O Jimenez">Luis De La O Jimenez</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -694,7 +694,6 @@
             selAcad.innerHTML = '<option value="">Seleccione profesor académico</option>';
             selAsig.innerHTML = '<option value="">Seleccione instructor</option>';
 
-            // Recopilar lista completa de nombres únicos de docentes para los selects con palomilla (selectores predefinidos)
             let listaNombresDocentes = new Set();
             data.forEach(doc => {
                 listaNombresDocentes.add(doc.nombre);
@@ -710,18 +709,17 @@
                 }
             });
 
-            // Poblar y asegurar los selectores predefinidos con su valor por defecto y lista completa
             selectsPredefinidos.forEach(select => {
                 const materia = select.getAttribute('data-materia');
                 let valorDefecto = '';
-                if (materia === 'Solfeo' || materia === 'Taller de Percusión') valorDefecto = 'Rafael Cativo Romero';
+                if (materia === 'Solfeo') valorDefecto = 'Rafael Cativo Romero';
+                if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
                 if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
                 if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro';
                 if (materia === 'Inglés') valorDefecto = 'Ulises';
                 if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
 
                 select.innerHTML = '';
-                // Asegurar que el predefinido esté presente
                 if (valorDefecto && !listaNombresDocentes.has(valorDefecto)) {
                     const optDef = document.createElement('option');
                     optDef.value = valorDefecto;
@@ -810,7 +808,7 @@
             document.getElementById('mat-docente-acad').value = data.docente_academico || '';
             
             if (document.getElementById('mat-doc-solfeo')) document.getElementById('mat-doc-solfeo').value = data.docente_solfeo || 'Rafael Cativo Romero';
-            if (document.getElementById('mat-doc-percursion')) document.getElementById('mat-doc-percursion').value = data.docente_percursion || 'Rafael Cativo Romero';
+            if (document.getElementById('mat-doc-percursion')) document.getElementById('mat-doc-percursion').value = data.docente_percursion || 'Luis De La O Jimenez';
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
             if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro';
             if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises';
@@ -1536,7 +1534,7 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Danza: ${est.docente_danza || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td>`;
+                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Percusión: ${est.docente_percursion || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td>`;
                 
                 if (listaMaterias.length > 0) {
                     listaMaterias.forEach(mat => {
@@ -1892,7 +1890,7 @@
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Danza: ${est.docente_danza || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Percusión: ${est.docente_percursion || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
