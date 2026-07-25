@@ -543,50 +543,87 @@
                 </form>
             </section>
 
-            <!-- 7. DIRECTORIO DE DOCENTES -->
+            <!-- 7. DIRECTORIO DE DOCENTES Y GESTIÓN DE ROLES -->
             <section id="docentes" class="tab-content">
-                <h2>Directorio General y Gestión de Docentes (Académicos y Artísticos)</h2>
+                <h2>Directorio General y Administración de Roles</h2>
                 
-                <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend id="docente-legend-title" style="color: var(--accent);">Registrar Nuevo Docente</legend>
-                    <form id="form-docente-general" onsubmit="confirmarYGuardarDocente(event)">
-                        <input type="hidden" id="doc-id">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Tipo de Docente</label>
-                                <select id="doc-tipo" required>
-                                    <option value="academico">Académico</option>
-                                    <option value="artistico">Artístico</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Nombre Completo</label>
-                                <input type="text" id="doc-nombre" required placeholder="Nombre y Apellidos">
-                            </div>
-                            <div class="form-group">
-                                <label>Correo Electrónico</label>
-                                <input type="email" id="doc-correo" required placeholder="correo@institucion.com">
-                            </div>
-                            <div class="form-group">
-                                <label>Teléfono / Celular</label>
-                                <input type="tel" id="doc-tel" required placeholder="Ej. 8888-8888">
-                            </div>
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label>Especialidad / Materia / Disciplina</label>
-                                <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Solfeo, Inglés">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button type="submit" id="btn-submit-docente" class="action-btn">Registrar Docente</button>
-                            <button type="button" class="warning-btn" onclick="limpiarFormularioDocente()">Cancelar / Nuevo</button>
-                        </div>
-                        <div id="doc-msg" class="notification"></div>
-                    </form>
-                </fieldset>
+                <div class="sub-panel-tabs" style="margin-top: 15px;">
+                    <button class="sub-tab-btn active" onclick="cambiarSubPestanaDocente('directorio', event)">Directorio de Personal</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaDocente('roles', event)">Administración de Roles de Acceso</button>
+                </div>
 
-                <h3 style="color: var(--primary); margin-top: 30px;">Personal Registrado en el Sistema</h3>
-                <div id="contenedor-tabla-docentes" style="overflow-x: auto;">
-                    <p>Cargando lista de docentes...</p>
+                <!-- SUB-PANEL 1: DIRECTORIO -->
+                <div id="sub-docentes-directorio" class="sub-doc-panel">
+                    <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                        <legend id="docente-legend-title" style="color: var(--accent);">Registrar Nuevo Docente</legend>
+                        <form id="form-docente-general" onsubmit="confirmarYGuardarDocente(event)">
+                            <input type="hidden" id="doc-id">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Tipo de Docente</label>
+                                    <select id="doc-tipo" required>
+                                        <option value="academico">Académico</option>
+                                        <option value="artistico">Artístico</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nombre Completo</label>
+                                    <input type="text" id="doc-nombre" required placeholder="Nombre y Apellidos">
+                                </div>
+                                <div class="form-group">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="doc-correo" required placeholder="correo@institucion.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Teléfono / Celular</label>
+                                    <input type="tel" id="doc-tel" required placeholder="Ej. 8888-8888">
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Especialidad / Materia / Disciplina</label>
+                                    <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Solfeo, Inglés">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button type="submit" id="btn-submit-docente" class="action-btn">Registrar Docente</button>
+                                <button type="button" class="warning-btn" onclick="limpiarFormularioDocente()">Cancelar / Nuevo</button>
+                            </div>
+                            <div id="doc-msg" class="notification"></div>
+                        </form>
+                    </fieldset>
+
+                    <h3 style="color: var(--primary); margin-top: 30px;">Personal Registrado en el Sistema</h3>
+                    <div id="contenedor-tabla-docentes" style="overflow-x: auto;">
+                        <p>Cargando lista de docentes...</p>
+                    </div>
+                </div>
+
+                <!-- SUB-PANEL 2: GESTIÓN DE ROLES -->
+                <div id="sub-docentes-roles" class="sub-doc-panel" style="display: none;">
+                    <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                        <legend style="color: var(--accent);">Asignar o Modificar Rol de Usuario</legend>
+                        <form id="form-asignar-rol" onsubmit="guardarRolUsuario(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Correo Electrónico del Usuario</label>
+                                    <input type="email" id="rol-email-input" required placeholder="usuario@correo.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Nivel de Rol en el Sistema</label>
+                                    <select id="rol-select-input" required>
+                                        <option value="admin">Administrador (Acceso total)</option>
+                                        <option value="docente">Docente Estándar (Restringido)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="action-btn">Guardar / Actualizar Rol</button>
+                            <div id="rol-msg" class="notification"></div>
+                        </form>
+                    </fieldset>
+
+                    <h3 style="color: var(--primary); margin-top: 30px;">Usuarios y Roles Registrados en la Base de Datos</h3>
+                    <div id="contenedor-tabla-roles" style="overflow-x: auto;">
+                        <p>Cargando roles activos...</p>
+                    </div>
                 </div>
             </section>
 
@@ -658,7 +695,7 @@
 
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
-        let usuarioRolActual = 'docente'; // Valor por defecto seguro
+        let usuarioRolActual = 'docente';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -686,7 +723,18 @@
                 cargarSelectorEstudiantesEdicion();
             }
             if (idSeccion === 'configuracion') cargarConfiguracion();
-            if (idSeccion === 'docentes') cargarTablaDocentesGeneral();
+            if (idSeccion === 'docentes') {
+                cargarTablaDocentesGeneral();
+                cargarTablaRolesUsuarios();
+            }
+        }
+
+        function cambiarSubPestanaDocente(subSubId, evt) {
+            document.querySelectorAll('.sub-doc-panel').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#docentes .sub-tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`sub-docentes-${subSubId}`).style.display = 'block';
+            if (evt) evt.currentTarget.classList.add('active');
+            if (subSubId === 'roles') cargarTablaRolesUsuarios();
         }
 
         async function verificarRolUsuario(email) {
@@ -699,10 +747,9 @@
             if (data && data.role) {
                 usuarioRolActual = data.role.toLowerCase();
             } else {
-                usuarioRolActual = 'docente'; // Rol estándar por defecto sin privilegios de administración
+                usuarioRolActual = 'docente';
             }
 
-            // Aplicar restricciones visuales en la barra de navegación según el rol
             document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}`;
             
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
@@ -748,6 +795,7 @@
             cargarSelectorEstudiantesEdicion();
             cargarConfiguracion();
             cargarTablaDocentesGeneral();
+            cargarTablaRolesUsuarios();
         }
 
         supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
@@ -1271,6 +1319,87 @@
             contenedor.innerHTML = html;
         }
 
+        async function cargarTablaRolesUsuarios() {
+            const contenedor = document.getElementById('contenedor-tabla-roles');
+            if (!contenedor) return;
+            contenedor.innerHTML = '<p>Cargando roles activos...</p>';
+
+            const { data, error } = await supabaseClient.from('user_roles').select('*').order('email');
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar roles: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b;">No hay roles registrados en la base de datos.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Correo Electrónico</th>
+                            <th>Rol Asignado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(item => {
+                html += `
+                    <tr>
+                        <td style="text-align: left;"><b>${item.email}</b></td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${item.role === 'admin' ? '#dcfce7; color: #166534;' : '#fef3c7; color: #92400e;'}">${item.role.toUpperCase()}</span></td>
+                        <td>
+                            <button class="danger-btn" onclick="eliminarRolUsuario('${item.email}')">Eliminar Rol</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
+        }
+
+        async function guardarRolUsuario(e) {
+            e.preventDefault();
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden gestionar roles.');
+                return;
+            }
+
+            const email = document.getElementById('rol-email-input').value.trim();
+            const role = document.getElementById('rol-select-input').value;
+
+            const { error } = await supabaseClient.from('user_roles').upsert([{ email, role }], { onConflict: 'email' });
+
+            if (error) {
+                mostrarMensaje('rol-msg', 'Error al guardar el rol: ' + error.message, false);
+            } else {
+                mostrarMensaje('rol-msg', `¡Rol '${role}' asignado exitosamente a ${email}!`, true);
+                document.getElementById('form-asignar-rol').reset();
+                cargarTablaRolesUsuarios();
+            }
+        }
+
+        async function eliminarRolUsuario(email) {
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden eliminar roles.');
+                return;
+            }
+            if (!confirm(`¿Está seguro de eliminar el rol asignado a ${email}? Quedará con acceso estándar (docente).`)) return;
+
+            const { error } = await supabaseClient.from('user_roles').delete().eq('email', email);
+            if (error) {
+                alert('Error al eliminar rol: ' + error.message);
+            } else {
+                alert('Rol eliminado correctamente.');
+                cargarTablaRolesUsuarios();
+            }
+        }
+
         function cargarDocenteParaEdicion(id, nombre, correo, telefono, especialidad, tipo) {
             if (usuarioRolActual !== 'admin') {
                 alert('Acceso denegado: Solo los administradores pueden editar docentes.');
@@ -1771,8 +1900,6 @@
                             docenteCargo = estData.docente_plasticas || 'Mirta Castro';
                         } else if (mat.includes('Edufi')) {
                             docenteCargo = estData.docente_edufi || 'Santiago Jimenez';
-                        } else if (mat.includes('Inglés')) {
-                            docenteCargo = estData.docente_ingles || 'Ulises';
                         } else if (mat.includes('Solfeo')) {
                             docenteCargo = estData.docente_solfeo || 'Rafael Cativo Romero';
                         } else if (mat.includes('Percusión')) {
