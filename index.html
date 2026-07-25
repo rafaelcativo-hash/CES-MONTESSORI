@@ -124,15 +124,15 @@
         </header>
 
         <nav id="app-nav">
-            <button class="tab-btn active" data-tab="matricula" onclick="cambiarPestana('matricula', event)">Matrícula</button>
-            <button class="tab-btn" data-tab="listas" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
-            <button class="tab-btn" data-tab="registro" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
-            <button class="tab-btn" data-tab="calificar" onclick="cambiarPestana('calificar', event)">Calificar</button>
-            <button class="tab-btn" data-tab="hogar" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
-            <button class="tab-btn" data-tab="configuracion" data-role="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
-            <button class="tab-btn" data-tab="docentes" data-role="admin" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
-            <button class="tab-btn" data-tab="contactos" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
-            <button class="tab-btn" data-tab="listasnivel" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
+            <button class="tab-btn active" data-tab="matricula" data-role-req="admin" onclick="cambiarPestana('matricula', event)">Matrícula</button>
+            <button class="tab-btn" data-tab="listas" data-role-req="admin" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
+            <button class="tab-btn" data-tab="registro" data-role-req="admin" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
+            <button class="tab-btn" data-tab="calificar" data-role-req="all" onclick="cambiarPestana('calificar', event)">Calificar</button>
+            <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
+            <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
+            <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
+            <button class="tab-btn" data-tab="contactos" data-role-req="admin" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
+            <button class="tab-btn" data-tab="listasnivel" data-role-req="admin" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
         </nav>
 
         <main>
@@ -470,7 +470,7 @@
 
             <!-- 5. INFORMES AL HOGAR -->
             <section id="hogar" class="tab-content">
-                <h2>Generación, Envío y Descarga de Informes al Hogar</h2>
+                <h2>Generación, Envío y Descarga di Informes al Hogar</h2>
                 <fieldset>
                     <legend>Selección para Informe Institucional</legend>
                     <div class="form-grid">
@@ -695,7 +695,9 @@
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         let usuarioRolActual = 'docente';
-        let docenteEspecialidadGlobal = ''; // Almacena la especialidad o materia del docente autenticado
+        let docenteTipoActual = 'academico'; // 'academico' o 'artistico'
+        let docenteEspecialidadGlobal = '';
+        let docenteNombreGlobal = '';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -713,10 +715,17 @@
         }
 
         function cambiarPestana(idSeccion, evt) {
+            if (usuarioRolActual !== 'admin' && idSeccion !== 'calificar') {
+                idSeccion = 'calificar';
+            }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(idSeccion).classList.add('active');
-            if (evt) evt.currentTarget.classList.add('active');
+            
+            const btnTarget = document.querySelector(`.tab-btn[data-tab="${idSeccion}"]`);
+            if (btnTarget) btnTarget.classList.add('active');
+            else if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+
             if (idSeccion === 'matricula') {
                 inicializarAniosLectivos();
                 cargarDocentesEnMatricula();
@@ -741,7 +750,6 @@
         }
 
         async function verificarRolUsuario(email) {
-            // 1. Consultar rol general en user_roles PRIMERO (Prioridad absoluta)
             const { data: roleData } = await supabaseClient
                 .from('user_roles')
                 .select('role')
@@ -754,37 +762,43 @@
                 usuarioRolActual = 'docente';
             }
 
-            // 2. Consultar si este correo corresponde a un docente registrado para conocer su especialidad exacta
             const { data: docData } = await supabaseClient
                 .from('docentes')
-                .select('especialidad, nombre')
+                .select('especialidad, nombre, tipo_docente')
                 .eq('correo', email)
                 .maybeSingle();
 
-            if (docData && docData.especialidad) {
-                docenteEspecialidadGlobal = docData.especialidad.toLowerCase();
+            if (docData) {
+                docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase();
+                docenteNombreGlobal = (docData.nombre || '').trim();
+                docenteTipoActual = (docData.tipo_docente || 'academico').toLowerCase();
             } else {
                 docenteEspecialidadGlobal = '';
+                docenteNombreGlobal = '';
+                docenteTipoActual = 'academico';
             }
 
             document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docData.especialidad+')' : ''}`;
             
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
             botonesNav.forEach(btn => {
-                const rolRequerido = btn.getAttribute('data-role');
-                if (rolRequerido === 'admin' && usuarioRolActual !== 'admin') {
+                const rolRequerido = btn.getAttribute('data-role-req');
+                if (usuarioRolActual !== 'admin' && rolRequerido === 'admin') {
                     btn.classList.add('hidden-by-role');
                 } else {
                     btn.classList.remove('hidden-by-role');
                 }
             });
+
+            if (usuarioRolActual !== 'admin') {
+                cambiarPestana('calificar', null);
+            }
         }
 
         async function aplicarRestriccionMateriaDocente() {
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
 
-            // Si es admin, mostrar todas las opciones completas sin restricciones
             if (usuarioRolActual === 'admin') {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
@@ -793,54 +807,54 @@
                 return;
             }
 
-            // Normalizar la especialidad del docente para hacer una búsqueda flexible
             const esp = docenteEspecialidadGlobal.toLowerCase();
+            const tipoDoc = docenteTipoActual.toLowerCase();
             
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
                 const valMateria = opt.value.toLowerCase();
                 let mostrarOpcion = false;
 
-                // Lógica estricta por especialidad docente registrada
-                if (esp.includes('percusión') || esp.includes('percursion')) {
-                    if (valMateria.includes('percusión') || valMateria.includes('percursion')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('canto')) {
-                    if (valMateria.includes('canto')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('danza')) {
-                    if (valMateria.includes('danza')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('plástica') || esp.includes('plastica')) {
-                    if (valMateria.includes('plásticas') || valMateria.includes('plastica')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('solfeo')) {
-                    if (valMateria.includes('solfeo')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('piano')) {
-                    if (valMateria.includes('piano')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('guitarra')) {
-                    if (valMateria.includes('guitarra')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('ukulele')) {
-                    if (valMateria.includes('ukulele')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('batería') || esp.includes('bateria')) {
-                    if (valMateria.includes('batería') || valMateria.includes('bateria')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('bajo')) {
-                    if (valMateria.includes('bajo')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('inglés') || esp.includes('ingles')) {
-                    if (valMateria.includes('inglés') || valMateria.includes('ingles')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('edufi') || esp.includes('educación física')) {
-                    if (valMateria.includes('edufi')) mostrarOpcion = true;
-                } 
-                else if (esp.includes('académico') || esp.includes('academico') || esp.includes('español') || esp.includes('matemáticas') || esp.includes('ciencias')) {
+                if (tipoDoc === 'academico') {
                     if (valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('conducta')) {
                         mostrarOpcion = true;
+                    }
+                } else if (tipoDoc === 'artistico') {
+                    if (esp.includes('percusión') || esp.includes('percursion')) {
+                        if (valMateria.includes('percusión') || valMateria.includes('percursion')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('canto')) {
+                        if (valMateria.includes('canto')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('danza')) {
+                        if (valMateria.includes('danza')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('plástica') || esp.includes('plastica')) {
+                        if (valMateria.includes('plásticas') || valMateria.includes('plastica')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('solfeo')) {
+                        if (valMateria.includes('solfeo')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('piano')) {
+                        if (valMateria.includes('piano')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('guitarra')) {
+                        if (valMateria.includes('guitarra')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('ukulele')) {
+                        if (valMateria.includes('ukulele')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('batería') || esp.includes('bateria')) {
+                        if (valMateria.includes('batería') || valMateria.includes('bateria')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('bajo')) {
+                        if (valMateria.includes('bajo')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('inglés') || esp.includes('ingles')) {
+                        if (valMateria.includes('inglés') || valMateria.includes('ingles')) mostrarOpcion = true;
+                    } 
+                    else if (esp.includes('edufi') || esp.includes('educación física')) {
+                        if (valMateria.includes('edufi')) mostrarOpcion = true;
                     }
                 }
 
@@ -1717,8 +1731,30 @@
                 estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico || est.instrumento_segundo === instrumentoEspecifico);
             }
 
+            if (usuarioRolActual !== 'admin' && docenteTipoActual === 'artistico') {
+                const espDoc = docenteEspecialidadGlobal;
+                const nomDoc = docenteNombreGlobal;
+                
+                estudiantes = estudiantes.filter(est => {
+                    let matchProfesor = false;
+                    if (materia.includes('Solfeo') && est.docente_solfeo === nomDoc) matchProfesor = true;
+                    if (materia.includes('Percusión') && est.docente_percursion === nomDoc) matchProfesor = true;
+                    if (materia.includes('Danza') && est.docente_danza === nomDoc) matchProfesor = true;
+                    if (materia.includes('Plásticas') && est.docente_plasticas === nomDoc) matchProfesor = true;
+                    if (materia.includes('Inglés') && est.docente_ingles === nomDoc) matchProfesor = true;
+                    if (materia.includes('Edufi') && est.docente_edufi === nomDoc) matchProfesor = true;
+                    if (instrumentoEspecifico && (est.docente_asignado === nomDoc || est.docente_segundo === nomDoc)) matchProfesor = true;
+                    return matchProfesor;
+                });
+            }
+
+            if (usuarioRolActual !== 'admin' && docenteTipoActual === 'academico') {
+                const nomDoc = docenteNombreGlobal;
+                estudiantes = estudiantes.filter(est => est.docente_academico === nomDoc);
+            }
+
             if (estudiantes.length === 0) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel} bajo su responsabilidad.</p>`;
                 return;
             }
 
