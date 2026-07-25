@@ -1382,7 +1382,7 @@
             }
 
             if (esConducta && !comentario) {
-                alert('El comentario formativo en Conducta is obligatorio para el informe al hogar.');
+                alert('El comentario formativo en Conducta es obligatorio para el informe al hogar.');
                 comentarioInput.focus();
                 return;
             }
@@ -1592,14 +1592,6 @@
                 reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios u observaciones docentes registradas para este ${periodoSel}]</p>`;
             }
 
-            let docenteDanzaEncargado = estData.docente_artistico_grupal || 'No asignado';
-            if (docentesLista) {
-                const docDanzaEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes('danza'));
-                if (docDanzaEncontrado) {
-                    docenteDanzaEncargado = docDanzaEncontrado.nombre;
-                }
-            }
-
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
@@ -1628,10 +1620,6 @@
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
                                 <p style="margin: 3px 0;"><b>Nacionalidad:</b> ${estData.nacionalidad || 'No especificada'}</p>
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
-                                <p style="margin: 3px 0;"><b>Instrumento Principal:</b> ${estData.instrumento_principal || 'Ninguno'}</p>
-                                <p style="margin: 3px 0;"><b>Profesor de Instrumento:</b> ${estData.docente_asignado || 'No asignado'}</p>
-                                <p style="margin: 3px 0; grid-column: span 2;"><b>Segundo Instrumento (Pago):</b> ${estData.instrumento_segundo && estData.instrumento_segundo !== 'Ninguno' ? `${estData.instrumento_segundo} (Profesor: ${estData.docente_segundo})` : 'Ninguno'}</p>
-                                <p style="margin: 3px 0; grid-column: span 2;"><b>Taller Artístico Grupal (Danza/Otros):</b> ${docenteDanzaEncargado}</p>
                                 <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                             </div>
                         </div>
