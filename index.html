@@ -35,6 +35,7 @@
         .tab-btn { background: none; border: none; color: #94a3b8; padding: 12px 10px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-size: 13px; flex: 1; text-align: center; }
         .tab-btn:hover { color: white; background-color: rgba(255,255,255,0.05); }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); background-color: rgba(255,255,255,0.08); }
+        .tab-btn.hidden-by-role { display: none !important; }
 
         .sub-panel-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; }
         .sub-tab-btn { background: #e2e8f0; border: none; color: var(--primary); padding: 8px 16px; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
@@ -118,20 +119,21 @@
             </div>
             <div>
                 <span id="user-email-display" style="margin-right: 15px; font-size: 14px;"></span>
+                <span id="user-role-badge" style="margin-right: 15px; padding: 3px 8px; border-radius: 4px; font-size: 11px; background: #e0f2fe; color: #0369a1; font-weight: bold;"></span>
                 <button class="logout-btn" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
         </header>
 
-        <nav>
-            <button class="tab-btn active" onclick="cambiarPestana('matricula', event)">Matrícula</button>
-            <button class="tab-btn" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
-            <button class="tab-btn" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
-            <button class="tab-btn" onclick="cambiarPestana('calificar', event)">Calificar</button>
-            <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
-            <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración</button>
-            <button class="tab-btn" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
-            <button class="tab-btn" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
-            <button class="tab-btn" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
+        <nav id="app-nav">
+            <button class="tab-btn active" data-tab="matricula" onclick="cambiarPestana('matricula', event)">Matrícula</button>
+            <button class="tab-btn" data-tab="listas" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
+            <button class="tab-btn" data-tab="registro" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
+            <button class="tab-btn" data-tab="calificar" onclick="cambiarPestana('calificar', event)">Calificar</button>
+            <button class="tab-btn" data-tab="hogar" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
+            <button class="tab-btn" data-tab="configuracion" data-role="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
+            <button class="tab-btn" data-tab="docentes" data-role="admin" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
+            <button class="tab-btn" data-tab="contactos" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
+            <button class="tab-btn" data-tab="listasnivel" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
         </nav>
 
         <main>
@@ -656,6 +658,8 @@
 
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
+        let usuarioRolActual = 'docente'; // Valor por defecto seguro
+
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
             if (!selectAnio) return;
@@ -685,6 +689,33 @@
             if (idSeccion === 'docentes') cargarTablaDocentesGeneral();
         }
 
+        async function verificarRolUsuario(email) {
+            const { data, error } = await supabaseClient
+                .from('user_roles')
+                .select('role')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (data && data.role) {
+                usuarioRolActual = data.role.toLowerCase();
+            } else {
+                usuarioRolActual = 'docente'; // Rol estándar por defecto sin privilegios de administración
+            }
+
+            // Aplicar restricciones visuales en la barra de navegación según el rol
+            document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}`;
+            
+            const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
+            botonesNav.forEach(btn => {
+                const rolRequerido = btn.getAttribute('data-role');
+                if (rolRequerido === 'admin' && usuarioRolActual !== 'admin') {
+                    btn.classList.add('hidden-by-role');
+                } else {
+                    btn.classList.remove('hidden-by-role');
+                }
+            });
+        }
+
         async function realizarLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -696,6 +727,7 @@
                 msg.innerText = 'Error de acceso: ' + error.message;
                 msg.style.display = 'block';
             } else {
+                await verificarRolUsuario(data.user.email);
                 iniciarSesionUI(data.user.email);
             }
         }
@@ -706,10 +738,11 @@
             document.getElementById('login-container').style.display = 'flex';
         }
 
-        function iniciarSesionUI(email) {
+        async function iniciarSesionUI(email) {
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
+            await verificarRolUsuario(email);
             inicializarAniosLectivos();
             cargarDocentesEnMatricula();
             cargarSelectorEstudiantesEdicion();
@@ -717,8 +750,11 @@
             cargarTablaDocentesGeneral();
         }
 
-        supabaseClient.auth.getSession().then(({ data: { session } }) => {
-            if (session) iniciarSesionUI(session.user.email);
+        supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+            if (session) {
+                await verificarRolUsuario(session.user.email);
+                iniciarSesionUI(session.user.email);
+            }
         });
 
         function procesarArchivoFoto(event) {
@@ -1156,6 +1192,10 @@
 
         function confirmarYGuardarConfiguracion(e) {
             e.preventDefault();
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden modificar la configuración institucional.');
+                return;
+            }
             if (confirm('¿Estás seguro que quieres realizar el cambio?')) {
                 guardarConfiguracion();
             }
@@ -1232,6 +1272,10 @@
         }
 
         function cargarDocenteParaEdicion(id, nombre, correo, telefono, especialidad, tipo) {
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden editar docentes.');
+                return;
+            }
             document.getElementById('doc-id').value = id;
             document.getElementById('doc-nombre').value = nombre;
             document.getElementById('doc-correo').value = correo;
@@ -1256,6 +1300,10 @@
 
         function confirmarYGuardarDocente(e) {
             e.preventDefault();
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden registrar o modificar docentes.');
+                return;
+            }
             if (confirm('¿Estás seguro que quieres realizar el cambio?')) {
                 guardarOActualizarDocente();
             }
@@ -1291,6 +1339,10 @@
         }
 
         async function eliminarDocente(id) {
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden eliminar docentes.');
+                return;
+            }
             if (!confirm('¿Está seguro de que desea eliminar este docente del sistema?')) return;
 
             const { error } = await supabaseClient.from('docentes').delete().eq('id', id);
@@ -2122,7 +2174,6 @@
                 return;
             }
 
-            // Ordenar alfabéticamente por nombre
             data.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
             let filasTablaHTML = '';
