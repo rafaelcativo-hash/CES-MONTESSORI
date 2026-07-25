@@ -554,7 +554,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const CAMPOS_ESTUDIANTES = 'cedula, nombre, nacionalidad, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
+        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -732,7 +732,6 @@
             document.getElementById('mat-nombre').value = data.nombre || '';
             inputCedula.value = data.cedula || '';
             inputCedula.readOnly = true; 
-            document.getElementById('mat-nacionalidad').value = data.nacionalidad || '';
             document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
             calcularEdadExacta();
             document.getElementById('mat-nivel').value = data.nivel || '';
@@ -800,7 +799,6 @@
             const datos = {
                 nombre: document.getElementById('mat-nombre').value.trim(),
                 cedula: cedulaVal,
-                nacionalidad: document.getElementById('mat-nacionalidad').value.trim(),
                 fecha_nacimiento: document.getElementById('mat-fnac').value,
                 nivel: document.getElementById('mat-nivel').value,
                 docente_academico: document.getElementById('mat-docente-acad').value,
@@ -846,7 +844,6 @@
             const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
             const nombre = document.getElementById('mat-nombre').value;
             const cedula = document.getElementById('mat-cedula').value;
-            const nacionalidad = document.getElementById('mat-nacionalidad').value;
             const fnac = document.getElementById('mat-fnac').value;
             const nivel = document.getElementById('mat-nivel').value;
             const docenteAcad = document.getElementById('mat-docente-acad').value;
@@ -945,13 +942,12 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nacionalidad,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
                     `"${est.cedula || ''}"`,
                     `"${est.nombre || ''}"`,
-                    `"${est.nacionalidad || ''}"`,
                     `"${est.nivel || ''}"`,
                     `"${est.fecha_nacimiento || ''}"`,
                     `"${est.docente_academico || ''}"`,
