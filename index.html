@@ -778,7 +778,14 @@
                 docenteTipoActual = 'academico';
             }
 
-            document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docData.especialidad+')' : ''}`;
+            // ASEGURAR PERFIL CORRECTO PARA LUIS INDEPENDIENTEMENTE DE SUPABASE
+            if (email.toLowerCase() === 'delaodrums@gmail.com') {
+                docenteTipoActual = 'artistico';
+                docenteEspecialidadGlobal = 'batería y taller de percusión';
+                docenteNombreGlobal = 'Luis De La O Jimenez';
+            }
+
+            document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
             
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
             botonesNav.forEach(btn => {
