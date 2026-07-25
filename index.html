@@ -130,6 +130,7 @@
             <button class="tab-btn" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
+            <button class="tab-btn" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
         </nav>
 
         <main>
@@ -539,7 +540,7 @@
                 </form>
             </section>
 
-            <!-- 7. DIRECTORIO Y GESTIÓN DE DOCENTES -->
+            <!-- 7. DIRECTORIO DE DOCENTES -->
             <section id="docentes" class="tab-content">
                 <h2>Directorio General y Gestión de Docentes (Académicos y Artísticos)</h2>
                 
@@ -583,6 +584,32 @@
                 <h3 style="color: var(--primary); margin-top: 30px;">Personal Registrado en el Sistema</h3>
                 <div id="contenedor-tabla-docentes" style="overflow-x: auto;">
                     <p>Cargando lista de docentes...</p>
+                </div>
+            </section>
+
+            <!-- 8. LISTA DE CONTACTOS -->
+            <section id="contactos" class="tab-content">
+                <h2>Directorio y Contactos de Encargados por Nivel</h2>
+                <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                    <legend style="color: var(--accent);">Seleccionar Nivel Educativo</legend>
+                    <div class="form-grid" style="max-width: 400px;">
+                        <div class="form-group">
+                            <label>Nivel</label>
+                            <select id="contacto-nivel-sel" onchange="cargarContactosPorNivel()">
+                                <option value="">-- Seleccione un nivel --</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div id="contenedor-lista-contactos" style="margin-top: 20px;">
+                    <p style="color: #64748b;">Seleccione un nivel educativo para desplegar la lista de estudiantes y los datos de sus encargados.</p>
                 </div>
             </section>
         </main>
@@ -985,7 +1012,7 @@
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
-                        <p style="margin: 4px 0;"><b>Fecha y Lugar de Nacimiento:</b> ${fnac} (${lugarNac || 'No especificado'})</p>
+                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
                         <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
                     </div>
 
@@ -1962,6 +1989,66 @@
                 }
             }
             msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
+        }
+
+        async function cargarContactosPorNivel() {
+            const nivel = document.getElementById('contacto-nivel-sel').value;
+            const contenedor = document.getElementById('contenedor-lista-contactos');
+
+            if (!nivel) {
+                contenedor.innerHTML = '<p style="color: #64748b;">Seleccione un nivel educativo para desplegar la lista de estudiantes y los datos de sus encargados.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '<p>Cargando lista de contactos...</p>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel).order('nombre');
+
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar contactos: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = `<p style="color: #64748b;">No hay estudiantes registrados en el nivel ${nivel}.</p>`;
+                return;
+            }
+
+            let html = `
+                <h3 style="color: var(--primary);">Directorio de Encargados - Nivel: ${nivel}</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Cédula</th>
+                            <th>Primer Encargado</th>
+                            <th>Teléfono 1</th>
+                            <th>Correo 1</th>
+                            <th>Segundo Encargado</th>
+                            <th>Teléfono 2</th>
+                            <th>Correo 2</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(est => {
+                html += `
+                    <tr>
+                        <td style="text-align: left;"><b>${est.nombre}</b></td>
+                        <td>${est.cedula}</td>
+                        <td style="text-align: left;">${est.encargado1_nombre || 'N/A'}</td>
+                        <td>${est.encargado1_cel || 'N/A'}</td>
+                        <td style="text-align: left;">${est.encargado1_correo || 'N/A'}</td>
+                        <td style="text-align: left;">${est.encargado2_nombre || 'N/A'}</td>
+                        <td>${est.encargado2_cel || 'N/A'}</td>
+                        <td style="text-align: left;">${est.encargado2_correo || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
         }
     </script>
 </body>
