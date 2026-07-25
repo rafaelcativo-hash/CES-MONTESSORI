@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIA-Shkénuk - CES Montessori</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería html2pdf para exportar a PDF en informes al hogar -->
+    <!-- Librería html2pdf para exportar a PDF en informes y listas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -84,8 +84,8 @@
 
         @media print {
             body * { visibility: hidden; }
-            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
+            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion * { visibility: visible; }
+            #preview-matricula-impresion, #plantilla-informe-oficial, #plantilla-lista-nivel-impresion { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
             .no-print { display: none !important; }
         }
     </style>
@@ -131,6 +131,7 @@
             <button class="tab-btn" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
             <button class="tab-btn" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
+            <button class="tab-btn" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
         </nav>
 
         <main>
@@ -611,6 +612,33 @@
                 <div id="contenedor-lista-contactos" style="margin-top: 20px;">
                     <p style="color: #64748b;">Seleccione un nivel educativo para desplegar la lista de estudiantes y los datos de sus encargados.</p>
                 </div>
+            </section>
+
+            <!-- 9. LISTAS POR NIVEL -->
+            <section id="listasnivel" class="tab-content">
+                <h2>Generador de Listas Oficiales por Nivel</h2>
+                <fieldset style="background: #f8fafc; border-color: var(--accent);">
+                    <legend style="color: var(--accent);">Parámetros de Generación</legend>
+                    <div class="form-grid" style="max-width: 400px;">
+                        <div class="form-group">
+                            <label>Seleccionar Nivel Educativo</label>
+                            <select id="generar-lista-nivel-sel" onchange="generarListaOficialNivelVisual()">
+                                <option value="">-- Seleccione un nivel --</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div id="contenedor-vista-lista-nivel" style="margin-top: 20px;">
+                    <p style="color: #64748b; text-align: center;">Seleccione un nivel educativo para generar la lista oficial.</p>
+                </div>
+                <div id="listanivel-msg" class="notification" style="width: 100%; text-align: right;"></div>
             </section>
         </main>
     </div>
@@ -2049,6 +2077,127 @@
 
             html += `</tbody></table>`;
             contenedor.innerHTML = html;
+        }
+
+        async function generarListaOficialNivelVisual() {
+            const nivel = document.getElementById('generar-lista-nivel-sel').value;
+            const contenedor = document.getElementById('contenedor-vista-lista-nivel');
+
+            if (!nivel) {
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione un nivel educativo para generar la lista oficial.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '<p>Cargando lista de estudiantes...</p>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
+
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = `<p style="color: #64748b; text-align: center;">No hay estudiantes matriculados en el nivel ${nivel}.</p>`;
+                return;
+            }
+
+            // Ordenar alfabéticamente por nombre
+            data.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+            let filasTablaHTML = '';
+            data.forEach((est, index) => {
+                filasTablaHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td style="text-align: center;">${est.cedula || ''}</td>
+                        <td style="text-align: left;"><b>${est.nombre || ''}</b></td>
+                    </tr>
+                `;
+            });
+
+            contenedor.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
+                    <h3 style="margin: 0; color: var(--primary);">Vista Previa • Lista Oficial de ${nivel}</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                        <button type="button" class="success-btn" onclick="descargarListaNivelExcel('${nivel}')">Descargar Excel (CSV)</button>
+                    </div>
+                </div>
+
+                <div class="report-preview" id="plantilla-lista-nivel-impresion">
+                    <div style="width: 100%; margin-bottom: 20px; text-align: center;">
+                        <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 150px; object-fit: contain; margin: 0 auto;">
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia • Circuito Escolar 04</p>
+                        <p style="margin: 3px 0; font-size: 11px; color: #64748b;">Calle El Pedregal 40205, Heredia, Barva, El Carbonal • Tel: 2260-7806</p>
+                        <p style="margin: 10px 0 0 0; font-size: 15px; color: var(--accent); font-weight: bold; text-transform: uppercase;">LISTA OFICIAL DE ESTUDIANTES • NIVEL: ${nivel.toUpperCase()}</p>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">N.°</th>
+                                    <th>Cédula</th>
+                                    <th style="text-align: left;">Apellidos y Nombres</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filasTablaHTML}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-around; margin-top: 50px; text-align: center;">
+                        <div style="width: 45%;">
+                            <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
+                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Directora de la Institución</p>
+                        </div>
+                        <div style="width: 45%;">
+                            <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
+                            <p style="margin: 0; font-size: 12px; font-weight: bold;">Docente Encargado de Nivel</p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Firma y Sello</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function descargarListaNivelExcel(nivel) {
+            const { data, error } = await supabaseClient.from('estudiantes').select('cedula, nombre').eq('nivel', nivel);
+
+            if (error || !data || data.length === 0) {
+                alert('No hay estudiantes en este nivel para exportar.');
+                return;
+            }
+
+            // Ordenar alfabéticamente
+            data.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+            let csvContent = `\uFEFF"LISTA OFICIAL - NIVEL: ${nivel.toUpperCase()}"\n`;
+            csvContent += '"N°","Cédula","Apellidos y Nombres"\n';
+
+            data.forEach((est, index) => {
+                const fila = [
+                    index + 1,
+                    `"${est.cedula || ''}"`,
+                    `"${est.nombre || ''}"`
+                ].join(',');
+                csvContent += fila + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Lista_Oficial_${nivel}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
