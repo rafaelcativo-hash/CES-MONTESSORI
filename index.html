@@ -470,7 +470,7 @@
 
             <!-- 5. INFORMES AL HOGAR -->
             <section id="hogar" class="tab-content">
-                <h2>Generación, Envío y Descarga di Informes al Hogar</h2>
+                <h2>Generación, Envío y Descarga de Informes al Hogar</h2>
                 <fieldset>
                     <legend>Selección para Informe Institucional</legend>
                     <div class="form-grid">
@@ -820,40 +820,37 @@
                         mostrarOpcion = true;
                     }
                 } else if (tipoDoc === 'artistico') {
-                    if (esp.includes('percusión') || esp.includes('percursion')) {
-                        if (valMateria.includes('percusión') || valMateria.includes('percursion')) mostrarOpcion = true;
+                    if (esp.includes('percusión') || esp.includes('percursion') || esp.includes('batería') || esp.includes('bateria')) {
+                        if (valMateria.includes('percusión') || valMateria.includes('percursion') || valMateria.includes('batería') || valMateria.includes('bateria')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('canto')) {
+                    if (esp.includes('canto')) {
                         if (valMateria.includes('canto')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('danza')) {
+                    if (esp.includes('danza')) {
                         if (valMateria.includes('danza')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('plástica') || esp.includes('plastica')) {
+                    if (esp.includes('plástica') || esp.includes('plastica')) {
                         if (valMateria.includes('plásticas') || valMateria.includes('plastica')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('solfeo')) {
+                    if (esp.includes('solfeo')) {
                         if (valMateria.includes('solfeo')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('piano')) {
+                    if (esp.includes('piano')) {
                         if (valMateria.includes('piano')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('guitarra')) {
+                    if (esp.includes('guitarra')) {
                         if (valMateria.includes('guitarra')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('ukulele')) {
+                    if (esp.includes('ukulele')) {
                         if (valMateria.includes('ukulele')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('batería') || esp.includes('bateria')) {
-                        if (valMateria.includes('batería') || valMateria.includes('bateria')) mostrarOpcion = true;
-                    } 
-                    else if (esp.includes('bajo')) {
+                    if (esp.includes('bajo')) {
                         if (valMateria.includes('bajo')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('inglés') || esp.includes('ingles')) {
+                    if (esp.includes('inglés') || esp.includes('ingles')) {
                         if (valMateria.includes('inglés') || valMateria.includes('ingles')) mostrarOpcion = true;
                     } 
-                    else if (esp.includes('edufi') || esp.includes('educación física')) {
+                    if (esp.includes('edufi') || esp.includes('educación física')) {
                         if (valMateria.includes('edufi')) mostrarOpcion = true;
                     }
                 }
@@ -1732,25 +1729,24 @@
             }
 
             if (usuarioRolActual !== 'admin' && docenteTipoActual === 'artistico') {
-                const espDoc = docenteEspecialidadGlobal;
                 const nomDoc = docenteNombreGlobal;
                 
                 estudiantes = estudiantes.filter(est => {
                     let matchProfesor = false;
-                    if (materia.includes('Solfeo') && est.docente_solfeo === nomDoc) matchProfesor = true;
-                    if (materia.includes('Percusión') && est.docente_percursion === nomDoc) matchProfesor = true;
-                    if (materia.includes('Danza') && est.docente_danza === nomDoc) matchProfesor = true;
-                    if (materia.includes('Plásticas') && est.docente_plasticas === nomDoc) matchProfesor = true;
-                    if (materia.includes('Inglés') && est.docente_ingles === nomDoc) matchProfesor = true;
-                    if (materia.includes('Edufi') && est.docente_edufi === nomDoc) matchProfesor = true;
-                    if (instrumentoEspecifico && (est.docente_asignado === nomDoc || est.docente_segundo === nomDoc)) matchProfesor = true;
+                    if (materia.includes('Solfeo') && (est.docente_solfeo === nomDoc || !est.docente_solfeo)) matchProfesor = true;
+                    if (materia.includes('Percusión') && (est.docente_percursion === nomDoc || !est.docente_percursion)) matchProfesor = true;
+                    if (materia.includes('Danza') && (est.docente_danza === nomDoc || !est.docente_danza)) matchProfesor = true;
+                    if (materia.includes('Plásticas') && (est.docente_plasticas === nomDoc || !est.docente_plasticas)) matchProfesor = true;
+                    if (materia.includes('Inglés') && (est.docente_ingles === nomDoc || !est.docente_ingles)) matchProfesor = true;
+                    if (materia.includes('Edufi') && (est.docente_edufi === nomDoc || !est.docente_edufi)) matchProfesor = true;
+                    if (instrumentoEspecifico && (est.docente_asignado === nomDoc || est.docente_segundo === nomDoc || !est.docente_asignado)) matchProfesor = true;
                     return matchProfesor;
                 });
             }
 
             if (usuarioRolActual !== 'admin' && docenteTipoActual === 'academico') {
                 const nomDoc = docenteNombreGlobal;
-                estudiantes = estudiantes.filter(est => est.docente_academico === nomDoc);
+                estudiantes = estudiantes.filter(est => est.docente_academico === nomDoc || !est.docente_academico);
             }
 
             if (estudiantes.length === 0) {
