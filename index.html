@@ -179,7 +179,7 @@
 
                 <form id="form-matricula" onsubmit="confirmarYGuardarMatricula(event)">
                     <fieldset>
-                        <legend>Datos Personales y Fotografía del Estudiante</legend>
+                        <legend>Datos Personales, Nacimiento y Fotografía del Estudiante</legend>
                         <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 1; min-width: 280px;">
                                 <div class="form-grid">
@@ -194,6 +194,10 @@
                                     <div class="form-group">
                                         <label>Fecha de Nacimiento</label>
                                         <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Lugar de Nacimiento</label>
+                                        <input type="text" id="mat-lugar-nac" required placeholder="Ej. Heredia, Costa Rica">
                                     </div>
                                     <div class="form-group" style="grid-column: span 2;">
                                         <label>Nivel Educativo (Ciclos)</label>
@@ -231,7 +235,7 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Asignación de Docentes, Talleres y Cursos Artísticos</legend>
+                        <legend>Asignación de Docentes, Académico, Talleres y Cursos Artísticos</legend>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Profesor Académico (Nivel)</label>
@@ -239,14 +243,49 @@
                                     <option value="">Cargando docentes académicos...</option>
                                 </select>
                             </div>
+                        </div>
+                        
+                        <h4 style="color: var(--primary); margin-top: 15px; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Asignaturas y Docentes Predefinidos (Asigne o Modifique en la lista)</h4>
+                        <div class="form-grid">
                             <div class="form-group">
-                                <label>Profesor Artístico Grupal (Danza, Solfeo, Percusión, Plásticas)</label>
-                                <select id="mat-docente-art-grupal">
-                                    <option value="">Cargando docentes artísticos...</option>
+                                <label>Solfeo</label>
+                                <select id="mat-doc-solfeo" class="select-docente-predefinido" data-materia="Solfeo">
+                                    <option value="Rafael Cativo Romero">Rafael Cativo Romero</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Taller de Percusión</label>
+                                <select id="mat-doc-percursion" class="select-docente-predefinido" data-materia="Taller de Percusión">
+                                    <option value="Rafael Cativo Romero">Rafael Cativo Romero</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Danza</label>
+                                <select id="mat-doc-danza" class="select-docente-predefinido" data-materia="Danza">
+                                    <option value="Vanesa De La O Jimenez">Vanesa De La O Jimenez</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Artes Plásticas</label>
+                                <select id="mat-doc-plasticas" class="select-docente-predefinido" data-materia="Artes Plásticas">
+                                    <option value="Mirta Castro">Mirta Castro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Inglés</label>
+                                <select id="mat-doc-ingles" class="select-docente-predefinido" data-materia="Inglés">
+                                    <option value="Ulises">Ulises</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Edufi</label>
+                                <select id="mat-doc-edufi" class="select-docente-predefinido" data-materia="Edufi">
+                                    <option value="Santiago Jimenez">Santiago Jimenez</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-grid">
+
+                        <div class="form-grid" style="margin-top: 15px;">
                             <div class="form-group">
                                 <label>Instrumento Individual Principal</label>
                                 <select id="mat-instr-principal" required>
@@ -554,7 +593,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, nivel, docente_academico, docente_artistico_grupal, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
+        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -639,13 +678,13 @@
 
         async function cargarDocentesEnMatricula() {
             const selAcad = document.getElementById('mat-docente-acad');
-            const selArtGrupal = document.getElementById('mat-docente-art-grupal');
             const selAsig = document.getElementById('mat-docente-asig');
             const selSegundoDoc = document.getElementById('mat-docente-segundo');
+            const selectsPredefinidos = document.querySelectorAll('.select-docente-predefinido');
+
             if (!selAcad) return;
 
             selAcad.innerHTML = '<option value="">Cargando académicos...</option>';
-            selArtGrupal.innerHTML = '<option value="">Cargando artísticos grupales...</option>';
             selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
             selSegundoDoc.innerHTML = '<option value="Ninguno">Ninguno / No aplica</option>';
 
@@ -653,20 +692,52 @@
             if (error || !data) return;
 
             selAcad.innerHTML = '<option value="">Seleccione profesor académico</option>';
-            selArtGrupal.innerHTML = '<option value="Ninguno">Ninguno</option>';
             selAsig.innerHTML = '<option value="">Seleccione instructor</option>';
 
+            // Recopilar lista completa de nombres únicos de docentes para los selects con palomilla (selectores predefinidos)
+            let listaNombresDocentes = new Set();
             data.forEach(doc => {
+                listaNombresDocentes.add(doc.nombre);
                 const opt = document.createElement('option');
                 opt.value = doc.nombre;
                 opt.textContent = `${doc.nombre} (${doc.especialidad})`;
+                
                 if (doc.tipo_docente === 'academico') {
                     selAcad.appendChild(opt);
                 } else {
-                    selArtGrupal.appendChild(opt.cloneNode(true));
-                    selAsig.appendChild(opt);
-                    selSegundoDoc.appendChild(opt.cloneNode(true));
+                    selAsig.appendChild(opt.cloneNode(true));
+                    selSegundoDoc.appendChild(opt);
                 }
+            });
+
+            // Poblar y asegurar los selectores predefinidos con su valor por defecto y lista completa
+            selectsPredefinidos.forEach(select => {
+                const materia = select.getAttribute('data-materia');
+                let valorDefecto = '';
+                if (materia === 'Solfeo' || materia === 'Taller de Percusión') valorDefecto = 'Rafael Cativo Romero';
+                if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
+                if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro';
+                if (materia === 'Inglés') valorDefecto = 'Ulises';
+                if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
+
+                select.innerHTML = '';
+                // Asegurar que el predefinido esté presente
+                if (valorDefecto && !listaNombresDocentes.has(valorDefecto)) {
+                    const optDef = document.createElement('option');
+                    optDef.value = valorDefecto;
+                    optDef.textContent = valorDefecto;
+                    select.appendChild(optDef);
+                }
+
+                listaNombresDocentes.forEach(nombreDoc => {
+                    const opt = document.createElement('option');
+                    opt.value = nombreDoc;
+                    opt.textContent = nombreDoc;
+                    if (nombreDoc === valorDefecto) {
+                        opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                });
             });
         }
 
@@ -733,10 +804,18 @@
             inputCedula.value = data.cedula || '';
             inputCedula.readOnly = true; 
             document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
+            document.getElementById('mat-lugar-nac').value = data.lugar_nacimiento || '';
             calcularEdadExacta();
             document.getElementById('mat-nivel').value = data.nivel || '';
             document.getElementById('mat-docente-acad').value = data.docente_academico || '';
-            document.getElementById('mat-docente-art-grupal').value = data.docente_artistico_grupal || 'Ninguno';
+            
+            if (document.getElementById('mat-doc-solfeo')) document.getElementById('mat-doc-solfeo').value = data.docente_solfeo || 'Rafael Cativo Romero';
+            if (document.getElementById('mat-doc-percursion')) document.getElementById('mat-doc-percursion').value = data.docente_percursion || 'Rafael Cativo Romero';
+            if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
+            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro';
+            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises';
+            if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
+
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
             document.getElementById('mat-docente-asig').value = data.docente_asignado || '';
             document.getElementById('mat-instr-segundo').value = data.instrumento_segundo || 'Ninguno';
@@ -784,6 +863,7 @@
             btnSubmit.className = 'action-btn';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
+            cargarDocentesEnMatricula();
         }
 
         function confirmarYGuardarMatricula(e) {
@@ -800,9 +880,15 @@
                 nombre: document.getElementById('mat-nombre').value.trim(),
                 cedula: cedulaVal,
                 fecha_nacimiento: document.getElementById('mat-fnac').value,
+                lugar_nacimiento: document.getElementById('mat-lugar-nac').value.trim(),
                 nivel: document.getElementById('mat-nivel').value,
                 docente_academico: document.getElementById('mat-docente-acad').value,
-                docente_artistico_grupal: document.getElementById('mat-docente-art-grupal').value || 'Ninguno',
+                docente_solfeo: document.getElementById('mat-doc-solfeo').value,
+                docente_percursion: document.getElementById('mat-doc-percursion').value,
+                docente_danza: document.getElementById('mat-doc-danza').value,
+                docente_plasticas: document.getElementById('mat-doc-plasticas').value,
+                docente_ingles: document.getElementById('mat-doc-ingles').value,
+                docente_edufi: document.getElementById('mat-doc-edufi').value,
                 instrumento_principal: document.getElementById('mat-instr-principal').value,
                 docente_asignado: document.getElementById('mat-docente-asig').value,
                 instrumento_segundo: document.getElementById('mat-instr-segundo').value || 'Ninguno',
@@ -845,9 +931,15 @@
             const nombre = document.getElementById('mat-nombre').value;
             const cedula = document.getElementById('mat-cedula').value;
             const fnac = document.getElementById('mat-fnac').value;
+            const lugarNac = document.getElementById('mat-lugar-nac').value;
             const nivel = document.getElementById('mat-nivel').value;
             const docenteAcad = document.getElementById('mat-docente-acad').value;
-            const docenteArt = document.getElementById('mat-docente-art-grupal').value;
+            const docSolfeo = document.getElementById('mat-doc-solfeo').value;
+            const docPerc = document.getElementById('mat-doc-percursion').value;
+            const docDanza = document.getElementById('mat-doc-danza').value;
+            const docPlast = document.getElementById('mat-doc-plasticas').value;
+            const docIngles = document.getElementById('mat-doc-ingles').value;
+            const docEdufi = document.getElementById('mat-doc-edufi').value;
             const instr = document.getElementById('mat-instr-principal').value;
             const docenteInstr = document.getElementById('mat-docente-asig').value;
             const instrSegundo = document.getElementById('mat-instr-segundo').value;
@@ -895,16 +987,17 @@
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
-                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
+                        <p style="margin: 4px 0;"><b>Fecha y Lugar de Nacimiento:</b> ${fnac} (${lugarNac || 'No especificado'})</p>
                         <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Asignación Académica y Artística</h4>
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Asignación Académica, Talleres y Cursos</h4>
                         <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${docenteAcad || 'No asignado'}</p>
-                        <p style="margin: 4px 0;"><b>Profesor Artístico Grupal:</b> ${docenteArt || 'Ninguno'}</p>
-                        <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'}</p>
-                        <p style="margin: 4px 0;"><b>Profesor de Instrumento Principal:</b> ${docenteInstr || 'No asignado'}</p>
+                        <p style="margin: 4px 0;"><b>Solfeo:</b> ${docSolfeo} | <b>Taller de Percusión:</b> ${docPerc}</p>
+                        <p style="margin: 4px 0;"><b>Danza:</b> ${docDanza} | <b>Artes Plásticas:</b> ${docPlast}</p>
+                        <p style="margin: 4px 0;"><b>Inglés:</b> ${docIngles} | <b>Edufi:</b> ${docEdufi}</p>
+                        <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'} (Profesor: ${docenteInstr || 'No asignado'})</p>
                         <p style="margin: 4px 0;"><b>Segundo Instrumento (Pago):</b> ${instrSegundo && instrSegundo !== 'Ninguno' ? `${instrSegundo} (Profesor: ${docenteSegundo})` : 'Ninguno'}</p>
                     </div>
 
@@ -942,7 +1035,7 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Profesor Académico,Profesor Artístico Grupal,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Lugar Nacimiento,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Edufi,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
@@ -950,8 +1043,14 @@
                     `"${est.nombre || ''}"`,
                     `"${est.nivel || ''}"`,
                     `"${est.fecha_nacimiento || ''}"`,
+                    `"${est.lugar_nacimiento || ''}"`,
                     `"${est.docente_academico || ''}"`,
-                    `"${est.docente_artistico_grupal || ''}"`,
+                    `"${est.docente_solfeo || ''}"`,
+                    `"${est.docente_percursion || ''}"`,
+                    `"${est.docente_danza || ''}"`,
+                    `"${est.docente_plasticas || ''}"`,
+                    `"${est.docente_ingles || ''}"`,
+                    `"${est.docente_edufi || ''}"`,
                     `"${est.instrumento_principal || ''}"`,
                     `"${est.docente_asignado || ''}"`,
                     `"${est.instrumento_segundo || ''}"`,
@@ -1437,7 +1536,7 @@
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td>`;
+                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Danza: ${est.docente_danza || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td>`;
                 
                 if (listaMaterias.length > 0) {
                     listaMaterias.forEach(mat => {
@@ -1556,13 +1655,10 @@
                     
                     if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
                         let docenteCargo = docenteSeleccionado;
-                        if (docentesLista) {
-                            const matLimpia = mat.replace('[Artística]', '').replace('[Académica]', '').trim().toLowerCase();
-                            const docEncontrado = docentesLista.find(d => d.especialidad && d.especialidad.toLowerCase().includes(matLimpia));
-                            if (docEncontrado) {
-                                docenteCargo = docEncontrado.nombre;
-                            }
-                        }
+                        if (mat.includes('Danza')) docenteCargo = estData.docente_danza || 'Vanesa De La O Jimenez';
+                        else if (mat.includes('Plásticas')) docenteCargo = estData.docente_plasticas || 'Mirta Castro';
+                        else if (mat.includes('Edufi')) docenteCargo = estData.docente_edufi || 'Santiago Jimenez';
+                        else if (mat.includes('Inglés')) docenteCargo = estData.docente_ingles || 'Ulises';
 
                         const estiloColor = coloresElegantes[index % coloresElegantes.length];
 
@@ -1613,6 +1709,7 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
+                                <p style="margin: 3px 0;"><b>Lugar y F. Nacimiento:</b> ${estData.fecha_nacimiento} (${estData.lugar_nacimiento || 'N/A'})</p>
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
                                 <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
                             </div>
@@ -1795,7 +1892,7 @@
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}${est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' ? ` + ${est.instrumento_segundo} (2do)` : ''}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Danza: ${est.docente_danza || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
