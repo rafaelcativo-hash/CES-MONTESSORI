@@ -696,6 +696,7 @@
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         let usuarioRolActual = 'docente';
+        let docenteEspecialidadGlobal = ''; // Almacena la especialidad o materia del docente autenticado
 
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
@@ -727,6 +728,9 @@
                 cargarTablaDocentesGeneral();
                 cargarTablaRolesUsuarios();
             }
+            if (idSeccion === 'calificar') {
+                aplicarRestriccionMateriaDocente();
+            }
         }
 
         function cambiarSubPestanaDocente(subSubId, evt) {
@@ -738,19 +742,33 @@
         }
 
         async function verificarRolUsuario(email) {
-            const { data, error } = await supabaseClient
+            // 1. Consultar rol general en user_roles
+            const { data: roleData } = await supabaseClient
                 .from('user_roles')
                 .select('role')
                 .eq('email', email)
                 .maybeSingle();
 
-            if (data && data.role) {
-                usuarioRolActual = data.role.toLowerCase();
+            if (roleData && roleData.role) {
+                usuarioRolActual = roleData.role.toLowerCase();
             } else {
                 usuarioRolActual = 'docente';
             }
 
-            document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}`;
+            // 2. Consultar si este correo corresponde a un docente registrado para conocer su especialidad exacta
+            const { data: docData } = await supabaseClient
+                .from('docentes')
+                .select('especialidad, nombre')
+                .eq('correo', email)
+                .maybeSingle();
+
+            if (docData && docData.especialidad) {
+                docenteEspecialidadGlobal = docData.especialidad.toLowerCase();
+            } else {
+                docenteEspecialidadGlobal = '';
+            }
+
+            document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docData.especialidad+')' : ''}`;
             
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
             botonesNav.forEach(btn => {
@@ -761,6 +779,60 @@
                     btn.classList.remove('hidden-by-role');
                 }
             });
+        }
+
+        async function aplicarRestriccionMateriaDocente() {
+            const selectMateria = document.getElementById('cal-materia');
+            if (!selectMateria) return;
+
+            // Si es admin, mostrar todas las opciones completas
+            if (usuarioRolActual === 'admin') {
+                for (let opt of selectMateria.options) {
+                    opt.disabled = false;
+                    opt.style.display = '';
+                }
+                return;
+            }
+
+            // Si es docente estándar, restringir según su especialidad registrada en la tabla de docentes
+            let materiaCoincidente = '';
+            if (docenteEspecialidadGlobal.includes('solfeo')) materiaCoincidente = 'Solfeo';
+            else if (docenteEspecialidadGlobal.includes('percusión') || docenteEspecialidadGlobal.includes('percursion')) materiaCoincidente = 'Taller de Percusión';
+            else if (docenteEspecialidadGlobal.includes('danza')) materiaCoincidente = 'Danza';
+            else if (docenteEspecialidadGlobal.includes('plástica') || docenteEspecialidadGlobal.includes('plastica')) materiaCoincidente = 'Artes Plásticas';
+            else if (docenteEspecialidadGlobal.includes('inglés') || docenteEspecialidadGlobal.includes('ingles')) materiaCoincidente = 'Inglés';
+            else if (docenteEspecialidadGlobal.includes('edufi') || docenteEspecialidadGlobal.includes('educación física')) materiaCoincidente = 'Edufi';
+            else if (docenteEspecialidadGlobal.includes('piano')) materiaCoincidente = 'Piano';
+            else if (docenteEspecialidadGlobal.includes('guitarra')) materiaCoincidente = 'Guitarra';
+            else if (docenteEspecialidadGlobal.includes('ukulele')) materiaCoincidente = 'Ukulele';
+            else if (docenteEspecialidadGlobal.includes('batería') || docenteEspecialidadGlobal.includes('bateria')) materiaCoincidente = 'Batería';
+            else if (docenteEspecialidadGlobal.includes('bajo')) materiaCoincidente = 'Bajo';
+            else if (docenteEspecialidadGlobal.includes('canto')) materiaCoincidente = 'Canto';
+
+            let encontradaSeleccionable = false;
+            for (let opt of selectMateria.options) {
+                if (!opt.value) continue;
+                if (materiaCoincidente && opt.value.toLowerCase().includes(materiaCoincidente.toLowerCase())) {
+                    opt.disabled = false;
+                    opt.style.display = '';
+                    if (!encontradaSeleccionable) {
+                        selectMateria.value = opt.value;
+                        encontradaSeleccionable = true;
+                    }
+                } else {
+                    opt.disabled = true;
+                    opt.style.display = 'none';
+                }
+            }
+
+            if (!encontradaSeleccionable) {
+                // Si no tiene materia artística directa asignada, permitir ver asignaturas generales o académico si aplica
+                for (let opt of selectMateria.options) {
+                    opt.disabled = false;
+                    opt.style.display = '';
+                }
+            }
+            cargarGrupoParaCalificar();
         }
 
         async function realizarLogin() {
@@ -2102,7 +2174,7 @@
             }
 
             let html = `
-                <h3>Listado de ${ciclo} con Instrumentos y Notas</h3>
+                <h3>Listado de ${ciclo} with Instrumentos y Notas</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
