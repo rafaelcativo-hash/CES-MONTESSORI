@@ -408,7 +408,7 @@
 
             <!-- 4. CALIFICAR -->
             <section id="calificar" class="tab-content">
-                <h2>Calificación por Componentes y Comentarios Individuales</h2>
+                <h2>Calificación por Componentes y Reflexiones Docentes</h2>
                 <fieldset>
                     <legend>Parámetros de Calificación</legend>
                     <div class="form-grid">
@@ -436,11 +436,11 @@
                             <select id="cal-materia" required onchange="cargarGrupoParaCalificar()">
                                 <option value="">Seleccione asignatura</option>
                                 <optgroup label="Materias Artísticas y Talleres">
-                                    <option value="[Artística] Solfeo">Solfeo (Grupal - Sin comentario)</option>
-                                    <option value="[Artística] Taller de Percusión">Taller de Percusión (Grupal - Sin comentario)</option>
-                                    <option value="[Artística] Danza">Danza (Con comentario)</option>
-                                    <option value="[Artística] Artes Plásticas">Artes Plásticas (Con comentario)</option>
-                                    <option value="[Artística] Edufi">Edufi (Con comentario)</option>
+                                    <option value="[Artística] Solfeo">Solfeo (Grupal - Sin reflexión)</option>
+                                    <option value="[Artística] Taller de Percusión">Taller de Percusión (Grupal - Sin reflexión)</option>
+                                    <option value="[Artística] Danza">Danza (Con reflexión)</option>
+                                    <option value="[Artística] Artes Plásticas">Artes Plásticas (Con reflexión)</option>
+                                    <option value="[Artística] Edufi">Edufi (Con reflexión)</option>
                                     <option value="[Artística] Piano">Piano (Individual - Solo matriculados)</option>
                                     <option value="[Artística] Guitarra">Guitarra (Individual - Solo matriculados)</option>
                                     <option value="[Artística] Ukulele">Ukulele (Individual - Solo matriculados)</option>
@@ -449,12 +449,12 @@
                                     <option value="[Artística] Canto">Canto (Individual - Solo matriculados)</option>
                                 </optgroup>
                                 <optgroup label="Materias Académicas y Conducta">
-                                    <option value="[Académica] Español">Español (Solo cuantitativa - Sin comentario)</option>
-                                    <option value="[Académica] Matemáticas">Matemáticas (Solo cuantitativa - Sin comentario)</option>
-                                    <option value="[Académica] Ciencias">Ciencias (Solo cuantitativa - Sin comentario)</option>
-                                    <option value="[Académica] Estudios Sociales">Estudios Sociales (Solo cuantitativa - Sin comentario)</option>
-                                    <option value="[Académica] Conducta">Conducta (Eje de Comentarios Institucionales)</option>
-                                    <option value="[Académica] Inglés">Inglés (Con comentario)</option>
+                                    <option value="[Académica] Español">Español (Solo cuantitativa - Sin reflexión)</option>
+                                    <option value="[Académica] Matemáticas">Matemáticas (Solo cuantitativa - Sin reflexión)</option>
+                                    <option value="[Académica] Ciencias">Ciencias (Solo cuantitativa - Sin reflexión)</option>
+                                    <option value="[Académica] Estudios Sociales">Estudios Sociales (Solo cuantitativa - Sin reflexión)</option>
+                                    <option value="[Académica] Conducta">Conducta (Eje de Reflexiones Docentes)</option>
+                                    <option value="[Académica] Inglés">Inglés (Con reflexión)</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -1395,7 +1395,7 @@
 
             html += `
                             <th>Nota Final</th>
-                            <th>Comentarios / Observaciones</th>
+                            <th>Reflexiones Docentes</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -1422,7 +1422,7 @@
                 `;
 
                 if (llevaComentario) {
-                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${comentarioGuardado}" placeholder="${esConducta ? 'Comentario obligatorio...' : 'Comentario opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
+                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${comentarioGuardado}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -1470,7 +1470,7 @@
             }
 
             if (esConducta && !comentario) {
-                alert('El comentario formativo en Conducta es obligatorio para el informe al hogar.');
+                alert('La reflexión docente en Conducta es obligatoria para el informe al hogar.');
                 comentarioInput.focus();
                 return;
             }
@@ -1692,7 +1692,7 @@
             }
 
             if (!reflexionesDocentesHTML) {
-                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones u observaciones docentes registradas para este ${periodoSel}]</p>`;
+                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones docentes registradas para este ${periodoSel}]</p>`;
             }
 
             const tituloInformeHogar = periodoSel === 'Primer Periodo' 
@@ -1768,7 +1768,7 @@
                             <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 90px; height: 90px; object-fit: contain; flex-shrink: 0;">
                             <div>
                                 <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">SIA-Shkénuk • CES Montessori</h3>
-                                <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Reflexiones y Observaciones Docentes • ${periodoSel}</p>
+                                <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Reflexiones Docentes • ${periodoSel}</p>
                             </div>
                         </div>
 
