@@ -1651,7 +1651,6 @@
                     const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
                     
                     if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
-                        // Determinación exacta y limpia del docente según el área y el instrumento matriculado
                         let docenteCargo = docenteSeleccionado;
                         if (mat.includes('Danza')) {
                             docenteCargo = estData.docente_danza || 'Vanesa De La O Jimenez';
@@ -1666,7 +1665,6 @@
                         } else if (mat.includes('Percusión')) {
                             docenteCargo = estData.docente_percursion || 'Luis De La O Jimenez';
                         } else {
-                            // Validar si es una materia de instrumento individual (Ej. Piano, Guitarra, Canto, etc.)
                             const instrumentosIndividuales = ['Piano', 'Guitarra', 'Ukulele', 'Batería', 'Bajo', 'Canto'];
                             let esInstrumento = false;
                             instrumentosIndividuales.forEach(instr => {
@@ -1694,7 +1692,7 @@
             }
 
             if (!reflexionesDocentesHTML) {
-                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios u observaciones docentes registradas para este ${periodoSel}]</p>`;
+                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones u observaciones docentes registradas para este ${periodoSel}]</p>`;
             }
 
             const tituloInformeHogar = periodoSel === 'Primer Periodo' 
@@ -1770,7 +1768,7 @@
                             <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 90px; height: 90px; object-fit: contain; flex-shrink: 0;">
                             <div>
                                 <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">SIA-Shkénuk • CES Montessori</h3>
-                                <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Observaciones y Comentarios Docentes (${periodoSel})</p>
+                                <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Reflexiones y Observaciones Docentes • ${periodoSel}</p>
                             </div>
                         </div>
 
