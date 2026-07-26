@@ -807,7 +807,7 @@
             }
         }
 
-        // FUNCIÓN 100% TOLERANTE Y ROBUSTA DE FILTRADO POR MATERIA
+        // FUNCIÓN ESTRICTA Y ABSOLUTA (SEPARACIÓN EXACTA ACADÉMICO VS ARTÍSTICO)
         async function aplicarRestriccionMateriaDocente() {
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
@@ -821,10 +821,14 @@
                 return;
             }
 
-            const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
             const tipoDoc = (docenteTipoActual || '').toLowerCase().trim();
+            const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
 
-            console.log("Depurando permisos -> Tipo Docente:", tipoDoc, "| Especialidad/Disciplina en BD:", espDocente);
+            console.log("Depuración estricta -> Tipo:", tipoDoc, "| Especialidad:", espDocente);
+
+            // REGLA ABSOLUTA: Si el docente es Académico (o su especialidad/tipo es académico), 
+            // solo maneja paquetes académicos, conducta e inglés. Cero materias artísticas individuales o talleres.
+            const esAcademicoAbsoluto = tipoDoc.includes('acad') || espDocente.includes('acad');
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
@@ -832,21 +836,19 @@
                 
                 let permitirMateria = false;
 
-                // 1. Si es docente académico o su especialidad contiene 'acad'
-                if (tipoDoc.includes('acad') || espDocente.includes('acad')) {
+                if (esAcademicoAbsoluto) {
+                    // Permitir únicamente materias de tipo académico, conducta o inglés
                     if (valMateria.includes('académica') || valMateria.includes('conducta') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
                         permitirMateria = true;
                     }
-                } 
-                // 2. Si es docente artístico o de disciplina específica
-                else {
+                } else {
+                    // Docente Artístico o de Taller/Instrumento: Nunca puede tocar materias puramente académicas
                     if (!valMateria.includes('académica') || valMateria.includes('conducta')) {
                         if (!espDocente) {
-                            permitirMateria = true; // Si no tiene especialidad definida, muestra todo por defecto
+                            permitirMateria = true; 
                         } else if (valMateria.includes(espDocente) || espDocente.includes('arte') || espDocente.includes('música') || espDocente.includes('taller')) {
                             permitirMateria = true;
                         } else {
-                            // Coincidencia exacta o parcial de palabras clave (ej: solfeo, piano, danza, percusión, guitarra, etc.)
                             const palabrasEspecialidad = espDocente.split(' ');
                             for (let palabra of palabrasEspecialidad) {
                                 if (palabra.length > 2 && valMateria.includes(palabra)) {
@@ -858,7 +860,6 @@
                     }
                 }
 
-                // Aplicar visibilidad en el menú desplegable
                 if (permitirMateria) {
                     opt.disabled = false;
                     opt.style.display = '';
@@ -868,7 +869,6 @@
                 }
             }
 
-            // Seleccionar automáticamente la primera opción válida disponible
             let primeraValida = '';
             for (let opt of selectMateria.options) {
                 if (!opt.disabled && opt.value) {
