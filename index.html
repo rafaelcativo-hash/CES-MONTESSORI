@@ -579,7 +579,7 @@
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Especialidad / Materia / Disciplina</label>
-                                    <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Solfeo, Inglés">
+                                    <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Taller de Percusión, Solfeo">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -799,6 +799,7 @@
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
 
+            // Si es administrador, tiene acceso total a todo
             if (usuarioRolActual === 'admin') {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
@@ -814,10 +815,8 @@
                 const valMateria = opt.value.toLowerCase();
                 let coincide = false;
 
+                // Validación estricta: Únicamente se habilita si el nombre de la materia incluye la especialidad del docente registrada en Supabase
                 if (espDocente && (valMateria.includes(espDocente) || espDocente.includes(valMateria.replace('[artística]', '').replace('[académica]', '').trim()))) {
-                    coincide = true;
-                }
-                if (espDocente.includes('general') || espDocente.includes('grado') || valMateria.includes('conducta')) {
                     coincide = true;
                 }
 
