@@ -233,7 +233,7 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Asignación de Docentes, Académico, Talleres y Cursos Artísticos (Opcional por ahora)</legend>
+                        <legend>Asignación de Docentes, Académico, Talleres y Cursos Artísticos (Opcional)</legend>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Profesor Académico (Nivel)</label>
@@ -697,8 +697,6 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
-
         let usuarioRolActual = 'docente';
         let docenteTipoActual = 'artistico'; 
         let docenteEspecialidadGlobal = '';
@@ -1040,7 +1038,7 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('cedula', cedula).single();
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
             if (error || !data) {
                 alert('No se pudo cargar la información del estudiante.');
                 return;
@@ -1281,7 +1279,7 @@
         }
 
         async function descargarMatriculaExcel() {
-            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).order('nivel');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').order('nivel');
             if (error || !data || data.length === 0) {
                 alert('No hay registros de matrícula para exportar.');
                 return;
@@ -1434,7 +1432,7 @@
             contenedor.innerHTML = '<p>Calculando carga académica desde Supabase...</p>';
 
             const { data: docentes, error: errDoc } = await supabaseClient.from('docentes').select('*').order('nombre');
-            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES);
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('*');
 
             if (errDoc || errEst) {
                 contenedor.innerHTML = '<p style="color: red;">Error al consultar los datos para la carga académica.</p>';
@@ -1799,7 +1797,7 @@
                 }
             });
 
-            let queryEstudiantes = supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
+            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             const { data: estudiantesRaw, error: errEst } = await queryEstudiantes;
             const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
 
@@ -1945,7 +1943,7 @@
 
             contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
@@ -2009,7 +2007,7 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             if (error || !data || data.length === 0) {
                 selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
                 return;
@@ -2294,7 +2292,7 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).in('nivel', niveles);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || estudiantes.length === 0) {
@@ -2368,7 +2366,7 @@
             const msgSpan = document.getElementById('promocion-msg');
             msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
             const { data: notas } = await supabaseClient.from('notas').select('*');
 
             if (!estudiantes || !notas) {
@@ -2416,7 +2414,7 @@
 
             contenedor.innerHTML = '<p>Cargando lista de contactos...</p>';
 
-            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel).order('nombre');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).order('nombre');
 
             if (error) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar contactos: ' + error.message + '</p>';
@@ -2490,7 +2488,7 @@
                 tituloCicloNivel = `NIVEL: ${seleccion.toUpperCase()}`;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).in('nivel', nivelesAConsultar);
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').in('nivel', nivelesAConsultar);
 
             if (error) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
