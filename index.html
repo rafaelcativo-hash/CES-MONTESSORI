@@ -1682,8 +1682,13 @@
             });
 
             let queryEstudiantes = supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES).eq('nivel', nivel);
-            const { data: estudiantesRaw } = await queryEstudiantes;
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
+            const { data: estudiantesRaw, error: errEst } = await queryEstudiantes;
+            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
+
+            if (errEst) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + errEst.message + '</p>';
+                return;
+            }
 
             let estudiantes = estudiantesRaw || [];
             if (instrumentoEspecifico && estudiantes.length > 0) {
