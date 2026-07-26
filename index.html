@@ -579,7 +579,7 @@
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Especialidad / Materia / Disciplina</label>
-                                    <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Taller de Percusión, Solfeo">
+                                    <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Taller de Percusión, Solfeo, Conducta">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -769,7 +769,7 @@
                 .maybeSingle();
 
             if (docData) {
-                docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase();
+                docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase().trim();
                 docenteNombreGlobal = (docData.nombre || '').trim();
                 docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
             } else {
@@ -815,9 +815,12 @@
                 const valMateria = opt.value.toLowerCase();
                 let coincide = false;
 
-                // Validación estricta: Únicamente se habilita si el nombre de la materia incluye la especialidad del docente registrada en Supabase
-                if (espDocente && (valMateria.includes(espDocente) || espDocente.includes(valMateria.replace('[artística]', '').replace('[académica]', '').trim()))) {
-                    coincide = true;
+                // Validación exacta contra la especialidad guardada en la tabla Directorio de Docentes
+                if (espDocente) {
+                    const limpiaMateria = valMateria.replace('[artística]', '').replace('[académica]', '').trim();
+                    if (limpiaMateria.includes(espDocente) || espDocente.includes(limpiaMateria)) {
+                        coincide = true;
+                    }
                 }
 
                 if (coincide) {
