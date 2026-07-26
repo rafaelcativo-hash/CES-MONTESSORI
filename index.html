@@ -182,41 +182,36 @@
 
                 <form id="form-matricula" onsubmit="confirmarYGuardarMatricula(event)">
                     <fieldset>
-                        <legend>Datos Personales, Nacimiento y Fotografía del Estudiante</legend>
+                        <legend>Datos Personales y Nivel (Matrícula Rápida)</legend>
                         <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 1; min-width: 280px;">
                                 <div class="form-grid">
                                     <div class="form-group" style="grid-column: span 2;">
-                                        <label>Nombre Completo</label>
+                                        <label>Nombre Completo (Obligatorio)</label>
                                         <input type="text" id="mat-nombre" required placeholder="Nombre y Apellidos">
                                     </div>
                                     <div class="form-group">
-                                        <label>Número de Cédula (Llave única)</label>
+                                        <label>Número de Cédula / Identificación (Obligatorio)</label>
                                         <input type="text" id="mat-cedula" required placeholder="Ej. 102340567">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Fecha de Nacimiento</label>
-                                        <input type="date" id="mat-fnac" required onchange="calcularEdadExacta()">
-                                    </div>
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>Lugar de Nacimiento</label>
-                                        <input type="text" id="mat-lugar-nac" required placeholder="Ej. Heredia, Costa Rica">
                                     </div>
                                     <div class="form-group" style="grid-column: span 2;">
                                         <label>Nivel Educativo (Ciclos)</label>
-                                        <select id="mat-nivel" required>
-                                            <option value="">Seleccione el nivel</option>
-                                            <optgroup label="Primer Ciclo">
-                                                <option value="Primero">Primero</option>
-                                                <option value="Segundo">Segundo</option>
-                                                <option value="Tercero">Tercero</option>
-                                            </optgroup>
-                                            <optgroup label="Segundo Ciclo">
-                                                <option value="Cuarto">Cuarto</option>
-                                                <option value="Quinto">Quinto</option>
-                                                <option value="Sexto">Sexto</option>
-                                            </optgroup>
+                                        <select id="mat-nivel">
+                                            <option value="Primero">Primero</option>
+                                            <option value="Segundo">Segundo</option>
+                                            <option value="Tercero">Tercero</option>
+                                            <option value="Cuarto">Cuarto</option>
+                                            <option value="Quinto">Quinto</option>
+                                            <option value="Sexto">Sexto</option>
                                         </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Fecha de Nacimiento (Opcional)</label>
+                                        <input type="date" id="mat-fnac" onchange="calcularEdadExacta()">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Lugar de Nacimiento (Opcional)</label>
+                                        <input type="text" id="mat-lugar-nac" placeholder="Ej. Heredia, Costa Rica">
                                     </div>
                                 </div>
                                 <div class="form-group" style="margin-top: 5px;">
@@ -238,17 +233,17 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Asignación de Docentes, Académico, Talleres y Cursos Artísticos</legend>
+                        <legend>Asignación de Docentes, Académico, Talleres y Cursos Artísticos (Opcional por ahora)</legend>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Profesor Académico (Nivel)</label>
-                                <select id="mat-docente-acad" required>
+                                <select id="mat-docente-acad">
                                     <option value="">Cargando docentes académicos...</option>
                                 </select>
                             </div>
                         </div>
                         
-                        <h4 style="color: var(--primary); margin-top: 15px; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Asignaturas y Docentes Predefinidos (Asigne o Modifique en la lista)</h4>
+                        <h4 style="color: var(--primary); margin-top: 15px; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Asignaturas y Docentes Predefinidos</h4>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Solfeo</label>
@@ -291,7 +286,7 @@
                         <div class="form-grid" style="margin-top: 15px;">
                             <div class="form-group">
                                 <label>Instrumento Individual Principal</label>
-                                <select id="mat-instr-principal" required>
+                                <select id="mat-instr-principal">
                                     <option value="">Seleccione instrumento</option>
                                     <option value="Canto">Canto</option>
                                     <option value="Piano">Piano</option>
@@ -304,7 +299,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Profesor de Instrumento Principal</label>
-                                <select id="mat-docente-asig" required>
+                                <select id="mat-docente-asig">
                                     <option value="">Cargando instructores...</option>
                                 </select>
                             </div>
@@ -333,11 +328,11 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Ubicación / Dirección</legend>
+                        <legend>Ubicación / Dirección (Opcional)</legend>
                         <div class="form-grid">
-                            <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" required placeholder="Ej. Heredia"></div>
-                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" required placeholder="Ej. Barva"></div>
-                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" required placeholder="Ej. El Carbonal"></div>
+                            <div class="form-group"><label>Provincia</label><input type="text" id="dir-provincia" placeholder="Ej. Heredia"></div>
+                            <div class="form-group"><label>Cantón</label><input type="text" id="dir-canton" placeholder="Ej. Barva"></div>
+                            <div class="form-group"><label>Distrito</label><input type="text" id="dir-distrito" placeholder="Ej. El Carbonal"></div>
                         </div>
                         <div class="form-group">
                             <label>Otras señas / Dirección exacta</label>
@@ -346,16 +341,16 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Primer Encargado</legend>
+                        <legend>Primer Encargado (Opcional)</legend>
                         <div class="form-grid">
-                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre" required></div>
-                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo" required></div>
-                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" required placeholder="Ej. 8888-8888"></div>
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre"></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo"></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" placeholder="Ej. 8888-8888"></div>
                         </div>
                     </fieldset>
 
                     <fieldset>
-                        <legend>Segundo Encargado</legend>
+                        <legend>Segundo Encargado (Opcional)</legend>
                         <div class="form-grid">
                             <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
                             <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
@@ -364,7 +359,7 @@
                     </fieldset>
 
                     <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
-                        <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Completa</button>
+                        <button type="submit" id="btn-submit-matricula" class="action-btn">Guardar Matrícula Rápida</button>
                         <button type="button" class="action-btn" onclick="generarVistaPreviaMatricula()">Vista Previa / Imprimir</button>
                     </div>
                     <div id="mat-msg" class="notification"></div>
@@ -807,12 +802,10 @@
             }
         }
 
-        // FUNCIÓN ESTRICTA Y ABSOLUTA (SEPARACIÓN EXACTA ACADÉMICO VS ARTÍSTICO)
         async function aplicarRestriccionMateriaDocente() {
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
 
-            // Si es administrador, acceso total a todo
             if (usuarioRolActual === 'admin') {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
@@ -823,26 +816,18 @@
 
             const tipoDoc = (docenteTipoActual || '').toLowerCase().trim();
             const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
-
-            console.log("Depuración estricta -> Tipo:", tipoDoc, "| Especialidad:", espDocente);
-
-            // REGLA ABSOLUTA: Si el docente es Académico (o su especialidad/tipo es académico), 
-            // solo maneja paquetes académicos, conducta e inglés. Cero materias artísticas individuales o talleres.
             const esAcademicoAbsoluto = tipoDoc.includes('acad') || espDocente.includes('acad');
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
                 const valMateria = opt.value.toLowerCase();
-                
                 let permitirMateria = false;
 
                 if (esAcademicoAbsoluto) {
-                    // Permitir únicamente materias de tipo académico, conducta o inglés
                     if (valMateria.includes('académica') || valMateria.includes('conducta') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
                         permitirMateria = true;
                     }
                 } else {
-                    // Docente Artístico o de Taller/Instrumento: Nunca puede tocar materias puramente académicas
                     if (!valMateria.includes('académica') || valMateria.includes('conducta')) {
                         if (!espDocente) {
                             permitirMateria = true; 
@@ -1066,8 +1051,8 @@
             inputCedula.readOnly = true; 
             document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
             document.getElementById('mat-lugar-nac').value = data.lugar_nacimiento || '';
-            calcularEdadExacta();
-            document.getElementById('mat-nivel').value = data.nivel || '';
+            if (data.fecha_nacimiento) calcularEdadExacta();
+            document.getElementById('mat-nivel').value = data.nivel || 'Primero';
             document.getElementById('mat-docente-acad').value = data.docente_academico || '';
             
             if (document.getElementById('mat-doc-solfeo')) document.getElementById('mat-doc-solfeo').value = data.docente_solfeo || 'Rafael Cativo Romero';
@@ -1120,7 +1105,7 @@
             document.getElementById('img-preview-foto').style.display = 'none';
             document.getElementById('txt-sin-foto').style.display = 'block';
             const btnSubmit = document.getElementById('btn-submit-matricula');
-            btnSubmit.innerText = 'Guardar Matrícula Completa';
+            btnSubmit.innerText = 'Guardar Matrícula Rápida';
             btnSubmit.className = 'action-btn';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
@@ -1136,35 +1121,41 @@
 
         async function guardarOActualizarMatricula() {
             const cedulaVal = document.getElementById('mat-cedula').value.trim();
+            const nombreVal = document.getElementById('mat-nombre').value.trim();
+
+            if (!cedulaVal || !nombreVal) {
+                alert('El Nombre y la Cédula son obligatorios para la matrícula.');
+                return;
+            }
 
             const datos = {
-                nombre: document.getElementById('mat-nombre').value.trim(),
+                nombre: nombreVal,
                 cedula: cedulaVal,
-                fecha_nacimiento: document.getElementById('mat-fnac').value,
-                lugar_nacimiento: document.getElementById('mat-lugar-nac').value.trim(),
-                nivel: document.getElementById('mat-nivel').value,
-                docente_academico: document.getElementById('mat-docente-acad').value,
-                docente_solfeo: document.getElementById('mat-doc-solfeo').value,
-                docente_percursion: document.getElementById('mat-doc-percursion').value,
-                docente_danza: document.getElementById('mat-doc-danza').value,
-                docente_plasticas: document.getElementById('mat-doc-plasticas').value,
-                docente_ingles: document.getElementById('mat-doc-ingles').value,
-                docente_edufi: document.getElementById('mat-doc-edufi').value,
-                instrumento_principal: document.getElementById('mat-instr-principal').value,
-                docente_asignado: document.getElementById('mat-docente-asig').value,
+                fecha_nacimiento: document.getElementById('mat-fnac').value || null,
+                lugar_nacimiento: document.getElementById('mat-lugar-nac').value.trim() || '',
+                nivel: document.getElementById('mat-nivel').value || 'Primero',
+                docente_academico: document.getElementById('mat-docente-acad').value || '',
+                docente_solfeo: document.getElementById('mat-doc-solfeo').value || '',
+                docente_percursion: document.getElementById('mat-doc-percursion').value || '',
+                docente_danza: document.getElementById('mat-doc-danza').value || '',
+                docente_plasticas: document.getElementById('mat-doc-plasticas').value || '',
+                docente_ingles: document.getElementById('mat-doc-ingles').value || '',
+                docente_edufi: document.getElementById('mat-doc-edufi').value || '',
+                instrumento_principal: document.getElementById('mat-instr-principal').value || '',
+                docente_asignado: document.getElementById('mat-docente-asig').value || '',
                 instrumento_segundo: document.getElementById('mat-instr-segundo').value || 'Ninguno',
                 docente_segundo: document.getElementById('mat-docente-segundo').value || 'Ninguno',
-                provincia: document.getElementById('dir-provincia').value.trim(),
-                canton: document.getElementById('dir-canton').value.trim(),
-                distrito: document.getElementById('dir-distrito').value.trim(),
-                direccion_detalles: document.getElementById('dir-detalles').value.trim(),
-                encargado1_nombre: document.getElementById('enc1-nombre').value.trim(),
-                encargado1_correo: document.getElementById('enc1-correo').value.trim(),
-                encargado1_cel: document.getElementById('enc1-cel').value.trim(),
-                encargado2_nombre: document.getElementById('enc2-nombre').value.trim(),
-                encargado2_correo: document.getElementById('enc2-correo').value.trim(),
-                encargado2_cel: document.getElementById('enc2-cel').value.trim(),
-                foto_url: document.getElementById('mat-foto-url').value.trim()
+                provincia: document.getElementById('dir-provincia').value.trim() || '',
+                canton: document.getElementById('dir-canton').value.trim() || '',
+                distrito: document.getElementById('dir-distrito').value.trim() || '',
+                direccion_detalles: document.getElementById('dir-detalles').value.trim() || '',
+                encargado1_nombre: document.getElementById('enc1-nombre').value.trim() || '',
+                encargado1_correo: document.getElementById('enc1-correo').value.trim() || '',
+                encargado1_cel: document.getElementById('enc1-cel').value.trim() || '',
+                encargado2_nombre: document.getElementById('enc2-nombre').value.trim() || '',
+                encargado2_correo: document.getElementById('enc2-correo').value.trim() || '',
+                encargado2_cel: document.getElementById('enc2-cel').value.trim() || '',
+                foto_url: document.getElementById('mat-foto-url').value.trim() || ''
             };
 
             const { data: existing } = await supabaseClient.from('estudiantes').select('cedula').eq('cedula', cedulaVal).maybeSingle();
@@ -1181,7 +1172,7 @@
             if (error) {
                 mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
             } else {
-                mostrarMensaje('mat-msg', '¡Matrícula guardada y registrada con éxito en el sistema!', true);
+                mostrarMensaje('mat-msg', '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
                 cargarSelectorEstudiantesEdicion();
                 generarVistaPreviaMatricula();
             }
@@ -1217,8 +1208,8 @@
             const enc2Cel = document.getElementById('enc2-cel').value;
             const fotoUrl = document.getElementById('mat-foto-url').value;
 
-            if (!nombre || !cedula || !nivel || !fnac) {
-                alert('Por favor complete al menos los datos personales obligatorios para generar la vista previa.');
+            if (!nombre || !cedula) {
+                alert('Por favor complete al menos el Nombre y la Cédula.');
                 return;
             }
 
@@ -1248,7 +1239,7 @@
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
-                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac}</p>
+                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac || 'Pendiente'}</p>
                         <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
                     </div>
 
@@ -1264,13 +1255,13 @@
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">3. Dirección y Ubicación</h4>
-                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${prov}, ${canton}, ${distrito}</p>
+                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${prov || 'Pendiente'}, ${canton || ''}, ${distrito || ''}</p>
                         <p style="margin: 4px 0;"><b>Otras Señas:</b> ${detalles || 'N/A'}</p>
                     </div>
 
                     <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">4. Información de Encargados</h4>
-                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${enc1Nom} - Correo: ${enc1Correo} - Tel: ${enc1Cel}</p>
+                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${enc1Nom || 'Pendiente'} - Correo: ${enc1Correo || 'N/A'} - Tel: ${enc1Cel || 'N/A'}</p>
                         <p style="margin: 4px 0;"><b>Segundo Encargado:</b> ${enc2Nom || 'N/A'} - Correo: ${enc2Correo || 'N/A'} - Tel: ${enc2Cel || 'N/A'}</p>
                     </div>
 
@@ -1689,7 +1680,10 @@
         function calcularEdadExacta() {
             const fechaNacVal = document.getElementById('mat-fnac').value;
             const resultadoDiv = document.getElementById('edad-resultado');
-            if (!fechaNacVal) return;
+            if (!fechaNacVal) {
+                resultadoDiv.innerText = 'Seleccione una fecha de nacimiento';
+                return;
+            }
             const fnac = new Date(fechaNacVal);
             const hoy = new Date();
             let anos = hoy.getFullYear() - fnac.getFullYear();
@@ -2173,7 +2167,7 @@
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
-                                <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre} (${estData.encargado1_correo})</p>
+                                <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre || 'Pendiente'} (${estData.encargado1_correo || 'N/A'})</p>
                             </div>
                         </div>
 
