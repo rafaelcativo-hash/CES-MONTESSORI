@@ -709,27 +709,6 @@
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
 
-        // Matriz modular de permisos por especialidad (Evita parches de texto y hardcodeo)
-        const permisosPorEspecialidad = {
-            'solfeo': ['[Artística] Solfeo'],
-            'percusión': ['[Artística] Taller de Percusión'],
-            'percursion': ['[Artística] Taller de Percusión'],
-            'danza': ['[Artística] Danza'],
-            'artes plásticas': ['[Artística] Artes Plásticas'],
-            'plastica': ['[Artística] Artes Plásticas'],
-            'edufi': ['[Artística] Edufi'],
-            'piano': ['[Artística] Piano'],
-            'guitarra': ['[Artística] Guitarra'],
-            'ukulele': ['[Artística] Ukulele'],
-            'batería': ['[Artística] Batería'],
-            'bateria': ['[Artística] Batería'],
-            'bajo': ['[Artística] Bajo'],
-            'canto': ['[Artística] Canto'],
-            'inglés': ['[Académica] Inglés'],
-            'ingles': ['[Académica] Inglés'],
-            'academico': ['[Académica] Español', '[Académica] Matemáticas', '[Académica] Ciencias', '[Académica] Estudios Sociales', '[Académica] Conducta', '[Académica] Inglés']
-        };
-
         function inicializarAniosLectivos() {
             const selectAnio = document.getElementById('filtro-anio-lectivo');
             if (!selectAnio) return;
@@ -828,7 +807,7 @@
             }
         }
 
-        // FUNCIÓN MODULAR Y LIMPIA DE FILTRADO POR MATERIA
+        // FUNCIÓN DEFINITIVA Y TOLERANTE DE FILTRADO POR MATERIA
         async function aplicarRestriccionMateriaDocente() {
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
@@ -845,31 +824,33 @@
             const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
             const tipoDoc = (docenteTipoActual || '').toLowerCase().trim();
 
-            console.log("Perfil modular detectado -> Tipo:", tipoDoc, "| Especialidad:", espDocente);
-
-            // Determinar qué lista de materias permitidas le corresponden por su especialidad o tipo
-            let materiasPermitidas = [];
-
-            if (permisosPorEspecialidad[espDocente]) {
-                materiasPermitidas = permisosPorEspecialidad[espDocente];
-            } else if (tipoDoc === 'academico' || espDocente.includes('acad')) {
-                materiasPermitidas = permisosPorEspecialidad['academico'];
-            } else {
-                // Si es un profesor artístico cuya especialidad exacta no está en la lista estricta, 
-                // permitimos por defecto todas las artísticas
-                materiasPermitidas = [
-                    '[Artística] Solfeo', '[Artística] Taller de Percusión', '[Artística] Danza', 
-                    '[Artística] Artes Plásticas', '[Artística] Edufi', '[Artística] Piano', 
-                    '[Artística] Guitarra', '[Artística] Ukulele', '[Artística] Batería', 
-                    '[Artística] Bajo', '[Artística] Canto'
-                ];
-            }
+            console.log("Depurando permisos -> Tipo Docente:", tipoDoc, "| Especialidad en BD:", espDocente);
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
+                const valMateria = opt.value.toLowerCase();
                 
-                // Verificamos si la opción actual está dentro de las permitidas para este docente
-                if (materiasPermitidas.includes(opt.value)) {
+                let permitirMateria = false;
+
+                if (tipoDoc.includes('acad') || espDocente.includes('acad')) {
+                    if (valMateria.includes('académica') || valMateria.includes('conducta') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
+                        permitirMateria = true;
+                    }
+                } else {
+                    if (!valMateria.includes('académica') || valMateria.includes('conducta')) {
+                        if (espDocente && (valMateria.includes(espDocente) || espDocente.includes('arte') || espDocente.includes('música') || espDocente.includes('taller'))) {
+                            permitirMateria = true;
+                        } else if (!espDocente) {
+                            permitirMateria = true;
+                        } else {
+                            if (valMateria.includes(espDocente)) {
+                                permitirMateria = true;
+                            }
+                        }
+                    }
+                }
+
+                if (permitirMateria) {
                     opt.disabled = false;
                     opt.style.display = '';
                 } else {
@@ -878,7 +859,6 @@
                 }
             }
 
-            // Seleccionar automáticamente la primera opción válida disponible
             let primeraValida = '';
             for (let opt of selectMateria.options) {
                 if (!opt.disabled && opt.value) {
