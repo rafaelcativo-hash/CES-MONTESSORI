@@ -579,7 +579,7 @@
                                     <input type="tel" id="doc-tel" required placeholder="Ej. 8888-8888">
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
-                                    <label>Especialidad / Materia / Paquete</label>
+                                    <label>Especialidad / Materia / Disciplina</label>
                                     <input type="text" id="doc-esp" required placeholder="Ej. Académica, Danza, Solfeo, Taller de Percusión, Piano">
                                 </div>
                             </div>
@@ -807,7 +807,7 @@
             }
         }
 
-        // FUNCIÓN DEFINITIVA Y TOLERANTE DE FILTRADO POR MATERIA
+        // FUNCIÓN 100% TOLERANTE Y ROBUSTA DE FILTRADO POR MATERIA
         async function aplicarRestriccionMateriaDocente() {
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
@@ -824,7 +824,7 @@
             const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
             const tipoDoc = (docenteTipoActual || '').toLowerCase().trim();
 
-            console.log("Depurando permisos -> Tipo Docente:", tipoDoc, "| Especialidad en BD:", espDocente);
+            console.log("Depurando permisos -> Tipo Docente:", tipoDoc, "| Especialidad/Disciplina en BD:", espDocente);
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
@@ -832,24 +832,33 @@
                 
                 let permitirMateria = false;
 
+                // 1. Si es docente académico o su especialidad contiene 'acad'
                 if (tipoDoc.includes('acad') || espDocente.includes('acad')) {
                     if (valMateria.includes('académica') || valMateria.includes('conducta') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
                         permitirMateria = true;
                     }
-                } else {
+                } 
+                // 2. Si es docente artístico o de disciplina específica
+                else {
                     if (!valMateria.includes('académica') || valMateria.includes('conducta')) {
-                        if (espDocente && (valMateria.includes(espDocente) || espDocente.includes('arte') || espDocente.includes('música') || espDocente.includes('taller'))) {
-                            permitirMateria = true;
-                        } else if (!espDocente) {
+                        if (!espDocente) {
+                            permitirMateria = true; // Si no tiene especialidad definida, muestra todo por defecto
+                        } else if (valMateria.includes(espDocente) || espDocente.includes('arte') || espDocente.includes('música') || espDocente.includes('taller')) {
                             permitirMateria = true;
                         } else {
-                            if (valMateria.includes(espDocente)) {
-                                permitirMateria = true;
+                            // Coincidencia exacta o parcial de palabras clave (ej: solfeo, piano, danza, percusión, guitarra, etc.)
+                            const palabrasEspecialidad = espDocente.split(' ');
+                            for (let palabra of palabrasEspecialidad) {
+                                if (palabra.length > 2 && valMateria.includes(palabra)) {
+                                    permitirMateria = true;
+                                    break;
+                                }
                             }
                         }
                     }
                 }
 
+                // Aplicar visibilidad en el menú desplegable
                 if (permitirMateria) {
                     opt.disabled = false;
                     opt.style.display = '';
@@ -859,6 +868,7 @@
                 }
             }
 
+            // Seleccionar automáticamente la primera opción válida disponible
             let primeraValida = '';
             for (let opt of selectMateria.options) {
                 if (!opt.disabled && opt.value) {
