@@ -820,8 +820,8 @@
                 return;
             }
 
-            const espDocente = docenteEspecialidadGlobal.toLowerCase();
-            const esTipoAcademico = docenteTipoActual === 'academico' || espDocente.includes('académica') || espDocente.includes('academico');
+            const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
+            const esTipoAcademico = docenteTipoActual === 'academico' || espDocente.includes('académica') || espDocente.includes('academico') || espDocente.includes('español') || espDocente.includes('matemáticas');
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
@@ -831,16 +831,18 @@
                 const limpiaMateria = valMateria.replace('[artística]', '').replace('[académica]', '').trim();
 
                 if (esTipoAcademico) {
-                    // Candado estricto: Solo materias académicas y conducta. Se bloquea lo artístico por completo.
+                    // CANDADO ACADÉMICO: Solo puede ver materias académicas o conducta. LO ARTÍSTICO SE OCULTA POR COMPLETO.
                     if (valMateria.includes('académica') || valMateria.includes('conducta') || limpiaMateria.includes('español') || limpiaMateria.includes('matemáticas') || limpiaMateria.includes('ciencias') || limpiaMateria.includes('estudios sociales') || limpiaMateria.includes('inglés')) {
                         coincide = true;
                     } else {
                         coincide = false;
                     }
                 } else {
-                    // Candado estricto: Solo su especialidad artística asignada
+                    // CANDADO ARTÍSTICO: Solo puede ver su disciplina exacta registrada en su especialidad. LO ACADÉMICO SE OCULTA.
                     if (limpiaMateria.includes(espDocente) || espDocente.includes(limpiaMateria)) {
                         coincide = true;
+                    } else {
+                        coincide = false;
                     }
                 }
 
@@ -849,10 +851,11 @@
                     opt.style.display = '';
                 } else {
                     opt.disabled = true;
-                    opt.style.display = 'none';
+                    opt.style.display = 'none'; // Desaparece la opción para que no puedan ver ni husmear
                 }
             }
 
+            // Seleccionamos automáticamente la primera materia válida disponible para este docente
             let primeraValida = '';
             for (let opt of selectMateria.options) {
                 if (!opt.disabled && opt.value) {
