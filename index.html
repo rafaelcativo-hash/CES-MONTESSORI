@@ -383,21 +383,31 @@
 
             <!-- 3. REGISTRO HISTÓRICO -->
             <section id="registro" class="tab-content">
-                <h2>Registro Histórico de Calificaciones</h2>
-                <div class="form-group" style="margin-bottom: 20px; max-width: 350px;">
-                    <label>Seleccionar Nivel Educativo</label>
-                    <select id="reg-nivel-sel" class="form-group" onchange="cargarCuadrosRegistro()">
-                        <option value="">Seleccione el nivel</option>
-                        <option value="Primero">Primero</option>
-                        <option value="Segundo">Segundo</option>
-                        <option value="Tercero">Tercero</option>
-                        <option value="Cuarto">Cuarto</option>
-                        <option value="Quinto">Quinto</option>
-                        <option value="Sexto">Sexto</option>
-                    </select>
+                <h2>Registro Histórico de Calificaciones por Año</h2>
+                <div class="form-grid" style="margin-bottom: 20px; max-width: 600px;">
+                    <div class="form-group">
+                        <label>Seleccionar Año Lectivo</label>
+                        <select id="reg-anio-sel" onchange="cargarCuadrosRegistro()">
+                            <option value="2026">Año Lectivo 2026</option>
+                            <option value="2027">Año Lectivo 2027</option>
+                            <option value="2028">Año Lectivo 2028</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Seleccionar Nivel Educativo</label>
+                        <select id="reg-nivel-sel" onchange="cargarCuadrosRegistro()">
+                            <option value="">Seleccione el nivel</option>
+                            <option value="Primero">Primero</option>
+                            <option value="Segundo">Segundo</option>
+                            <option value="Tercero">Tercero</option>
+                            <option value="Cuarto">Cuarto</option>
+                            <option value="Quinto">Quinto</option>
+                            <option value="Sexto">Sexto</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="contenedor-cuadros-registro" style="overflow-x: auto;">
-                    <p style="color: #64748b;">Seleccione un nivel educativo para desplegar el registro histórico.</p>
+                    <p style="color: #64748b;">Seleccione el año y nivel educativo para desplegar el registro histórico correspondiente.</p>
                 </div>
             </section>
 
@@ -503,6 +513,17 @@
             <section id="configuracion" class="tab-content">
                 <h2>Configuración de Periodos e Institución</h2>
                 <form id="form-config" onsubmit="confirmarYGuardarConfiguracion(event)">
+                    <fieldset>
+                        <legend>Año Lectivo Activo del Sistema</legend>
+                        <div class="form-grid" style="max-width: 350px;">
+                            <div class="form-group">
+                                <label>Año Lectivo en Curso</label>
+                                <select id="cfg-anio-lectivo-activo" required onchange="actualizarAnioLectivoGlobal()">
+                                    <!-- Dinámico -->
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
                     <fieldset>
                         <legend>Calendario Lectivo y Periodos</legend>
                         <div class="form-grid">
@@ -698,19 +719,43 @@
         let docenteTipoActual = 'artistico'; 
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
+        let anioLectivoActivoGlobal = 2026;
 
         function inicializarAniosLectivos() {
-            const selectAnio = document.getElementById('filtro-anio-lectivo');
-            if (!selectAnio) return;
-            selectAnio.innerHTML = '';
+            const selectsAnio = [
+                document.getElementById('filtro-anio-lectivo'), 
+                document.getElementById('cfg-anio-lectivo-activo'),
+                document.getElementById('reg-anio-sel')
+            ];
             const anioActual = 2026;
-            for (let i = 0; i <= 6; i++) {
-                const anioOpt = anioActual + i;
-                const opt = document.createElement('option');
-                opt.value = anioOpt;
-                opt.textContent = `Año Lectivo ${anioOpt}`;
-                if (anioOpt === 2026) opt.selected = true;
-                selectAnio.appendChild(opt);
+            
+            selectsAnio.forEach(sel => {
+                if (!sel) return;
+                const valorPrevio = sel.value;
+                sel.innerHTML = '';
+                for (let i = 0; i <= 6; i++) {
+                    const anioOpt = anioActual + i;
+                    const opt = document.createElement('option');
+                    opt.value = anioOpt;
+                    opt.textContent = `Año Lectivo ${anioOpt}`;
+                    if (valorPrevio ? anioOpt == valorPrevio : anioOpt === anioActual) {
+                        opt.selected = true;
+                    }
+                    sel.appendChild(opt);
+                }
+            });
+            const filtroAnio = document.getElementById('filtro-anio-lectivo');
+            if (filtroAnio) {
+                anioLectivoActivoGlobal = parseInt(filtroAnio.value);
+            }
+        }
+
+        function actualizarAnioLectivoGlobal() {
+            const selConfig = document.getElementById('cfg-anio-lectivo-activo');
+            if (selConfig) {
+                anioLectivoActivoGlobal = parseInt(selConfig.value);
+                const filtroMatricula = document.getElementById('filtro-anio-lectivo');
+                if (filtroMatricula) filtroMatricula.value = anioLectivoActivoGlobal;
             }
         }
 
@@ -818,12 +863,19 @@
                 const valMateria = opt.value.toLowerCase();
                 let permitirMateria = false;
 
-                if (esAcademicoAbsoluto) {
-                    if (valMateria.includes('académica') || valMateria.includes('conducta') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
+                // REGLA ESTRICTA: Conducta pertenece exclusivamente a académico
+                if (valMateria.includes('conducta')) {
+                    if (esAcademicoAbsoluto) {
+                        permitirMateria = true;
+                    } else {
+                        permitirMateria = false; 
+                    }
+                } else if (esAcademicoAbsoluto) {
+                    if (valMateria.includes('académica') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
                         permitirMateria = true;
                     }
                 } else {
-                    if (!valMateria.includes('académica') || valMateria.includes('conducta')) {
+                    if (!valMateria.includes('académica')) {
                         if (!espDocente) {
                             permitirMateria = true; 
                         } else if (valMateria.includes(espDocente) || espDocente.includes('arte') || espDocente.includes('música') || espDocente.includes('taller')) {
@@ -1341,6 +1393,13 @@
             const { data, error } = await supabaseClient.from('configuracion_periodos').select('*').eq('id', 1).single();
             if (error || !data) return;
 
+            if (data.anio_activo) {
+                anioLectivoActivoGlobal = data.anio_activo;
+                const cfgAnio = document.getElementById('cfg-anio-lectivo-activo');
+                if (cfgAnio) cfgAnio.value = data.anio_activo;
+                const filtroMat = document.getElementById('filtro-anio-lectivo');
+                if (filtroMat) filtroMat.value = data.anio_activo;
+            }
             if (data.p1_inicio) document.getElementById('cfg-p1-inicio').value = data.p1_inicio;
             if (data.p1_fin) document.getElementById('cfg-p1-fin').value = data.p1_fin;
             if (data.vac_inicio) document.getElementById('cfg-vac-inicio').value = data.vac_inicio;
@@ -1365,8 +1424,10 @@
         }
 
         async function guardarConfiguracion() {
+            const anioActivoVal = document.getElementById('cfg-anio-lectivo-activo') ? parseInt(document.getElementById('cfg-anio-lectivo-activo').value) : 2026;
             const datos = {
                 id: 1,
+                anio_activo: anioActivoVal,
                 p1_inicio: document.getElementById('cfg-p1-inicio').value,
                 p1_fin: document.getElementById('cfg-p1-fin').value,
                 vac_inicio: document.getElementById('cfg-vac-inicio').value,
@@ -1380,7 +1441,10 @@
             };
             const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
             if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
-            else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
+            else {
+                anioLectivoActivoGlobal = anioActivoVal;
+                mostrarMensaje('cfg-msg', `¡Configuración y Año Lectivo (${anioActivoVal}) guardados con éxito!`, true);
+            }
         }
 
         async function cargarTablaDocentesGeneral() {
@@ -1807,7 +1871,8 @@
 
             let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
             const { data: estudiantesRaw, error: errEst } = await queryEstudiantes;
-            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia);
+            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
+            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia).eq('anio_lectivo', anioActualConsulta);
 
             if (errEst) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + errEst.message + '</p>';
@@ -1831,7 +1896,7 @@
             const esConducta = materia.includes('Conducta');
 
             let html = `
-                <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
+                <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo}) - Año ${anioActualConsulta}${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -1919,29 +1984,33 @@
             }
 
             if (esConducta && !comentario) {
-                alert('La reflexión docente en Conducta es obligatoria para el informe al hogar.');
+                alert('La reflexión docente en Conducta is obligatoria para el informe al hogar.');
                 comentarioInput.focus();
                 return;
             }
+
+            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
 
             const datos = { 
                 cedula_estudiante: String(cedula), 
                 materia: String(materia), 
                 periodo: String(periodo), 
+                anio_lectivo: Number(anioActualConsulta),
                 promedio: Number(promedioFinal),
                 comentario: String(comentario) 
             };
 
-            const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo' });
+            const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo,anio_lectivo' });
             if (error) {
-                alert('Error al guardar: ' + error.message);
+                alert('Error al guardar nota con año lectivo: ' + error.message);
             } else {
-                alert(`¡Calificación guardada con éxito para la cédula ${cedula}!`);
+                alert(`¡Calificación guardada para el año ${anioActualConsulta} (Cédula ${cedula})!`);
             }
         }
 
         async function cargarCuadrosRegistro() {
             const nivel = document.getElementById('reg-nivel-sel').value;
+            const anioSeleccionado = document.getElementById('reg-anio-sel') ? parseInt(document.getElementById('reg-anio-sel').value) : 2026;
             const contenedor = document.getElementById('contenedor-cuadros-registro');
 
             if (!nivel) {
@@ -1949,10 +2018,10 @@
                 return;
             }
 
-            contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
+            contenedor.innerHTML = `<p>Cargando registro histórico institucional para el año ${anioSeleccionado}...</p>`;
 
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
-            const { data: notas } = await supabaseClient.from('notas').select('*');
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioSeleccionado);
 
             if (!estudiantes || estudiantes.length === 0) {
                 contenedor.innerHTML = `<p>No hay estudiantes matriculados en ${nivel}.</p>`;
@@ -1969,11 +2038,11 @@
 
             const listaMaterias = Array.from(materiasSet);
 
-            let html = `<h3>Registro Histórico - Nivel: ${nivel}</h3>`;
+            let html = `<h3>Registro Histórico (${anioSeleccionado}) - Nivel: ${nivel}</h3>`;
             html += `<table class="data-table"><thead><tr><th>Estudiante</th><th>Cédula</th><th>Profesores / Inst</th>`;
             
             if (listaMaterias.length === 0) {
-                html += `<th>Sin materias registradas aún</th></tr></thead><tbody>`;
+                html += `<th>Sin materias registradas para el año ${anioSeleccionado}</th></tr></thead><tbody>`;
             } else {
                 listaMaterias.forEach(mat => {
                     html += `<th>${mat}<br><span style="font-size:10px; font-weight:normal;">1°P | 2°P | Final (50%-50%)</span></th>`;
@@ -2043,8 +2112,9 @@
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
             const docenteSeleccionado = estData.docente_academico || '[Sin asignar]';
+            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
 
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula).eq('anio_lectivo', anioActualConsulta);
 
             let tablaMateriasHTML = '';
             let reflexionesDocentesHTML = '';
@@ -2060,7 +2130,7 @@
             ];
 
             if (materiasUnicas.length === 0) {
-                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
+                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante en el año ${anioActualConsulta}.</td></tr>`;
             } else {
                 materiasUnicas.forEach((mat, index) => {
                     const notaP1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
@@ -2143,8 +2213,8 @@
             }
 
             const tituloInformeHogar = periodoSel === 'Primer Periodo' 
-                ? 'INFORME OFICIAL AL HOGAR - PRIMER PERIODO' 
-                : 'INFORME OFICIAL AL HOGAR - SEGUNDO PERIODO Y ANUAL';
+                ? `INFORME OFICIAL AL HOGAR - PRIMER PERIODO (${anioActualConsulta})` 
+                : `INFORME OFICIAL AL HOGAR - SEGUNDO PERIODO Y ANUAL (${anioActualConsulta})`;
 
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
@@ -2301,7 +2371,8 @@
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
-            const { data: notas } = await supabaseClient.from('notas').select('*');
+            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioActualConsulta);
 
             if (!estudiantes || estudiantes.length === 0) {
                 contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${ciclo}.</p>`;
@@ -2309,7 +2380,7 @@
             }
 
             let html = `
-                <h3>Listado de ${ciclo} con Instrumentos y Notas</h3>
+                <h3>Listado de ${ciclo} con Instrumentos y Notas (Año ${anioActualConsulta})</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -2374,8 +2445,9 @@
             const msgSpan = document.getElementById('promocion-msg');
             msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
+            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
-            const { data: notas } = await supabaseClient.from('notas').select('*');
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioActualConsulta);
 
             if (!estudiantes || !notas) {
                 msgSpan.innerText = 'No hay datos suficientes para procesar.';
