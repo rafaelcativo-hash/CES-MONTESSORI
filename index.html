@@ -695,7 +695,7 @@
         const CAMPOS_ESTUDIANTES = 'cedula, nombre, fecha_nacimiento, lugar_nacimiento, nivel, docente_academico, docente_solfeo, docente_percursion, docente_danza, docente_plasticas, docente_ingles, docente_edufi, instrumento_principal, docente_asignado, instrumento_segundo, docente_segundo, provincia, canton, distrito, direccion_detalles, encargado1_nombre, encargado1_correo, encargado1_cel, encargado2_nombre, encargado2_correo, encargado2_cel, foto_url';
 
         let usuarioRolActual = 'docente';
-        let docenteTipoActual = 'academico'; // 'academico' o 'artistico'
+        let docenteTipoActual = 'artistico'; 
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
 
@@ -771,32 +771,11 @@
             if (docData) {
                 docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase();
                 docenteNombreGlobal = (docData.nombre || '').trim();
-                docenteTipoActual = (docData.tipo_docente || 'academico').toLowerCase();
+                docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
             } else {
                 docenteEspecialidadGlobal = '';
                 docenteNombreGlobal = '';
-                docenteTipoActual = 'academico';
-            }
-
-            const { data: docCompleto } = await supabaseClient
-                .from('docentes')
-                .select('*')
-                .eq('correo', email)
-                .maybeSingle();
-
-            if (docCompleto) {
-                docenteNombreGlobal = (docCompleto.nombre || '').trim();
-                docenteTipoActual = (docCompleto.tipo_docente || 'academico').toLowerCase();
-                docenteEspecialidadGlobal = (docCompleto.especialidad || '').toLowerCase();
-            }
-
-            // CORRECCIÓN AUTOMÁTICA DE RAÍZ: Si el usuario inició sesión como docente pero en la base de datos de docentes está registrado con un correo diferente o no se encontró registro estricto pero su correo contiene palabras clave artísticas (como "musica", "arte", "danza", etc.), forzamos el tipo artístico de raíz para evitar que caigan por defecto en académico.
-            if (usuarioRolActual !== 'admin' && docenteTipoActual === 'academico') {
-                const mailLower = email.toLowerCase();
-                if (mailLower.includes('musica') || mailLower.includes('profedemusica') || mailLower.includes('arte') || mailLower.includes('danza') || mailLower.includes('percussion') || mailLower.includes('solfeo')) {
-                    docenteTipoActual = 'artistico';
-                    if (!docenteEspecialidadGlobal) docenteEspecialidadGlobal = 'música y artes';
-                }
+                docenteTipoActual = 'artistico';
             }
 
             document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
@@ -828,51 +807,21 @@
                 return;
             }
 
-            const esp = docenteEspecialidadGlobal.toLowerCase();
-            const tipoDoc = docenteTipoActual.toLowerCase();
-            
+            const espDocente = docenteEspecialidadGlobal.toLowerCase();
+
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
                 const valMateria = opt.value.toLowerCase();
-                let mostrarOpcion = false;
+                let coincide = false;
 
-                if (tipoDoc === 'academico') {
-                    if (valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('conducta')) {
-                        mostrarOpcion = true;
-                    }
-                } else if (tipoDoc === 'artistico') {
-                    // SOLUCIÓN DE RAÍZ: Para cualquier docente artístico (incluyendo nuevos o con especialidades compuestas), permitimos ver todas las opciones de la categoría artística o hacemos coincidencia flexible con su especialidad.
-                    if (valMateria.includes('[artística]') || esp.includes('música') || esp.includes('musica') || esp.includes('arte') || esp.includes('docente') || esp.includes('general')) {
-                        mostrarOpcion = true;
-                    } else if (esp.includes('percusión') || esp.includes('percursion') || esp.includes('batería') || esp.includes('bateria')) {
-                        if (valMateria.includes('percusión') || valMateria.includes('percursion') || valMateria.includes('batería') || valMateria.includes('bateria')) mostrarOpcion = true;
-                    } else if (esp.includes('canto')) {
-                        if (valMateria.includes('canto')) mostrarOpcion = true;
-                    } else if (esp.includes('danza')) {
-                        if (valMateria.includes('danza')) mostrarOpcion = true;
-                    } else if (esp.includes('plástica') || esp.includes('plastica')) {
-                        if (valMateria.includes('plásticas') || valMateria.includes('plastica')) mostrarOpcion = true;
-                    } else if (esp.includes('solfeo')) {
-                        if (valMateria.includes('solfeo')) mostrarOpcion = true;
-                    } else if (esp.includes('piano')) {
-                        if (valMateria.includes('piano')) mostrarOpcion = true;
-                    } else if (esp.includes('guitarra')) {
-                        if (valMateria.includes('guitarra')) mostrarOpcion = true;
-                    } else if (esp.includes('ukulele')) {
-                        if (valMateria.includes('ukulele')) mostrarOpcion = true;
-                    } else if (esp.includes('bajo')) {
-                        if (valMateria.includes('bajo')) mostrarOpcion = true;
-                    } else if (esp.includes('inglés') || esp.includes('ingles')) {
-                        if (valMateria.includes('inglés') || valMateria.includes('ingles')) mostrarOpcion = true;
-                    } else if (esp.includes('edufi') || esp.includes('educación física')) {
-                        if (valMateria.includes('edufi')) mostrarOpcion = true;
-                    } else {
-                        // Si la especialidad no coincide exactamente con una palabra clave pero es docente artístico, habilitamos las artísticas por defecto para evitar bloqueos
-                        mostrarOpcion = true;
-                    }
+                if (espDocente && (valMateria.includes(espDocente) || espDocente.includes(valMateria.replace('[artística]', '').replace('[académica]', '').trim()))) {
+                    coincide = true;
+                }
+                if (espDocente.includes('general') || espDocente.includes('grado') || valMateria.includes('conducta')) {
+                    coincide = true;
                 }
 
-                if (mostrarOpcion) {
+                if (coincide) {
                     opt.disabled = false;
                     opt.style.display = '';
                 } else {
@@ -881,50 +830,14 @@
                 }
             }
 
-            let hayOpcionesDisponibles = false;
+            let primeraValida = '';
             for (let opt of selectMateria.options) {
                 if (!opt.disabled && opt.value) {
-                    hayOpcionesDisponibles = true;
+                    primeraValida = opt.value;
                     break;
                 }
             }
-
-            // RESPALDO ABSOLUTO DE RAÍZ: Si ningún filtro de especialidad activó opciones, habilitamos todas las materias artísticas si el tipo es artístico, o académico si es académico.
-            if (!hayOpcionesDisponibles) {
-                for (let opt of selectMateria.options) {
-                    if (!opt.value) continue;
-                    const valMateria = opt.value.toLowerCase();
-                    if (tipoDoc === 'artistico' && valMateria.includes('[artística]')) {
-                        opt.disabled = false;
-                        opt.style.display = '';
-                        hayOpcionesDisponibles = true;
-                    } else if (tipoDoc === 'academico' && valMateria.includes('[académica]')) {
-                        opt.disabled = false;
-                        opt.style.display = '';
-                        hayOpcionesDisponibles = true;
-                    }
-                }
-            }
-
-            if (!hayOpcionesDisponibles) {
-                for (let opt of selectMateria.options) {
-                    opt.disabled = false;
-                    opt.style.display = '';
-                }
-            }
-
-            let seleccionada = false;
-            for (let opt of selectMateria.options) {
-                if (!opt.disabled && opt.value) {
-                    selectMateria.value = opt.value;
-                    seleccionada = true;
-                    break;
-                }
-            }
-            if (!seleccionada) {
-                selectMateria.value = '';
-            }
-
+            selectMateria.value = primeraValida;
             cargarGrupoParaCalificar();
         }
 
@@ -1777,31 +1690,8 @@
                 estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico || est.instrumento_segundo === instrumentoEspecifico);
             }
 
-            if (usuarioRolActual !== 'admin' && docenteTipoActual === 'artistico') {
-                const nomDoc = docenteNombreGlobal;
-                
-                estudiantes = estudiantes.filter(est => {
-                    let matchProfesor = false;
-                    if (materia.includes('Solfeo') && (est.docente_solfeo === nomDoc || !est.docente_solfeo)) matchProfesor = true;
-                    if (materia.includes('Percusión') && (est.docente_percursion === nomDoc || !est.docente_percursion)) matchProfesor = true;
-                    if (materia.includes('Danza') && (est.docente_danza === nomDoc || !est.docente_danza)) matchProfesor = true;
-                    if (materia.includes('Plásticas') && (est.docente_plasticas === nomDoc || !est.docente_plasticas)) matchProfesor = true;
-                    if (materia.includes('Inglés') && (est.docente_ingles === nomDoc || !est.docente_ingles)) matchProfesor = true;
-                    if (materia.includes('Edufi') && (est.docente_edufi === nomDoc || !est.docente_edufi)) matchProfesor = true;
-                    if (instrumentoEspecifico && (est.docente_asignado === nomDoc || est.docente_segundo === nomDoc || !est.docente_asignado)) matchProfesor = true;
-                    // RESPALDO DE RAÍZ: Para docentes artísticos nuevos (como Mariángel), si no hay coincidencia estricta en las columnas individuales del estudiante, se permite calificar al grupo completo del nivel.
-                    if (matchProfesor === false) matchProfesor = true;
-                    return matchProfesor;
-                });
-            }
-
-            if (usuarioRolActual !== 'admin' && docenteTipoActual === 'academico') {
-                const nomDoc = docenteNombreGlobal;
-                estudiantes = estudiantes.filter(est => est.docente_academico === nomDoc || !est.docente_academico || est.docente_academico === '');
-            }
-
             if (estudiantes.length === 0) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel} bajo su responsabilidad.</p>`;
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
             }
 
