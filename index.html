@@ -130,7 +130,7 @@
             <button class="tab-btn" data-tab="calificar" data-role-req="all" onclick="cambiarPestana('calificar', event)">Calificar</button>
             <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
-            <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio de Docentes</button>
+            <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio y Carga</button>
             <button class="tab-btn" data-tab="contactos" data-role-req="admin" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
             <button class="tab-btn" data-tab="listasnivel" data-role-req="admin" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
         </nav>
@@ -542,13 +542,14 @@
                 </form>
             </section>
 
-            <!-- 7. DIRECTORIO DE DOCENTES Y GESTIÓN DE ROLES -->
+            <!-- 7. DIRECTORIO DE DOCENTES Y CARGA ACADÉMICA -->
             <section id="docentes" class="tab-content">
-                <h2>Directorio General y Administración de Roles</h2>
+                <h2>Directorio de Docentes y Carga Académica Asignada</h2>
                 
                 <div class="sub-panel-tabs" style="margin-top: 15px;">
-                    <button class="sub-tab-btn active" onclick="cambiarSubPestanaDocente('directorio', event)">Directorio de Personal</button>
-                    <button class="sub-tab-btn" onclick="cambiarSubPestanaDocente('roles', event)">Administración de Roles de Acceso</button>
+                    <button class="sub-tab-btn active" onclick="cambiarSubPestanaDocente('directorio', event)">Directorio y Registro</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaDocente('carga', event)">Carga Académica por Docente</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaDocente('roles', event)">Administración de Roles</button>
                 </div>
 
                 <!-- SUB-PANEL 1: DIRECTORIO -->
@@ -561,8 +562,8 @@
                                 <div class="form-group">
                                     <label>Tipo de Docente</label>
                                     <select id="doc-tipo" required>
-                                        <option value="academico">Académico</option>
-                                        <option value="artistico">Artístico</option>
+                                        <option value="academico">Académico (Paquete general)</option>
+                                        <option value="artistico">Artístico / Especialidad</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -578,8 +579,8 @@
                                     <input type="tel" id="doc-tel" required placeholder="Ej. 8888-8888">
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
-                                    <label>Especialidad / Materia / Disciplina</label>
-                                    <input type="text" id="doc-esp" required placeholder="Ej. Español, Danza, Taller de Percusión, Solfeo, Conducta">
+                                    <label>Especialidad / Materia / Paquete</label>
+                                    <input type="text" id="doc-esp" required placeholder="Ej. Académica, Danza, Solfeo, Taller de Percusión, Piano">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -596,7 +597,16 @@
                     </div>
                 </div>
 
-                <!-- SUB-PANEL 2: GESTIÓN DE ROLES -->
+                <!-- SUB-PANEL 2: CARGA ACADÉMICA -->
+                <div id="sub-docentes-carga" class="sub-doc-panel" style="display: none;">
+                    <h3 style="color: var(--primary);">Resumen de Carga Académica por Docente</h3>
+                    <p style="color: #64748b; font-size: 13px;">Visualice qué materias y responsabilidades tiene asignadas cada docente registrado en el directorio de Supabase.</p>
+                    <div id="contenedor-carga-academica" style="overflow-x: auto; margin-top: 20px;">
+                        <p>Cargando distribución de carga académica...</p>
+                    </div>
+                </div>
+
+                <!-- SUB-PANEL 3: GESTIÓN DE ROLES -->
                 <div id="sub-docentes-roles" class="sub-doc-panel" style="display: none;">
                     <fieldset style="background: #f8fafc; border-color: var(--accent);">
                         <legend style="color: var(--accent);">Asignar o Modificar Rol de Usuario</legend>
@@ -734,6 +744,7 @@
             if (idSeccion === 'configuracion') cargarConfiguracion();
             if (idSeccion === 'docentes') {
                 cargarTablaDocentesGeneral();
+                cargarTablaCargaAcademica();
                 cargarTablaRolesUsuarios();
             }
             if (idSeccion === 'calificar') {
@@ -746,6 +757,7 @@
             document.querySelectorAll('#docentes .sub-tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(`sub-docentes-${subSubId}`).style.display = 'block';
             if (evt) evt.currentTarget.classList.add('active');
+            if (subSubId === 'carga') cargarTablaCargaAcademica();
             if (subSubId === 'roles') cargarTablaRolesUsuarios();
         }
 
@@ -799,7 +811,7 @@
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
 
-            // Si es administrador, tiene acceso total a todo
+            // Si es administrador, acceso total a todas las materias
             if (usuarioRolActual === 'admin') {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
@@ -815,9 +827,15 @@
                 const valMateria = opt.value.toLowerCase();
                 let coincide = false;
 
-                // Validación exacta contra la especialidad guardada en la tabla Directorio de Docentes
-                if (espDocente) {
-                    const limpiaMateria = valMateria.replace('[artística]', '').replace('[académica]', '').trim();
+                const limpiaMateria = valMateria.replace('[artística]', '').replace('[académica]', '').trim();
+
+                // Si el docente es académico (ej. especialidad 'académica'), puede calificar el bloque académico completo y conducta
+                if (espDocente.includes('académica') || espDocente.includes('academico')) {
+                    if (valMateria.includes('académica') || valMateria.includes('conducta') || limpiaMateria.includes('español') || limpiaMateria.includes('matemáticas') || limpiaMateria.includes('ciencias') || limpiaMateria.includes('estudios sociales') || limpiaMateria.includes('inglés')) {
+                        coincide = true;
+                    }
+                } else {
+                    // Si es docente artístico o de disciplina específica, solo su materia correspondiente
                     if (limpiaMateria.includes(espDocente) || espDocente.includes(limpiaMateria)) {
                         coincide = true;
                     }
@@ -875,6 +893,7 @@
             cargarSelectorEstudiantesEdicion();
             cargarConfiguracion();
             cargarTablaDocentesGeneral();
+            cargarTablaCargaAcademica();
             cargarTablaRolesUsuarios();
         }
 
@@ -1399,6 +1418,88 @@
             contenedor.innerHTML = html;
         }
 
+        async function cargarTablaCargaAcademica() {
+            const contenedor = document.getElementById('contenedor-carga-academica');
+            if (!contenedor) return;
+            contenedor.innerHTML = '<p>Calculando carga académica desde Supabase...</p>';
+
+            const { data: docentes, error: errDoc } = await supabaseClient.from('docentes').select('*').order('nombre');
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select(CAMPOS_ESTUDIANTES);
+
+            if (errDoc || errEst) {
+                contenedor.innerHTML = '<p style="color: red;">Error al consultar los datos para la carga académica.</p>';
+                return;
+            }
+
+            if (!docentes || docentes.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b;">No hay docentes en el directorio.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Docente</th>
+                            <th>Tipo</th>
+                            <th>Especialidad / Materia Asignada</th>
+                            <th>Estudiantes a Cargo / Grupos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            docentes.forEach(doc => {
+                let countEst = 0;
+                let detalleGrupos = [];
+
+                if (estudiantes) {
+                    estudiantes.forEach(est => {
+                        const esp = (doc.especialidad || '').toLowerCase();
+                        const nom = (doc.nombre || '').trim();
+
+                        let match = false;
+                        if (esp.includes('académica') || esp.includes('academico')) {
+                            if (est.docente_academico === nom) match = true;
+                        } else if (esp.includes('solfeo')) {
+                            if (est.docente_solfeo === nom) match = true;
+                        } else if (esp.includes('percusión')) {
+                            if (est.docente_percursion === nom) match = true;
+                        } else if (esp.includes('danza')) {
+                            if (est.docente_danza === nom) match = true;
+                        } else if (esp.includes('plásticas')) {
+                            if (est.docente_plasticas === nom) match = true;
+                        } else if (esp.includes('inglés')) {
+                            if (est.docente_ingles === nom) match = true;
+                        } else if (esp.includes('edufi')) {
+                            if (est.docente_edufi === nom) match = true;
+                        } else {
+                            if (est.docente_asignado === nom || est.docente_segundo === nom) match = true;
+                        }
+
+                        if (match) {
+                            countEst++;
+                            if (!detalleGrupos.includes(est.nivel)) {
+                                detalleGrupos.push(est.nivel);
+                            }
+                        }
+                    });
+                }
+
+                html += `
+                    <tr>
+                        <td style="text-align: left;"><b>${doc.nombre}</b><br><small>${doc.correo}</small></td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${doc.tipo_docente === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${doc.tipo_docente.toUpperCase()}</span></td>
+                        <td><b>${doc.especialidad}</b></td>
+                        <td><b>${countEst} estudiantes</b><br><small>Niveles: ${detalleGrupos.length > 0 ? detalleGrupos.join(', ') : 'Ninguno asignado'}</small></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            contenedor.innerHTML = html;
+        }
+
         async function cargarTablaRolesUsuarios() {
             const contenedor = document.getElementById('contenedor-tabla-roles');
             if (!contenedor) return;
@@ -1543,6 +1644,7 @@
                 mostrarMensaje('doc-msg', id ? '¡Docente actualizado exitosamente!' : '¡Docente registrado exitosamente!', true);
                 limpiarFormularioDocente();
                 cargarTablaDocentesGeneral();
+                cargarTablaCargaAcademica();
                 cargarDocentesEnMatricula();
             }
         }
@@ -1560,6 +1662,7 @@
             } else {
                 alert('Docente eliminado correctamente.');
                 cargarTablaDocentesGeneral();
+                cargarTablaCargaAcademica();
                 cargarDocentesEnMatricula();
             }
         }
