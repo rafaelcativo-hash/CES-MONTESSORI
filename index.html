@@ -811,7 +811,7 @@
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
 
-            // Si es administrador, acceso total a todas las materias
+            // Si es administrador, acceso total a todo
             if (usuarioRolActual === 'admin') {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
@@ -821,6 +821,7 @@
             }
 
             const espDocente = docenteEspecialidadGlobal.toLowerCase();
+            const esTipoAcademico = docenteTipoActual === 'academico' || espDocente.includes('académica') || espDocente.includes('academico');
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
@@ -829,13 +830,15 @@
 
                 const limpiaMateria = valMateria.replace('[artística]', '').replace('[académica]', '').trim();
 
-                // Si el docente es académico (ej. especialidad 'académica'), puede calificar el bloque académico completo y conducta
-                if (espDocente.includes('académica') || espDocente.includes('academico')) {
+                if (esTipoAcademico) {
+                    // Candado estricto: Solo materias académicas y conducta. Se bloquea lo artístico por completo.
                     if (valMateria.includes('académica') || valMateria.includes('conducta') || limpiaMateria.includes('español') || limpiaMateria.includes('matemáticas') || limpiaMateria.includes('ciencias') || limpiaMateria.includes('estudios sociales') || limpiaMateria.includes('inglés')) {
                         coincide = true;
+                    } else {
+                        coincide = false;
                     }
                 } else {
-                    // Si es docente artístico o de disciplina específica, solo su materia correspondiente
+                    // Candado estricto: Solo su especialidad artística asignada
                     if (limpiaMateria.includes(espDocente) || espDocente.includes(limpiaMateria)) {
                         coincide = true;
                     }
