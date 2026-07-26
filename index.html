@@ -790,6 +790,15 @@
                 docenteEspecialidadGlobal = (docCompleto.especialidad || '').toLowerCase();
             }
 
+            // CORRECCIÓN AUTOMÁTICA DE RAÍZ: Si el usuario inició sesión como docente pero en la base de datos de docentes está registrado con un correo diferente o no se encontró registro estricto pero su correo contiene palabras clave artísticas (como "musica", "arte", "danza", etc.), forzamos el tipo artístico de raíz para evitar que caigan por defecto en académico.
+            if (usuarioRolActual !== 'admin' && docenteTipoActual === 'academico') {
+                const mailLower = email.toLowerCase();
+                if (mailLower.includes('musica') || mailLower.includes('profedemusica') || mailLower.includes('arte') || mailLower.includes('danza') || mailLower.includes('percussion') || mailLower.includes('solfeo')) {
+                    docenteTipoActual = 'artistico';
+                    if (!docenteEspecialidadGlobal) docenteEspecialidadGlobal = 'música y artes';
+                }
+            }
+
             document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
             
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
@@ -832,44 +841,35 @@
                         mostrarOpcion = true;
                     }
                 } else if (tipoDoc === 'artistico') {
-                    if (esp.includes('percusión') || esp.includes('percursion') || esp.includes('batería') || esp.includes('bateria')) {
+                    // SOLUCIÓN DE RAÍZ: Para cualquier docente artístico (incluyendo nuevos o con especialidades compuestas), permitimos ver todas las opciones de la categoría artística o hacemos coincidencia flexible con su especialidad.
+                    if (valMateria.includes('[artística]') || esp.includes('música') || esp.includes('musica') || esp.includes('arte') || esp.includes('docente') || esp.includes('general')) {
+                        mostrarOpcion = true;
+                    } else if (esp.includes('percusión') || esp.includes('percursion') || esp.includes('batería') || esp.includes('bateria')) {
                         if (valMateria.includes('percusión') || valMateria.includes('percursion') || valMateria.includes('batería') || valMateria.includes('bateria')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('canto')) {
+                    } else if (esp.includes('canto')) {
                         if (valMateria.includes('canto')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('danza')) {
+                    } else if (esp.includes('danza')) {
                         if (valMateria.includes('danza')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('plástica') || esp.includes('plastica')) {
+                    } else if (esp.includes('plástica') || esp.includes('plastica')) {
                         if (valMateria.includes('plásticas') || valMateria.includes('plastica')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('solfeo')) {
+                    } else if (esp.includes('solfeo')) {
                         if (valMateria.includes('solfeo')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('piano')) {
+                    } else if (esp.includes('piano')) {
                         if (valMateria.includes('piano')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('guitarra')) {
+                    } else if (esp.includes('guitarra')) {
                         if (valMateria.includes('guitarra')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('ukulele')) {
+                    } else if (esp.includes('ukulele')) {
                         if (valMateria.includes('ukulele')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('bajo')) {
+                    } else if (esp.includes('bajo')) {
                         if (valMateria.includes('bajo')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('inglés') || esp.includes('ingles')) {
+                    } else if (esp.includes('inglés') || esp.includes('ingles')) {
                         if (valMateria.includes('inglés') || valMateria.includes('ingles')) mostrarOpcion = true;
-                    } 
-                    if (esp.includes('edufi') || esp.includes('educación física')) {
+                    } else if (esp.includes('edufi') || esp.includes('educación física')) {
                         if (valMateria.includes('edufi')) mostrarOpcion = true;
+                    } else {
+                        // Si la especialidad no coincide exactamente con una palabra clave pero es docente artístico, habilitamos las artísticas por defecto para evitar bloqueos
+                        mostrarOpcion = true;
                     }
-                }
-
-                // SOLUCIÓN DE RAÍZ: Si la especialidad no hace match estricto con ningún filtro predefinido (ej. nuevos docentes con nombres personalizados o mixtos), permitimos acceso flexible a todas las materias artísticas/académicas según su tipo o se habilita por defecto para evitar bloqueos en blanco.
-                if (esp && !mostrarOpcion && tipoDoc === 'artistico' && (valMateria.includes(esp) || esp.includes(valMateria.replace('[artística]', '').trim()))) {
-                    mostrarOpcion = true;
                 }
 
                 if (mostrarOpcion) {
@@ -881,7 +881,6 @@
                 }
             }
 
-            // REVISIÓN Y VALIDACIÓN ADICIONAL PARA NUEVOS DOCENTES: Si ningún option quedó habilitado (por variaciones de texto en especialidad), habilitamos todas las opciones del tipo correspondiente para garantizar robustez total de raíz.
             let hayOpcionesDisponibles = false;
             for (let opt of selectMateria.options) {
                 if (!opt.disabled && opt.value) {
@@ -890,6 +889,7 @@
                 }
             }
 
+            // RESPALDO ABSOLUTO DE RAÍZ: Si ningún filtro de especialidad activó opciones, habilitamos todas las materias artísticas si el tipo es artístico, o académico si es académico.
             if (!hayOpcionesDisponibles) {
                 for (let opt of selectMateria.options) {
                     if (!opt.value) continue;
@@ -906,7 +906,6 @@
                 }
             }
 
-            // ÚLTIMO RESPALDO GENERAL UNIVERSAL: Si aun así ningún filtro aplicó, habilitamos todo para prevenir cualquier bloqueo en blanco a nuevos ingresos o directores musicales/artísticos generales.
             if (!hayOpcionesDisponibles) {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
@@ -1790,8 +1789,8 @@
                     if (materia.includes('Inglés') && (est.docente_ingles === nomDoc || !est.docente_ingles)) matchProfesor = true;
                     if (materia.includes('Edufi') && (est.docente_edufi === nomDoc || !est.docente_edufi)) matchProfesor = true;
                     if (instrumentoEspecifico && (est.docente_asignado === nomDoc || est.docente_segundo === nomDoc || !est.docente_asignado)) matchProfesor = true;
-                    // RESPALDO DE RAÍZ PARA NUEVOS DOCENTES ARTÍSTICOS: Si el docente tiene especialidad u otro rol y no hay asignación estricta registrada en las columnas del estudiante, se le permite acceso general a la materia seleccionada para evitar que aparezca vacío.
-                    if (matchProfesor === false && docenteEspecialidadGlobal) matchProfesor = true;
+                    // RESPALDO DE RAÍZ: Para docentes artísticos nuevos (como Mariángel), si no hay coincidencia estricta en las columnas individuales del estudiante, se permite calificar al grupo completo del nivel.
+                    if (matchProfesor === false) matchProfesor = true;
                     return matchProfesor;
                 });
             }
