@@ -144,7 +144,7 @@
                 </div>
 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda</legend>
+                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda / Edición</legend>
                     <div class="form-grid" style="align-items: flex-end;">
                         <div class="form-group">
                             <label>Año Lectivo</label>
@@ -153,29 +153,26 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Filtrar por Ciclo / Nivel General</label>
-                            <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
-                                <option value="">-- Todos los niveles vigentes --</option>
-                                <optgroup label="Primer Ciclo">
-                                    <option value="Primero">Primero</option>
-                                    <option value="Segundo">Segundo</option>
-                                    <option value="Tercero">Tercero</option>
-                                </optgroup>
-                                <optgroup label="Segundo Ciclo">
-                                    <option value="Cuarto">Cuarto</option>
-                                    <option value="Quinto">Quinto</option>
-                                    <option value="Sexto">Sexto</option>
-                                </optgroup>
+                            <label>Filtrar Estudiantes por Nivel (Para Editar / Eliminar)</label>
+                            <select id="filtro-nivel-edicion" onchange="cargarSelectorEstudiantesEdicionPorNivel()">
+                                <option value="">-- Todos los niveles --</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Seleccionar Estudiante para Editar</label>
+                            <label>Seleccionar Estudiante</label>
                             <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
                                 <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
+                        <div class="form-group" style="display: flex; gap: 8px;">
+                            <button type="button" class="warning-btn" style="flex: 1;" onclick="limpiarFormularioMatricula()">Limpiar</button>
+                            <button type="button" id="btn-eliminar-estudiante" class="danger-btn" style="display: none; padding: 12px 15px; font-size: 13px;" onclick="eliminarEstudianteActual()">Eliminar</button>
                         </div>
                     </div>
                 </fieldset>
@@ -732,7 +729,7 @@
             if (idSeccion === 'matricula') {
                 inicializarAniosLectivos();
                 cargarDocentesEnMatricula();
-                cargarSelectorEstudiantesEdicion();
+                cargarSelectorEstudiantesEdicionPorNivel();
             }
             if (idSeccion === 'configuracion') cargarConfiguracion();
             if (idSeccion === 'docentes') {
@@ -892,7 +889,7 @@
             await verificarRolUsuario(email);
             inicializarAniosLectivos();
             cargarDocentesEnMatricula();
-            cargarSelectorEstudiantesEdicion();
+            cargarSelectorEstudiantesEdicionPorNivel();
             cargarConfiguracion();
             cargarTablaDocentesGeneral();
             cargarTablaCargaAcademica();
@@ -985,32 +982,16 @@
             });
         }
 
-        async function cargarSelectorEstudiantesEdicion() {
-            const selectEdit = document.getElementById('select-estudiante-editar');
-            if (!selectEdit) return;
-            selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
-
-            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
-            if (error || !data) return;
-
-            data.forEach(est => {
-                const opt = document.createElement('option');
-                opt.value = est.cedula;
-                opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})`;
-                selectEdit.appendChild(opt);
-            });
-        }
-
-        async function filtrarEstudiantesPorCiclo() {
-            const cicloFiltro = document.getElementById('filtro-ciclo-general').value;
+        async function cargarSelectorEstudiantesEdicionPorNivel() {
+            const nivelFiltro = document.getElementById('filtro-nivel-edicion').value;
             const selectEdit = document.getElementById('select-estudiante-editar');
             if (!selectEdit) return;
 
-            selectEdit.innerHTML = '<option value="">-- Cargando por nivel filtrado --</option>';
+            selectEdit.innerHTML = '<option value="">-- Cargando estudiantes --</option>';
 
             let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
-            if (cicloFiltro) {
-                query = query.eq('nivel', cicloFiltro);
+            if (nivelFiltro) {
+                query = query.eq('nivel', nivelFiltro);
             }
 
             const { data, error } = await query;
@@ -1019,7 +1000,7 @@
                 return;
             }
 
-            selectEdit.innerHTML = '<option value="">-- Seleccione estudiante --</option>';
+            selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
             data.forEach(est => {
                 const opt = document.createElement('option');
                 opt.value = est.cedula;
@@ -1032,6 +1013,7 @@
             const cedula = document.getElementById('select-estudiante-editar').value;
             const btnSubmit = document.getElementById('btn-submit-matricula');
             const inputCedula = document.getElementById('mat-cedula');
+            const btnEliminar = document.getElementById('btn-eliminar-estudiante');
 
             if (!cedula) {
                 limpiarFormularioMatricula();
@@ -1091,6 +1073,7 @@
 
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
+            btnEliminar.style.display = 'inline-block';
 
             generarVistaPreviaMatricula();
         }
@@ -1105,9 +1088,34 @@
             const btnSubmit = document.getElementById('btn-submit-matricula');
             btnSubmit.innerText = 'Guardar Matrícula Rápida';
             btnSubmit.className = 'action-btn';
+            document.getElementById('btn-eliminar-estudiante').style.display = 'none';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
             cargarDocentesEnMatricula();
+        }
+
+        async function eliminarEstudianteActual() {
+            const cedulaVal = document.getElementById('mat-cedula').value.trim();
+            const nombreVal = document.getElementById('mat-nombre').value.trim();
+
+            if (!cedulaVal) {
+                alert('No hay ningún estudiante seleccionado para eliminar.');
+                return;
+            }
+
+            if (!confirm(`¿Está completamente seguro de ELIMINAR al estudiante "${nombreVal}" (Cédula: ${cedulaVal})? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+
+            const { error } = await supabaseClient.from('estudiantes').delete().eq('cedula', cedulaVal);
+
+            if (error) {
+                alert('Error al eliminar estudiante de Supabase: ' + error.message);
+            } else {
+                alert(`¡Estudiante ${nombreVal} eliminado correctamente!`);
+                limpiarFormularioMatricula();
+                cargarSelectorEstudiantesEdicionPorNivel();
+            }
         }
 
         function confirmarYGuardarMatricula(e) {
@@ -1171,7 +1179,7 @@
                 mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
             } else {
                 mostrarMensaje('mat-msg', '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
-                cargarSelectorEstudiantesEdicion();
+                cargarSelectorEstudiantesEdicionPorNivel();
                 generarVistaPreviaMatricula();
             }
         }
@@ -1182,10 +1190,7 @@
             const cedula = document.getElementById('mat-cedula').value;
             const fnac = document.getElementById('mat-fnac').value;
             const lugarNac = document.getElementById('mat-lugar-nac').value;
-            
-            // CORREGIDO: Toma el nivel real del formulario de matrícula de forma independiente
             const nivel = document.getElementById('mat-nivel').value;
-            
             const docenteAcad = document.getElementById('mat-docente-acad').value;
             const docSolfeo = document.getElementById('mat-doc-solfeo').value;
             const docPerc = document.getElementById('mat-doc-percursion').value;
