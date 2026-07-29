@@ -72,7 +72,7 @@
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
         .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 100%; max-width: 190mm; box-sizing: border-box; margin-left: auto; margin-right: auto; font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'URW Gothic', 'Segoe UI', sans-serif; }
-        .encabezado-informe-full { width: calc(100% + 50px); margin: -25px -25px 15px -25px; text-align: center; }
+        .encabezado-informe-full { width: calc(100% + 50px); margin: -25px -25px 2px -25px; text-align: center; }
         .encabezado-informe-full img { width: 100%; height: auto; display: block; object-fit: contain; }
         .cita-montessori { margin-top: 30px; padding: 18px 22px; background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; page-break-inside: avoid; break-inside: avoid; }
         .cita-montessori p.texto-cita { margin: 0; font-size: 13px; font-style: italic; color: #334155; line-height: 1.5; }
@@ -93,7 +93,7 @@
             body * { visibility: hidden; }
             #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion * { visibility: visible; }
             #preview-matricula-impresion, #plantilla-informe-oficial, #plantilla-lista-nivel-impresion { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
-            .encabezado-informe-full { width: calc(100% + 20mm); margin: -10mm -10mm 15px -10mm; }
+            .encabezado-informe-full { width: calc(100% + 20mm); margin: -10mm -10mm 2px -10mm; }
             .salto-pagina-forzado { page-break-before: always; break-before: page; }
             .report-preview table.data-table { display: table; width: 100%; }
             .report-preview table.data-table thead { display: table-header-group; }
@@ -250,6 +250,14 @@
                                         <label>Lugar de Nacimiento (Opcional)</label>
                                         <input type="text" id="mat-lugar-nac" placeholder="Ej. Heredia, Costa Rica">
                                     </div>
+                                    <div class="form-group">
+                                        <label>Fecha de Ingreso a CES (Opcional)</label>
+                                        <input type="date" id="mat-fecha-ingreso">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Institución de Procedencia (Opcional)</label>
+                                        <input type="text" id="mat-institucion-procedencia" placeholder="Ej. Escuela Barva Centro, o 'Nuevo ingreso'">
+                                    </div>
                                 </div>
                                 <div class="form-group" style="margin-top: 5px;">
                                     <label>Edad Exacta Calculada</label>
@@ -383,6 +391,8 @@
                             <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc1-nombre"></div>
                             <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc1-correo"></div>
                             <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc1-cel" placeholder="Ej. 8888-8888"></div>
+                            <div class="form-group"><label>Profesión u Oficio</label><input type="text" id="enc1-profesion"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Lugar de Trabajo</label><input type="text" id="enc1-trabajo"></div>
                         </div>
                     </fieldset>
 
@@ -392,6 +402,16 @@
                             <div class="form-group"><label>Nombre Completo</label><input type="text" id="enc2-nombre"></div>
                             <div class="form-group"><label>Correo Electrónico</label><input type="email" id="enc2-correo"></div>
                             <div class="form-group"><label>Contacto Celular</label><input type="tel" id="enc2-cel" placeholder="Ej. 8888-8888"></div>
+                            <div class="form-group"><label>Profesión u Oficio</label><input type="text" id="enc2-profesion"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Lugar de Trabajo</label><input type="text" id="enc2-trabajo"></div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Observaciones (Opcional)</legend>
+                        <div class="form-group">
+                            <label>Observaciones generales del estudiante</label>
+                            <textarea id="mat-observaciones" rows="3" placeholder="Anotaciones relevantes sobre el estudiante..."></textarea>
                         </div>
                     </fieldset>
 
@@ -824,6 +844,48 @@
 
         function nombreMateriaLimpio(valorOpcion) {
             return valorOpcion.replace('[Artística] ', '').replace('[Académica] ', '').trim();
+        }
+
+        // Exporta cualquiera de los documentos imprimibles (informe, lista oficial,
+        // ficha de matrícula) como un archivo .doc editable en Microsoft Word,
+        // conservando el formato visual (incluye la tipografía Century Gothic).
+        function exportarComoWord(elementId, nombreArchivoBase) {
+            const contenido = document.getElementById(elementId);
+            if (!contenido) {
+                alert('No hay contenido generado para exportar todavía.');
+                return;
+            }
+
+            const estilosWord = `
+                body { font-family: 'Century Gothic', 'CenturyGothic', 'Segoe UI', sans-serif; font-size: 11pt; color: #1e293b; }
+                table { border-collapse: collapse; width: 100%; }
+                table, th, td { border: 1px solid #94a3b8; }
+                th, td { padding: 6px; text-align: center; }
+                img { max-width: 100%; }
+                h3, h4 { color: #1e293b; }
+            `;
+
+            const htmlCompleto = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>${nombreArchivoBase}</title>
+                    <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+                    <style>${estilosWord}</style>
+                </head>
+                <body>${contenido.innerHTML}</body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff', htmlCompleto], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${nombreArchivoBase}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         // Calcula, consultando la matrícula real (solo estudiantes activos),
@@ -1306,6 +1368,8 @@
             inputCedula.readOnly = true; 
             document.getElementById('mat-fnac').value = data.fecha_nacimiento || '';
             document.getElementById('mat-lugar-nac').value = data.lugar_nacimiento || '';
+            document.getElementById('mat-fecha-ingreso').value = data.fecha_ingreso_ces || '';
+            document.getElementById('mat-institucion-procedencia').value = data.institucion_procedencia || '';
             if (data.fecha_nacimiento) calcularEdadExacta();
             document.getElementById('mat-nivel').value = data.nivel || 'Primero';
             document.getElementById('mat-docente-acad').value = data.docente_academico || '';
@@ -1328,9 +1392,14 @@
             document.getElementById('enc1-nombre').value = data.encargado1_nombre || '';
             document.getElementById('enc1-correo').value = data.encargado1_correo || '';
             document.getElementById('enc1-cel').value = data.encargado1_cel || '';
+            document.getElementById('enc1-profesion').value = data.encargado1_profesion || '';
+            document.getElementById('enc1-trabajo').value = data.encargado1_trabajo || '';
             document.getElementById('enc2-nombre').value = data.encargado2_nombre || '';
             document.getElementById('enc2-correo').value = data.encargado2_correo || '';
             document.getElementById('enc2-cel').value = data.encargado2_cel || '';
+            document.getElementById('enc2-profesion').value = data.encargado2_profesion || '';
+            document.getElementById('enc2-trabajo').value = data.encargado2_trabajo || '';
+            document.getElementById('mat-observaciones').value = data.observaciones || '';
 
             const fotoUrlVal = data.foto_url || '';
             document.getElementById('mat-foto-url').value = fotoUrlVal;
@@ -1388,6 +1457,8 @@
                 cedula: cedulaVal,
                 fecha_nacimiento: document.getElementById('mat-fnac').value || null,
                 lugar_nacimiento: document.getElementById('mat-lugar-nac').value.trim() || '',
+                fecha_ingreso_ces: document.getElementById('mat-fecha-ingreso').value || null,
+                institucion_procedencia: document.getElementById('mat-institucion-procedencia').value.trim() || '',
                 nivel: document.getElementById('mat-nivel').value || 'Primero',
                 docente_academico: document.getElementById('mat-docente-acad').value || '',
                 docente_solfeo: document.getElementById('mat-doc-solfeo').value || '',
@@ -1407,9 +1478,14 @@
                 encargado1_nombre: document.getElementById('enc1-nombre').value.trim() || '',
                 encargado1_correo: document.getElementById('enc1-correo').value.trim() || '',
                 encargado1_cel: document.getElementById('enc1-cel').value.trim() || '',
+                encargado1_profesion: document.getElementById('enc1-profesion').value.trim() || '',
+                encargado1_trabajo: document.getElementById('enc1-trabajo').value.trim() || '',
                 encargado2_nombre: document.getElementById('enc2-nombre').value.trim() || '',
                 encargado2_correo: document.getElementById('enc2-correo').value.trim() || '',
                 encargado2_cel: document.getElementById('enc2-cel').value.trim() || '',
+                encargado2_profesion: document.getElementById('enc2-profesion').value.trim() || '',
+                encargado2_trabajo: document.getElementById('enc2-trabajo').value.trim() || '',
+                observaciones: document.getElementById('mat-observaciones').value.trim() || '',
                 foto_url: document.getElementById('mat-foto-url').value.trim() || ''
             };
 
@@ -1440,10 +1516,13 @@
             const cedula = document.getElementById('mat-cedula').value;
             const fnac = document.getElementById('mat-fnac').value;
             const lugarNac = document.getElementById('mat-lugar-nac').value;
-            
+            const fechaIngreso = document.getElementById('mat-fecha-ingreso').value;
+            const institucionProcedencia = document.getElementById('mat-institucion-procedencia').value;
+            const edadExactaTexto = document.getElementById('edad-resultado').innerText;
+
             // CORREGIDO: Toma el nivel real del formulario de matrícula de forma independiente
             const nivel = document.getElementById('mat-nivel').value;
-            
+
             const docenteAcad = document.getElementById('mat-docente-acad').value;
             const docSolfeo = document.getElementById('mat-doc-solfeo').value;
             const docPerc = document.getElementById('mat-doc-percursion').value;
@@ -1462,9 +1541,14 @@
             const enc1Nom = document.getElementById('enc1-nombre').value;
             const enc1Correo = document.getElementById('enc1-correo').value;
             const enc1Cel = document.getElementById('enc1-cel').value;
+            const enc1Profesion = document.getElementById('enc1-profesion').value;
+            const enc1Trabajo = document.getElementById('enc1-trabajo').value;
             const enc2Nom = document.getElementById('enc2-nombre').value;
             const enc2Correo = document.getElementById('enc2-correo').value;
             const enc2Cel = document.getElementById('enc2-cel').value;
+            const enc2Profesion = document.getElementById('enc2-profesion').value;
+            const enc2Trabajo = document.getElementById('enc2-trabajo').value;
+            const observaciones = document.getElementById('mat-observaciones').value;
             const fotoUrl = document.getElementById('mat-foto-url').value;
 
             if (!nombre || !cedula) {
@@ -1479,6 +1563,7 @@
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión (Año ${anioLectivo})</h3>
                     <div>
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                        <button type="button" class="warning-btn" onclick="exportarComoWord('preview-matricula-impresion', 'Ficha_Matricula_${cedula}')">Guardar en Word (Editable)</button>
                     </div>
                 </div>
 
@@ -1495,44 +1580,43 @@
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos Personales y Nivel</h4>
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">1. Datos del Estudiante</h4>
                         <p style="margin: 4px 0;"><b>Nombre Completo:</b> ${nombre}</p>
                         <p style="margin: 4px 0;"><b>Cédula:</b> ${cedula}</p>
-                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac || 'Pendiente'}</p>
                         <p style="margin: 4px 0;"><b>Nivel Educativo:</b> ${nivel}</p>
+                        <p style="margin: 4px 0;"><b>Fecha de Nacimiento:</b> ${fnac || 'Pendiente'} — <b>Lugar de Nacimiento:</b> ${lugarNac || 'N/A'}</p>
+                        <p style="margin: 4px 0;"><b>Edad Exacta:</b> ${edadExactaTexto}</p>
+                        <p style="margin: 4px 0;"><b>Fecha de Ingreso a CES:</b> ${fechaIngreso || 'Pendiente'}</p>
+                        <p style="margin: 4px 0;"><b>Institución de Procedencia:</b> ${institucionProcedencia || 'N/A'}</p>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Asignación Académica, Talleres y Cursos</h4>
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Dirección y Ubicación</h4>
+                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${prov || 'Pendiente'}, ${canton || ''}, ${distrito || ''}</p>
+                        <p style="margin: 4px 0;"><b>Otras Señas:</b> ${detalles || 'N/A'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">3. Información de Encargados</h4>
+                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${enc1Nom || 'Pendiente'} - Correo: ${enc1Correo || 'N/A'} - Tel: ${enc1Cel || 'N/A'}</p>
+                        <p style="margin: 4px 0 4px 15px;">Profesión u Oficio: ${enc1Profesion || 'N/A'} — Lugar de Trabajo: ${enc1Trabajo || 'N/A'}</p>
+                        <p style="margin: 8px 0 4px 0;"><b>Segundo Encargado:</b> ${enc2Nom || 'N/A'} - Correo: ${enc2Correo || 'N/A'} - Tel: ${enc2Cel || 'N/A'}</p>
+                        <p style="margin: 4px 0 4px 15px;">Profesión u Oficio: ${enc2Profesion || 'N/A'} — Lugar de Trabajo: ${enc2Trabajo || 'N/A'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; min-height: 60px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">4. Observaciones</h4>
+                        <p style="margin: 4px 0; white-space: pre-wrap;">${observaciones || '—'}</p>
+                    </div>
+
+                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">5. Asignación Académica, Talleres y Cursos</h4>
                         <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${docenteAcad || 'No asignado'}</p>
                         <p style="margin: 4px 0;"><b>Solfeo:</b> ${docSolfeo} | <b>Taller de Percusión:</b> ${docPerc}</p>
                         <p style="margin: 4px 0;"><b>Danza:</b> ${docDanza} | <b>Artes Plásticas:</b> ${docPlast}</p>
                         <p style="margin: 4px 0;"><b>Inglés:</b> ${docIngles} | <b>Edufi:</b> ${docEdufi}</p>
                         <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'} (Profesor: ${docenteInstr || 'No asignado'})</p>
                         <p style="margin: 4px 0;"><b>Segundo Instrumento (Pago):</b> ${instrSegundo && instrSegundo !== 'Ninguno' ? `${instrSegundo} (Profesor: ${docenteSegundo})` : 'Ninguno'}</p>
-                    </div>
-
-                    <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">3. Dirección y Ubicación</h4>
-                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${prov || 'Pendiente'}, ${canton || ''}, ${distrito || ''}</p>
-                        <p style="margin: 4px 0;"><b>Otras Señas:</b> ${detalles || 'N/A'}</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
-                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">4. Información de Encargados</h4>
-                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${enc1Nom || 'Pendiente'} - Correo: ${enc1Correo || 'N/A'} - Tel: ${enc1Cel || 'N/A'}</p>
-                        <p style="margin: 4px 0;"><b>Segundo Encargado:</b> ${enc2Nom || 'N/A'} - Correo: ${enc2Correo || 'N/A'} - Tel: ${enc2Cel || 'N/A'}</p>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-around; margin-top: 30px; text-align: center;">
-                        <div style="width: 40%;">
-                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
-                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Firma del Encargado</p>
-                        </div>
-                        <div style="width: 40%;">
-                            <div style="border-bottom: 1px solid #1e293b; margin-bottom: 5px; height: 30px;"></div>
-                            <p style="margin: 0; font-size: 11px; font-weight: bold;">Sello y Dirección Institucional (${anioLectivo})</p>
-                        </div>
                     </div>
                 </div>
             `;
@@ -1546,7 +1630,7 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Estado,Fecha Nacimiento,Lugar Nacimiento,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Edufi,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Estado,Fecha Nacimiento,Lugar Nacimiento,Fecha Ingreso CES,Institución de Procedencia,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Edufi,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Profesión Encargado 1,Trabajo Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2,Profesión Encargado 2,Trabajo Encargado 2,Observaciones\n';
 
             data.forEach(est => {
                 const fila = [
@@ -1556,6 +1640,8 @@
                     `"${est.activo === false ? 'Oculto' : 'Activo'}"`,
                     `"${est.fecha_nacimiento || ''}"`,
                     `"${est.lugar_nacimiento || ''}"`,
+                    `"${est.fecha_ingreso_ces || ''}"`,
+                    `"${(est.institucion_procedencia || '').replace(/"/g, '""')}"`,
                     `"${est.docente_academico || ''}"`,
                     `"${est.docente_solfeo || ''}"`,
                     `"${est.docente_percursion || ''}"`,
@@ -1574,9 +1660,14 @@
                     `"${est.encargado1_nombre || ''}"`,
                     `"${est.encargado1_correo || ''}"`,
                     `"${est.encargado1_cel || ''}"`,
+                    `"${(est.encargado1_profesion || '').replace(/"/g, '""')}"`,
+                    `"${(est.encargado1_trabajo || '').replace(/"/g, '""')}"`,
                     `"${est.encargado2_nombre || ''}"`,
                     `"${est.encargado2_correo || ''}"`,
-                    `"${est.encargado2_cel || ''}"`
+                    `"${est.encargado2_cel || ''}"`,
+                    `"${(est.encargado2_profesion || '').replace(/"/g, '""')}"`,
+                    `"${(est.encargado2_trabajo || '').replace(/"/g, '""')}"`,
+                    `"${(est.observaciones || '').replace(/"/g, '""')}"`
                 ].join(',');
                 csvContent += fila + '\n';
             });
@@ -2707,6 +2798,7 @@
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
                         <button type="button" class="warning-btn" onclick="descargarInformePDF()">Guardar como PDF</button>
+                        <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-informe-oficial', 'Informe_${estData.cedula}')">Guardar en Word (Editable)</button>
                         <button type="button" class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informe a Encargados</button>
                     </div>
                 </div>
@@ -2729,7 +2821,6 @@
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
                                 <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
-                                <p style="margin: 3px 0; grid-column: span 2;"><b>Encargado(s):</b> ${estData.encargado1_nombre || 'Pendiente'} (${estData.encargado1_correo || 'N/A'})</p>
                             </div>
                         </div>
 
@@ -2751,7 +2842,7 @@
                             </table>
                         </div>
 
-                        <div style="display: flex; justify-content: space-around; margin-top: 35px; text-align: center;">
+                        <div style="display: flex; justify-content: space-around; margin-top: 25px; text-align: center; page-break-inside: avoid; break-inside: avoid;">
                             <div style="width: 40%;">
                                 <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
                                 <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
@@ -2781,6 +2872,11 @@
 
                         <div class="reflexiones-container">
                             ${reflexionesDocentesHTML}
+                        </div>
+
+                        <div class="cita-montessori">
+                            <p class="texto-cita">"No hay nadie que lo sepa todo, ni nadie que no sepa nada. Entre todos sabemos todo"</p>
+                            <p class="autor-cita">Paulo Freire</p>
                         </div>
                     </div>
                 </div>
@@ -3165,6 +3261,7 @@
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa • Lista Oficial (${seleccion})</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                        <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-lista-nivel-impresion', 'Lista_Oficial_${seleccion.replace(/\\s+/g, '_')}')">Guardar en Word (Editable)</button>
                         <button type="button" class="success-btn" onclick="descargarListaExcel('${seleccion}')">Descargar Excel (CSV)</button>
                     </div>
                 </div>
