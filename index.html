@@ -6,6 +6,7 @@
     <title>SIA-Shkénuk - CES Montessori</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #1e293b;
@@ -128,6 +129,7 @@
             <button class="tab-btn" data-tab="listas" data-role-req="admin" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
             <button class="tab-btn" data-tab="registro" data-role-req="admin" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
             <button class="tab-btn" data-tab="calificar" data-role-req="all" onclick="cambiarPestana('calificar', event)">Calificar</button>
+            <button class="tab-btn" data-tab="importar" data-role-req="admin" onclick="cambiarPestana('importar', event)">Importar Notas (Excel)</button>
             <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio y Carga</button>
@@ -144,7 +146,7 @@
                 </div>
 
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda / Edición</legend>
+                    <legend style="color: var(--accent);">Parámetros de Ciclo, Año y Búsqueda</legend>
                     <div class="form-grid" style="align-items: flex-end;">
                         <div class="form-group">
                             <label>Año Lectivo</label>
@@ -153,27 +155,52 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Filtrar Estudiantes por Nivel (Para Editar / Eliminar)</label>
-                            <select id="filtro-nivel-edicion" onchange="cargarSelectorEstudiantesEdicionPorNivel()">
-                                <option value="">-- Todos los niveles --</option>
-                                <option value="Primero">Primero</option>
-                                <option value="Segundo">Segundo</option>
-                                <option value="Tercero">Tercero</option>
-                                <option value="Cuarto">Cuarto</option>
-                                <option value="Quinto">Quinto</option>
-                                <option value="Sexto">Sexto</option>
+                            <label>Filtrar por Ciclo / Nivel General</label>
+                            <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()">
+                                <option value="">-- Todos los niveles vigentes --</option>
+                                <optgroup label="Primer Ciclo">
+                                    <option value="Primero">Primero</option>
+                                    <option value="Segundo">Segundo</option>
+                                    <option value="Tercero">Tercero</option>
+                                </optgroup>
+                                <optgroup label="Segundo Ciclo">
+                                    <option value="Cuarto">Cuarto</option>
+                                    <option value="Quinto">Quinto</option>
+                                    <option value="Sexto">Sexto</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Seleccionar Estudiante</label>
+                            <label>Seleccionar Estudiante para Editar</label>
                             <select id="select-estudiante-editar" onchange="cargarDatosEstudianteEdicion()">
                                 <option value="">-- Nuevo ingreso (Matrícula regular) --</option>
                             </select>
                         </div>
-                        <div class="form-group" style="display: flex; gap: 8px;">
-                            <button type="button" class="warning-btn" style="flex: 1;" onclick="limpiarFormularioMatricula()">Limpiar</button>
-                            <button type="button" id="btn-eliminar-estudiante" class="danger-btn" style="display: none; padding: 12px 15px; font-size: 13px;" onclick="eliminarEstudianteActual()">Eliminar</button>
+                        <div class="form-group">
+                            <button type="button" class="warning-btn" onclick="limpiarFormularioMatricula()">Limpiar / Nuevo</button>
                         </div>
+                    </div>
+                </fieldset>
+
+                <fieldset style="background: #fefce8; border-color: #ca8a04;">
+                    <legend style="color: #92400e;">Promoción de Fin de Curso</legend>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 0;">Procesa la promoción de nivel para el <b>Año Lectivo Activo (<span id="span-anio-activo-matricula">...</span>)</b> configurado en la pestaña Configuración. El resultado queda guardado permanentemente en el historial, sin borrar los años anteriores.</p>
+                    <button type="button" class="action-btn" style="background: #ca8a04;" onclick="procesarPromocionAutomatica()">Promoción</button>
+                    <button type="button" class="warning-btn" onclick="verHistorialPromociones()">Ver Historial de Promociones</button>
+                    <span id="promocion-msg-matricula" style="margin-left: 15px; font-weight: 600; color: #166534;"></span>
+                    <div id="contenedor-historial-promociones" style="margin-top: 15px;"></div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Estudiantes en el Nivel Seleccionado</legend>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; margin: 0;">
+                            <input type="checkbox" id="chk-mostrar-ocultos" onchange="cargarTablaEstudiantesNivel()" style="width: auto;">
+                            Mostrar también estudiantes ocultos (retirados)
+                        </label>
+                    </div>
+                    <div id="contenedor-tabla-estudiantes-nivel">
+                        <p style="color: #64748b; text-align: center;">Seleccione un nivel arriba (o deje "Todos los niveles") para ver el listado de estudiantes y sus acciones.</p>
                     </div>
                 </fieldset>
 
@@ -383,31 +410,21 @@
 
             <!-- 3. REGISTRO HISTÓRICO -->
             <section id="registro" class="tab-content">
-                <h2>Registro Histórico de Calificaciones por Año</h2>
-                <div class="form-grid" style="margin-bottom: 20px; max-width: 600px;">
-                    <div class="form-group">
-                        <label>Seleccionar Año Lectivo</label>
-                        <select id="reg-anio-sel" onchange="cargarCuadrosRegistro()">
-                            <option value="2026">Año Lectivo 2026</option>
-                            <option value="2027">Año Lectivo 2027</option>
-                            <option value="2028">Año Lectivo 2028</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Seleccionar Nivel Educativo</label>
-                        <select id="reg-nivel-sel" onchange="cargarCuadrosRegistro()">
-                            <option value="">Seleccione el nivel</option>
-                            <option value="Primero">Primero</option>
-                            <option value="Segundo">Segundo</option>
-                            <option value="Tercero">Tercero</option>
-                            <option value="Cuarto">Cuarto</option>
-                            <option value="Quinto">Quinto</option>
-                            <option value="Sexto">Sexto</option>
-                        </select>
-                    </div>
+                <h2>Registro Histórico de Calificaciones</h2>
+                <div class="form-group" style="margin-bottom: 20px; max-width: 350px;">
+                    <label>Seleccionar Nivel Educativo</label>
+                    <select id="reg-nivel-sel" class="form-group" onchange="cargarCuadrosRegistro()">
+                        <option value="">Seleccione el nivel</option>
+                        <option value="Primero">Primero</option>
+                        <option value="Segundo">Segundo</option>
+                        <option value="Tercero">Tercero</option>
+                        <option value="Cuarto">Cuarto</option>
+                        <option value="Quinto">Quinto</option>
+                        <option value="Sexto">Sexto</option>
+                    </select>
                 </div>
                 <div id="contenedor-cuadros-registro" style="overflow-x: auto;">
-                    <p style="color: #64748b;">Seleccione el año y nivel educativo para desplegar el registro histórico correspondiente.</p>
+                    <p style="color: #64748b;">Seleccione un nivel educativo para desplegar el registro histórico.</p>
                 </div>
             </section>
 
@@ -470,6 +487,47 @@
                 </div>
             </section>
 
+            <!-- 4.B IMPORTAR NOTAS DESDE EXCEL -->
+            <section id="importar" class="tab-content">
+                <h2>Importar Notas desde Excel</h2>
+                <fieldset>
+                    <legend>1. Cargar Archivo</legend>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 0;">
+                        Sube el archivo Excel (formato con columnas "Nombre", "Nivel", "Cédula" y bloques de materias con su columna final "Promedio", y "Comentario" cuando aplique). El sistema busca automáticamente la hoja que contenga la columna "Cédula".
+                    </p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Archivo Excel (.xlsx)</label>
+                            <input type="file" id="import-file-input" accept=".xlsx,.xls" onchange="procesarArchivoExcelImport(event)">
+                        </div>
+                        <div class="form-group">
+                            <label>Hoja a importar</label>
+                            <select id="import-hoja-select" onchange="previsualizarImportacionExcel()">
+                                <option value="">-- Cargue un archivo primero --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Periodo a asignar</label>
+                            <select id="import-periodo-select" onchange="previsualizarImportacionExcel()">
+                                <option value="Primer Periodo">Primer Periodo</option>
+                                <option value="Segundo Periodo">Segundo Periodo</option>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>2. Previsualización y Validación</legend>
+                    <div id="contenedor-preview-import">
+                        <p style="color: #64748b;">Aún no se ha cargado ningún archivo.</p>
+                    </div>
+                </fieldset>
+                <fieldset id="fieldset-confirmar-import" style="display: none;">
+                    <legend>3. Confirmar Importación</legend>
+                    <button type="button" class="action-btn" onclick="ejecutarImportacionExcel()">Importar Notas y Comentarios a Supabase</button>
+                    <span id="import-progreso-msg" style="margin-left: 15px; font-weight: 600;"></span>
+                </fieldset>
+            </section>
+
             <!-- 5. INFORMES AL HOGAR -->
             <section id="hogar" class="tab-content">
                 <h2>Generación, Envío y Descarga de Informes al Hogar</h2>
@@ -513,14 +571,13 @@
             <section id="configuracion" class="tab-content">
                 <h2>Configuración de Periodos e Institución</h2>
                 <form id="form-config" onsubmit="confirmarYGuardarConfiguracion(event)">
-                    <fieldset>
-                        <legend>Año Lectivo Activo del Sistema</legend>
-                        <div class="form-grid" style="max-width: 350px;">
+                    <fieldset style="border-color: var(--accent);">
+                        <legend style="color: var(--accent);">Año Lectivo Activo del Sistema</legend>
+                        <p style="font-size: 12px; color: #64748b; margin-top: 0;">Este es el año que se usa para guardar calificaciones nuevas y para el botón "Promoción" en Matrícula. Los años anteriores quedan guardados en el historial y no se modifican.</p>
+                        <div class="form-grid">
                             <div class="form-group">
-                                <label>Año Lectivo en Curso</label>
-                                <select id="cfg-anio-lectivo-activo" required onchange="actualizarAnioLectivoGlobal()">
-                                    <!-- Dinámico -->
-                                </select>
+                                <label>Año Lectivo Activo</label>
+                                <input type="number" id="cfg-anio-activo" min="2026" step="1" required>
                             </div>
                         </div>
                     </fieldset>
@@ -719,44 +776,77 @@
         let docenteTipoActual = 'artistico'; 
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
-        let anioLectivoActivoGlobal = 2026;
+        let anioLectivoActivo = 2026;
 
-        function inicializarAniosLectivos() {
-            const selectsAnio = [
-                document.getElementById('filtro-anio-lectivo'), 
-                document.getElementById('cfg-anio-lectivo-activo'),
-                document.getElementById('reg-anio-sel')
-            ];
-            const anioActual = 2026;
-            
-            selectsAnio.forEach(sel => {
-                if (!sel) return;
-                const valorPrevio = sel.value;
-                sel.innerHTML = '';
-                for (let i = 0; i <= 6; i++) {
-                    const anioOpt = anioActual + i;
-                    const opt = document.createElement('option');
-                    opt.value = anioOpt;
-                    opt.textContent = `Año Lectivo ${anioOpt}`;
-                    if (valorPrevio ? anioOpt == valorPrevio : anioOpt === anioActual) {
-                        opt.selected = true;
-                    }
-                    sel.appendChild(opt);
+        // =====================================================================
+        // FUENTE ÚNICA DE VERDAD PARA LA CARGA ACADÉMICA REAL
+        // Este mapeo conecta cada materia de "Calificar" con el campo real de
+        // asignación de docente guardado en la matrícula del estudiante.
+        // Tanto "Directorio y Carga" como la restricción de "Calificar" para
+        // el rol Docente usan EXACTAMENTE esta misma fuente, para que ambos
+        // módulos siempre muestren información consistente entre sí.
+        // =====================================================================
+        const INSTRUMENTOS_INDIVIDUALES = ['Piano', 'Guitarra', 'Ukulele', 'Batería', 'Bajo', 'Canto'];
+        const CAMPO_DOCENTE_POR_MATERIA = {
+            'Solfeo': 'docente_solfeo',
+            'Taller de Percusión': 'docente_percursion',
+            'Danza': 'docente_danza',
+            'Artes Plásticas': 'docente_plasticas',
+            'Edufi': 'docente_edufi',
+            'Inglés': 'docente_ingles',
+            'Español': 'docente_academico',
+            'Matemáticas': 'docente_academico',
+            'Ciencias': 'docente_academico',
+            'Estudios Sociales': 'docente_academico',
+            'Conducta': 'docente_academico'
+        };
+
+        function nombreMateriaLimpio(valorOpcion) {
+            return valorOpcion.replace('[Artística] ', '').replace('[Académica] ', '').trim();
+        }
+
+        // Calcula, consultando la matrícula real (solo estudiantes activos),
+        // el conjunto de materias que un docente específico imparte de verdad.
+        async function obtenerCargaRealDocente(nombreDocente) {
+            const materiasPermitidas = new Set();
+            if (!nombreDocente) return materiasPermitidas;
+
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
+            if (!estudiantes) return materiasPermitidas;
+
+            estudiantes.forEach(est => {
+                Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([materia, campo]) => {
+                    if (est[campo] && est[campo] === nombreDocente) materiasPermitidas.add(materia);
+                });
+                if (est.instrumento_principal && est.docente_asignado === nombreDocente) {
+                    materiasPermitidas.add(est.instrumento_principal);
+                }
+                if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && est.docente_segundo === nombreDocente) {
+                    materiasPermitidas.add(est.instrumento_segundo);
                 }
             });
-            const filtroAnio = document.getElementById('filtro-anio-lectivo');
-            if (filtroAnio) {
-                anioLectivoActivoGlobal = parseInt(filtroAnio.value);
+
+            return materiasPermitidas;
+        }
+
+        function inicializarSelectAnios(idSelect, anioPreseleccionado) {
+            const select = document.getElementById(idSelect);
+            if (!select) return;
+            select.innerHTML = '';
+            const anioBase = 2026;
+            const anioMarcado = anioPreseleccionado || anioLectivoActivo || anioBase;
+            const anioTope = Math.max(anioBase + 6, anioMarcado + 2);
+            for (let anio = anioBase; anio <= anioTope; anio++) {
+                const opt = document.createElement('option');
+                opt.value = anio;
+                opt.textContent = `Año Lectivo ${anio}`;
+                if (anio === anioMarcado) opt.selected = true;
+                select.appendChild(opt);
             }
         }
 
-        function actualizarAnioLectivoGlobal() {
-            const selConfig = document.getElementById('cfg-anio-lectivo-activo');
-            if (selConfig) {
-                anioLectivoActivoGlobal = parseInt(selConfig.value);
-                const filtroMatricula = document.getElementById('filtro-anio-lectivo');
-                if (filtroMatricula) filtroMatricula.value = anioLectivoActivoGlobal;
-            }
+        function inicializarAniosLectivos() {
+            inicializarSelectAnios('filtro-anio-lectivo', anioLectivoActivo);
         }
 
         function cambiarPestana(idSeccion, evt) {
@@ -774,7 +864,13 @@
             if (idSeccion === 'matricula') {
                 inicializarAniosLectivos();
                 cargarDocentesEnMatricula();
-                cargarSelectorEstudiantesEdicionPorNivel();
+                cargarSelectorEstudiantesEdicion();
+                cargarTablaEstudiantesNivel();
+                const spanAnio = document.getElementById('span-anio-activo-matricula');
+                if (spanAnio) spanAnio.textContent = anioLectivoActivo;
+            }
+            if (idSeccion === 'registro') {
+                inicializarSelectAnios('reg-anio-sel', anioLectivoActivo);
             }
             if (idSeccion === 'configuracion') cargarConfiguracion();
             if (idSeccion === 'docentes') {
@@ -846,59 +942,37 @@
             const selectMateria = document.getElementById('cal-materia');
             if (!selectMateria) return;
 
-            if (usuarioRolActual === 'admin') {
+            const mostrarTodo = () => {
                 for (let opt of selectMateria.options) {
                     opt.disabled = false;
                     opt.style.display = '';
                 }
+            };
+
+            if (usuarioRolActual === 'admin') {
+                mostrarTodo();
                 return;
             }
 
-            const tipoDoc = (docenteTipoActual || '').toLowerCase().trim();
-            const espDocente = (docenteEspecialidadGlobal || '').toLowerCase().trim();
-            const esAcademicoAbsoluto = tipoDoc.includes('acad') || espDocente.includes('acad');
+            // Consulta la carga académica real (misma fuente que "Directorio y Carga").
+            // Si por alguna razón no se encuentra ninguna coincidencia (nombre distinto,
+            // docente no vinculado, etc.), se prioriza que el docente SÍ pueda evaluar:
+            // se muestran todas las materias en vez de bloquearlo por completo.
+            const materiasReales = docenteNombreGlobal ? await obtenerCargaRealDocente(docenteNombreGlobal) : new Set();
+
+            if (materiasReales.size === 0) {
+                mostrarTodo();
+                cargarGrupoParaCalificar();
+                return;
+            }
 
             for (let opt of selectMateria.options) {
                 if (!opt.value) continue;
-                const valMateria = opt.value.toLowerCase();
-                let permitirMateria = false;
+                const nombreMateria = nombreMateriaLimpio(opt.value);
+                const permitirMateria = materiasReales.has(nombreMateria);
 
-                // REGLA ESTRICTA: Conducta pertenece exclusivamente a académico
-                if (valMateria.includes('conducta')) {
-                    if (esAcademicoAbsoluto) {
-                        permitirMateria = true;
-                    } else {
-                        permitirMateria = false; 
-                    }
-                } else if (esAcademicoAbsoluto) {
-                    if (valMateria.includes('académica') || valMateria.includes('español') || valMateria.includes('matemáticas') || valMateria.includes('ciencias') || valMateria.includes('estudios sociales') || valMateria.includes('inglés')) {
-                        permitirMateria = true;
-                    }
-                } else {
-                    if (!valMateria.includes('académica')) {
-                        if (!espDocente) {
-                            permitirMateria = true; 
-                        } else if (valMateria.includes(espDocente) || espDocente.includes('arte') || espDocente.includes('música') || espDocente.includes('taller')) {
-                            permitirMateria = true;
-                        } else {
-                            const palabrasEspecialidad = espDocente.split(' ');
-                            for (let palabra of palabrasEspecialidad) {
-                                if (palabra.length > 2 && valMateria.includes(palabra)) {
-                                    permitirMateria = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (permitirMateria) {
-                    opt.disabled = false;
-                    opt.style.display = '';
-                } else {
-                    opt.disabled = true;
-                    opt.style.display = 'none';
-                }
+                opt.disabled = !permitirMateria;
+                opt.style.display = permitirMateria ? '' : 'none';
             }
 
             let primeraValida = '';
@@ -939,10 +1013,13 @@
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('user-email-display').innerText = 'Usuario: ' + email;
             await verificarRolUsuario(email);
+            await cargarConfiguracion();
             inicializarAniosLectivos();
             cargarDocentesEnMatricula();
-            cargarSelectorEstudiantesEdicionPorNivel();
-            cargarConfiguracion();
+            cargarSelectorEstudiantesEdicion();
+            cargarTablaEstudiantesNivel();
+            const spanAnio = document.getElementById('span-anio-activo-matricula');
+            if (spanAnio) spanAnio.textContent = anioLectivoActivo;
             cargarTablaDocentesGeneral();
             cargarTablaCargaAcademica();
             cargarTablaRolesUsuarios();
@@ -1034,42 +1111,167 @@
             });
         }
 
-        async function cargarSelectorEstudiantesEdicionPorNivel() {
-            const nivelFiltro = document.getElementById('filtro-nivel-edicion').value;
+        async function cargarSelectorEstudiantesEdicion() {
             const selectEdit = document.getElementById('select-estudiante-editar');
             if (!selectEdit) return;
-
-            selectEdit.innerHTML = '<option value="">-- Cargando estudiantes --</option>';
-
-            let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel').order('nombre');
-            if (nivelFiltro) {
-                query = query.eq('nivel', nivelFiltro);
-            }
-
-            const { data, error } = await query;
-            if (error || !data) {
-                selectEdit.innerHTML = '<option value="">-- Sin resultados --</option>';
-                return;
-            }
-
             selectEdit.innerHTML = '<option value="">-- Nuevo ingreso (Matrícula regular) --</option>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('nombre, cedula, nivel, activo').order('nombre');
+            if (error || !data) return;
+
             data.forEach(est => {
                 const opt = document.createElement('option');
                 opt.value = est.cedula;
-                opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})`;
+                opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})${est.activo === false ? ' [OCULTO]' : ''}`;
                 selectEdit.appendChild(opt);
             });
         }
 
-        async function cargarDatosEstudianteEdicion() {
-            const cedula = document.getElementById('select-estudiante-editar').value;
+        async function filtrarEstudiantesPorCiclo() {
+            const cicloFiltro = document.getElementById('filtro-ciclo-general').value;
+            const selectEdit = document.getElementById('select-estudiante-editar');
+            if (selectEdit) {
+                selectEdit.innerHTML = '<option value="">-- Cargando por nivel filtrado --</option>';
+
+                let query = supabaseClient.from('estudiantes').select('nombre, cedula, nivel, activo').order('nombre');
+                if (cicloFiltro) {
+                    query = query.eq('nivel', cicloFiltro);
+                }
+
+                const { data, error } = await query;
+                if (error || !data) {
+                    selectEdit.innerHTML = '<option value="">-- Sin resultados --</option>';
+                } else {
+                    selectEdit.innerHTML = '<option value="">-- Seleccione estudiante --</option>';
+                    data.forEach(est => {
+                        const opt = document.createElement('option');
+                        opt.value = est.cedula;
+                        opt.textContent = `${est.nombre} (Cédula: ${est.cedula} - Nivel: ${est.nivel})${est.activo === false ? ' [OCULTO]' : ''}`;
+                        selectEdit.appendChild(opt);
+                    });
+                }
+            }
+            cargarTablaEstudiantesNivel();
+        }
+
+        async function cargarTablaEstudiantesNivel() {
+            const filtroNivel = document.getElementById('filtro-ciclo-general');
+            const chkOcultos = document.getElementById('chk-mostrar-ocultos');
+            const contenedor = document.getElementById('contenedor-tabla-estudiantes-nivel');
+            if (!contenedor || !filtroNivel || !chkOcultos) return;
+
+            const nivel = filtroNivel.value;
+            const mostrarOcultos = chkOcultos.checked;
+
+            contenedor.innerHTML = '<p>Cargando estudiantes...</p>';
+
+            let query = supabaseClient.from('estudiantes').select('cedula, nombre, nivel, activo').order('nombre');
+            if (nivel) query = query.eq('nivel', nivel);
+            if (!mostrarOcultos) query = query.eq('activo', true);
+
+            const { data, error } = await query;
+
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">No hay estudiantes que coincidan con este filtro.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th>
+                            <th style="text-align: left;">Nombre</th>
+                            <th>Nivel</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(est => {
+                const estaOculto = est.activo === false;
+                html += `
+                    <tr>
+                        <td>${est.cedula}</td>
+                        <td style="text-align: left;"><b>${est.nombre}</b></td>
+                        <td>${est.nivel}</td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${estaOculto ? '#fef3c7; color: #92400e;' : '#dcfce7; color: #166534;'}">${estaOculto ? 'OCULTO' : 'ACTIVO'}</span></td>
+                        <td style="white-space: nowrap;">
+                            <button type="button" class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDatosEstudianteEdicion('${est.cedula}')">Editar</button>
+                            <button type="button" class="${estaOculto ? 'success-btn' : 'warning-btn'}" style="padding: 4px 10px; font-size: 11px;" onclick="alternarVisibilidadEstudiante('${est.cedula}', ${estaOculto})">${estaOculto ? 'Reactivar' : 'Ocultar'}</button>
+                            <button type="button" class="danger-btn" onclick="eliminarEstudiantePermanente('${est.cedula}', '${(est.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            contenedor.innerHTML = html;
+        }
+
+        async function alternarVisibilidadEstudiante(cedula, reactivar) {
+            const mensajeConfirm = reactivar
+                ? '¿Reactivar a este estudiante? Volverá a aparecer en listas, calificaciones e informes.'
+                : '¿Ocultar a este estudiante? Dejará de aparecer en listas, calificaciones e informes, pero su expediente e historial se conservarán intactos por si regresa a la institución.';
+
+            if (!confirm(mensajeConfirm)) return;
+
+            const { error } = await supabaseClient.from('estudiantes').update({ activo: reactivar }).eq('cedula', cedula);
+            if (error) {
+                alert('Error al actualizar el estado del estudiante: ' + error.message);
+                return;
+            }
+
+            cargarTablaEstudiantesNivel();
+            cargarSelectorEstudiantesEdicion();
+        }
+
+        async function eliminarEstudiantePermanente(cedula, nombre) {
+            const primeraConfirmacion = confirm(
+                `¿ELIMINAR PERMANENTEMENTE a ${nombre} (Cédula: ${cedula})?\n\n` +
+                'Esta acción borrará también todo su historial de calificaciones y NO se puede deshacer.\n\n' +
+                'Si solo desea darlo de baja temporalmente conservando su expediente por si regresa, use el botón "Ocultar" en su lugar.'
+            );
+            if (!primeraConfirmacion) return;
+
+            const segundaConfirmacion = confirm('Confirme una vez más: esta eliminación es DEFINITIVA y no se puede recuperar. ¿Desea continuar?');
+            if (!segundaConfirmacion) return;
+
+            await supabaseClient.from('notas').delete().eq('cedula_estudiante', cedula);
+            const { error } = await supabaseClient.from('estudiantes').delete().eq('cedula', cedula);
+
+            if (error) {
+                alert('Error al eliminar al estudiante: ' + error.message);
+                return;
+            }
+
+            alert('Estudiante eliminado permanentemente del sistema.');
+            cargarTablaEstudiantesNivel();
+            cargarSelectorEstudiantesEdicion();
+            limpiarFormularioMatricula();
+        }
+
+        async function cargarDatosEstudianteEdicion(cedulaDirecta) {
+            const selectEdit = document.getElementById('select-estudiante-editar');
+            const cedula = cedulaDirecta || (selectEdit ? selectEdit.value : '');
             const btnSubmit = document.getElementById('btn-submit-matricula');
             const inputCedula = document.getElementById('mat-cedula');
-            const btnEliminar = document.getElementById('btn-eliminar-estudiante');
 
             if (!cedula) {
                 limpiarFormularioMatricula();
                 return;
+            }
+
+            if (cedulaDirecta && selectEdit) {
+                selectEdit.value = cedulaDirecta;
+                document.getElementById('form-matricula').scrollIntoView({ behavior: 'smooth' });
             }
 
             const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
@@ -1125,7 +1327,6 @@
 
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
-            btnEliminar.style.display = 'inline-block';
 
             generarVistaPreviaMatricula();
         }
@@ -1140,34 +1341,9 @@
             const btnSubmit = document.getElementById('btn-submit-matricula');
             btnSubmit.innerText = 'Guardar Matrícula Rápida';
             btnSubmit.className = 'action-btn';
-            document.getElementById('btn-eliminar-estudiante').style.display = 'none';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
             cargarDocentesEnMatricula();
-        }
-
-        async function eliminarEstudianteActual() {
-            const cedulaVal = document.getElementById('mat-cedula').value.trim();
-            const nombreVal = document.getElementById('mat-nombre').value.trim();
-
-            if (!cedulaVal) {
-                alert('No hay ningún estudiante seleccionado para eliminar.');
-                return;
-            }
-
-            if (!confirm(`¿Está completamente seguro de ELIMINAR al estudiante "${nombreVal}" (Cédula: ${cedulaVal})? Esta acción no se puede deshacer.`)) {
-                return;
-            }
-
-            const { error } = await supabaseClient.from('estudiantes').delete().eq('cedula', cedulaVal);
-
-            if (error) {
-                alert('Error al eliminar estudiante de Supabase: ' + error.message);
-            } else {
-                alert(`¡Estudiante ${nombreVal} eliminado correctamente!`);
-                limpiarFormularioMatricula();
-                cargarSelectorEstudiantesEdicionPorNivel();
-            }
         }
 
         function confirmarYGuardarMatricula(e) {
@@ -1231,7 +1407,8 @@
                 mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
             } else {
                 mostrarMensaje('mat-msg', '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
-                cargarSelectorEstudiantesEdicionPorNivel();
+                cargarSelectorEstudiantesEdicion();
+                cargarTablaEstudiantesNivel();
                 generarVistaPreviaMatricula();
             }
         }
@@ -1242,7 +1419,10 @@
             const cedula = document.getElementById('mat-cedula').value;
             const fnac = document.getElementById('mat-fnac').value;
             const lugarNac = document.getElementById('mat-lugar-nac').value;
+            
+            // CORREGIDO: Toma el nivel real del formulario de matrícula de forma independiente
             const nivel = document.getElementById('mat-nivel').value;
+            
             const docenteAcad = document.getElementById('mat-docente-acad').value;
             const docSolfeo = document.getElementById('mat-doc-solfeo').value;
             const docPerc = document.getElementById('mat-doc-percursion').value;
@@ -1345,13 +1525,14 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Fecha Nacimiento,Lugar Nacimiento,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Edufi,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Estado,Fecha Nacimiento,Lugar Nacimiento,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Edufi,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2\n';
 
             data.forEach(est => {
                 const fila = [
                     `"${est.cedula || ''}"`,
                     `"${est.nombre || ''}"`,
                     `"${est.nivel || ''}"`,
+                    `"${est.activo === false ? 'Oculto' : 'Activo'}"`,
                     `"${est.fecha_nacimiento || ''}"`,
                     `"${est.lugar_nacimiento || ''}"`,
                     `"${est.docente_academico || ''}"`,
@@ -1393,13 +1574,10 @@
             const { data, error } = await supabaseClient.from('configuracion_periodos').select('*').eq('id', 1).single();
             if (error || !data) return;
 
-            if (data.anio_activo) {
-                anioLectivoActivoGlobal = data.anio_activo;
-                const cfgAnio = document.getElementById('cfg-anio-lectivo-activo');
-                if (cfgAnio) cfgAnio.value = data.anio_activo;
-                const filtroMat = document.getElementById('filtro-anio-lectivo');
-                if (filtroMat) filtroMat.value = data.anio_activo;
-            }
+            anioLectivoActivo = data.anio_lectivo_activo || 2026;
+            const inputAnio = document.getElementById('cfg-anio-activo');
+            if (inputAnio) inputAnio.value = anioLectivoActivo;
+
             if (data.p1_inicio) document.getElementById('cfg-p1-inicio').value = data.p1_inicio;
             if (data.p1_fin) document.getElementById('cfg-p1-fin').value = data.p1_fin;
             if (data.vac_inicio) document.getElementById('cfg-vac-inicio').value = data.vac_inicio;
@@ -1424,10 +1602,9 @@
         }
 
         async function guardarConfiguracion() {
-            const anioActivoVal = document.getElementById('cfg-anio-lectivo-activo') ? parseInt(document.getElementById('cfg-anio-lectivo-activo').value) : 2026;
             const datos = {
                 id: 1,
-                anio_activo: anioActivoVal,
+                anio_lectivo_activo: parseInt(document.getElementById('cfg-anio-activo').value, 10) || 2026,
                 p1_inicio: document.getElementById('cfg-p1-inicio').value,
                 p1_fin: document.getElementById('cfg-p1-fin').value,
                 vac_inicio: document.getElementById('cfg-vac-inicio').value,
@@ -1441,10 +1618,7 @@
             };
             const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
             if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
-            else {
-                anioLectivoActivoGlobal = anioActivoVal;
-                mostrarMensaje('cfg-msg', `¡Configuración y Año Lectivo (${anioActivoVal}) guardados con éxito!`, true);
-            }
+            else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
         }
 
         async function cargarTablaDocentesGeneral() {
@@ -1504,7 +1678,7 @@
             contenedor.innerHTML = '<p>Calculando carga académica desde Supabase...</p>';
 
             const { data: docentes, error: errDoc } = await supabaseClient.from('docentes').select('*').order('nombre');
-            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('*');
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
 
             if (errDoc || errEst) {
                 contenedor.innerHTML = '<p style="color: red;">Error al consultar los datos para la carga académica.</p>';
@@ -1517,44 +1691,43 @@
             }
 
             let html = `
+                <p style="font-size: 12px; color: #64748b; margin-top: 0;">Esta tabla se calcula directamente desde las asignaciones reales guardadas en la Matrícula (solo estudiantes activos), por lo que siempre coincide con lo que cada docente puede calificar en la pestaña "Calificar".</p>
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Docente</th>
                             <th>Tipo</th>
-                            <th>Especialidad / Materia Asignada</th>
-                            <th>Estudiantes a Cargo / Grupos</th>
+                            <th>Especialidad Registrada</th>
+                            <th>Materias Reales Asignadas (según Matrícula)</th>
+                            <th>Estudiantes a Cargo / Niveles</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
 
             docentes.forEach(doc => {
+                const nom = (doc.nombre || '').trim();
                 let countEst = 0;
                 let detalleGrupos = [];
+                let materiasReales = new Set();
 
                 if (estudiantes) {
                     estudiantes.forEach(est => {
-                        const esp = (doc.especialidad || '').toLowerCase();
-                        const nom = (doc.nombre || '').trim();
-
                         let match = false;
-                        if (esp.includes('académica') || esp.includes('academico')) {
-                            if (est.docente_academico === nom) match = true;
-                        } else if (esp.includes('solfeo')) {
-                            if (est.docente_solfeo === nom) match = true;
-                        } else if (esp.includes('percusión')) {
-                            if (est.docente_percursion === nom) match = true;
-                        } else if (esp.includes('danza')) {
-                            if (est.docente_danza === nom) match = true;
-                        } else if (esp.includes('plásticas')) {
-                            if (est.docente_plasticas === nom) match = true;
-                        } else if (esp.includes('inglés')) {
-                            if (est.docente_ingles === nom) match = true;
-                        } else if (esp.includes('edufi')) {
-                            if (est.docente_edufi === nom) match = true;
-                        } else {
-                            if (est.docente_asignado === nom || est.docente_segundo === nom) match = true;
+
+                        Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([materia, campo]) => {
+                            if (est[campo] && est[campo] === nom) {
+                                materiasReales.add(materia);
+                                match = true;
+                            }
+                        });
+                        if (est.instrumento_principal && est.docente_asignado === nom) {
+                            materiasReales.add(est.instrumento_principal);
+                            match = true;
+                        }
+                        if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && est.docente_segundo === nom) {
+                            materiasReales.add(est.instrumento_segundo);
+                            match = true;
                         }
 
                         if (match) {
@@ -1566,11 +1739,14 @@
                     });
                 }
 
+                const listaMateriasStr = materiasReales.size > 0 ? Array.from(materiasReales).join(', ') : '<span style="color:#991b1b;">Sin carga real asignada en Matrícula</span>';
+
                 html += `
                     <tr>
                         <td style="text-align: left;"><b>${doc.nombre}</b><br><small>${doc.correo}</small></td>
                         <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${doc.tipo_docente === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${doc.tipo_docente.toUpperCase()}</span></td>
-                        <td><b>${doc.especialidad}</b></td>
+                        <td>${doc.especialidad}</td>
+                        <td style="text-align: left;">${listaMateriasStr}</td>
                         <td><b>${countEst} estudiantes</b><br><small>Niveles: ${detalleGrupos.length > 0 ? detalleGrupos.join(', ') : 'Ninguno asignado'}</small></td>
                     </tr>
                 `;
@@ -1861,18 +2037,16 @@
 
             contenedor.innerHTML = '<p>Cargando estudiantes y componentes...</p>';
 
-            const instrumentosIndividuales = ['Piano', 'Guitarra', 'Ukulele', 'Batería', 'Bajo', 'Canto'];
             let instrumentoEspecifico = null;
-            instrumentosIndividuales.forEach(instr => {
+            INSTRUMENTOS_INDIVIDUALES.forEach(instr => {
                 if (materia.includes(instr)) {
                     instrumentoEspecifico = instr;
                 }
             });
 
-            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true);
             const { data: estudiantesRaw, error: errEst } = await queryEstudiantes;
-            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
-            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia).eq('anio_lectivo', anioActualConsulta);
+            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia).eq('anio_lectivo', anioLectivoActivo);
 
             if (errEst) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + errEst.message + '</p>';
@@ -1896,7 +2070,7 @@
             const esConducta = materia.includes('Conducta');
 
             let html = `
-                <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo}) - Año ${anioActualConsulta}${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
+                <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -1984,44 +2158,329 @@
             }
 
             if (esConducta && !comentario) {
-                alert('La reflexión docente en Conducta is obligatoria para el informe al hogar.');
+                alert('La reflexión docente en Conducta es obligatoria para el informe al hogar.');
                 comentarioInput.focus();
                 return;
             }
-
-            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
 
             const datos = { 
                 cedula_estudiante: String(cedula), 
                 materia: String(materia), 
                 periodo: String(periodo), 
-                anio_lectivo: Number(anioActualConsulta),
+                anio_lectivo: anioLectivoActivo,
                 promedio: Number(promedioFinal),
                 comentario: String(comentario) 
             };
 
             const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo,anio_lectivo' });
             if (error) {
-                alert('Error al guardar nota con año lectivo: ' + error.message);
+                alert('Error al guardar: ' + error.message);
             } else {
-                alert(`¡Calificación guardada para el año ${anioActualConsulta} (Cédula ${cedula})!`);
+                alert(`¡Calificación guardada con éxito para la cédula ${cedula} (Año lectivo ${anioLectivoActivo})!`);
             }
+        }
+
+        // =====================================================================
+        // IMPORTACIÓN DE NOTAS DESDE EXCEL
+        // =====================================================================
+
+        // Nombre de materia tal como aparece en el Excel (en minúsculas, sin
+        // tildes ambiguas) -> valor exacto de materia usado por la app.
+        const MAPEO_MATERIA_EXCEL = {
+            'español': '[Académica] Español',
+            'matemáticas': '[Académica] Matemáticas',
+            'matematicas': '[Académica] Matemáticas',
+            'ciencias': '[Académica] Ciencias',
+            'estudios sociales': '[Académica] Estudios Sociales',
+            'inglés': '[Académica] Inglés',
+            'ingles': '[Académica] Inglés',
+            'conducta': '[Académica] Conducta',
+            'arte': '[Artística] Artes Plásticas',
+            'artes plásticas': '[Artística] Artes Plásticas',
+            'artes plasticas': '[Artística] Artes Plásticas',
+            'danza': '[Artística] Danza',
+            'guitarra': '[Artística] Guitarra',
+            'piano': '[Artística] Piano',
+            'ukelele': '[Artística] Ukulele',
+            'ukulele': '[Artística] Ukulele',
+            'canto': '[Artística] Canto',
+            'percusión': '[Artística] Batería',
+            'percusion': '[Artística] Batería',
+            'bajo': '[Artística] Bajo',
+            'solfeo': '[Artística] Solfeo',
+            'taller de percusión': '[Artística] Taller de Percusión',
+            'taller de percusion': '[Artística] Taller de Percusión',
+            'educación física': '[Artística] Edufi',
+            'educacion fisica': '[Artística] Edufi',
+            'edufi': '[Artística] Edufi'
+        };
+
+        // Instrumentos individuales: si el Excel trae la casilla en 0 y sin
+        // comentario, se asume que ese estudiante NO lleva ese instrumento
+        // (el Excel suele traer todas las columnas de instrumentos para
+        // todos los estudiantes, en 0 cuando no aplica) y no se importa.
+        const MATERIAS_OPCIONALES_SI_CERO = ['Piano', 'Guitarra', 'Ukulele', 'Canto', 'Bajo', 'Batería'];
+
+        let workbookImportadoGlobal = null;
+        let datosParaImportar = [];
+
+        function procesarArchivoExcelImport(evt) {
+            const archivo = evt.target.files[0];
+            const contenedorPreview = document.getElementById('contenedor-preview-import');
+            const selectHoja = document.getElementById('import-hoja-select');
+            document.getElementById('fieldset-confirmar-import').style.display = 'none';
+
+            if (!archivo) return;
+
+            contenedorPreview.innerHTML = '<p>Leyendo archivo...</p>';
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    const datosBin = new Uint8Array(e.target.result);
+                    workbookImportadoGlobal = XLSX.read(datosBin, { type: 'array' });
+
+                    selectHoja.innerHTML = '';
+                    let hojaCedulaDetectada = '';
+                    workbookImportadoGlobal.SheetNames.forEach(nombreHoja => {
+                        const opt = document.createElement('option');
+                        opt.value = nombreHoja;
+                        opt.textContent = nombreHoja;
+                        selectHoja.appendChild(opt);
+
+                        if (!hojaCedulaDetectada) {
+                            const hojaTmp = XLSX.utils.sheet_to_json(workbookImportadoGlobal.Sheets[nombreHoja], { header: 1, defval: '' });
+                            for (let r = 0; r < Math.min(hojaTmp.length, 15); r++) {
+                                if ((hojaTmp[r] || []).some(v => String(v).trim().toLowerCase() === 'cédula' || String(v).trim().toLowerCase() === 'cedula')) {
+                                    hojaCedulaDetectada = nombreHoja;
+                                    break;
+                                }
+                            }
+                        }
+                    });
+
+                    if (hojaCedulaDetectada) selectHoja.value = hojaCedulaDetectada;
+                    previsualizarImportacionExcel();
+                } catch (err) {
+                    contenedorPreview.innerHTML = '<p style="color: red;">Error al leer el archivo: ' + err.message + '</p>';
+                }
+            };
+            lector.readAsArrayBuffer(archivo);
+        }
+
+        function detectarEncabezadosHojaImport(filas) {
+            let filaCedula = -1, colCedula = -1, colNombre = -1, colNivel = -1;
+
+            for (let r = 0; r < Math.min(filas.length, 15); r++) {
+                const fila = filas[r] || [];
+                for (let c = 0; c < fila.length; c++) {
+                    const v = String(fila[c] || '').trim().toLowerCase();
+                    if (v === 'cédula' || v === 'cedula') { filaCedula = r; colCedula = c; }
+                }
+            }
+            if (filaCedula === -1) return null;
+
+            const filaHeader = filas[filaCedula] || [];
+            const filaGrupo = filas[filaCedula - 1] || [];
+
+            filaHeader.forEach((val, c) => {
+                const v = String(val || '').trim().toLowerCase();
+                if (v === 'nombre') colNombre = c;
+                if (v === 'nivel') colNivel = c;
+            });
+
+            let inicios = [];
+            filaGrupo.forEach((val, c) => {
+                if (val && String(val).trim() !== '') inicios.push({ col: c, nombre: String(val).trim() });
+            });
+
+            let bloques = [];
+            inicios.forEach((ini, idx) => {
+                const colFin = idx + 1 < inicios.length ? inicios[idx + 1].col : filaHeader.length;
+                let colPromedio = -1, colComentario = -1;
+                for (let c = ini.col; c < colFin; c++) {
+                    const v = String(filaHeader[c] || '').trim().toLowerCase();
+                    if (v === 'promedio') colPromedio = c;
+                    if (v === 'comentario') colComentario = c;
+                }
+                if (colPromedio !== -1) {
+                    bloques.push({ materiaExcel: ini.nombre, colPromedio, colComentario });
+                }
+            });
+
+            return { filaDatosInicio: filaCedula + 1, colCedula, colNombre, colNivel, bloques };
+        }
+
+        async function previsualizarImportacionExcel() {
+            const contenedorPreview = document.getElementById('contenedor-preview-import');
+            document.getElementById('fieldset-confirmar-import').style.display = 'none';
+
+            const nombreHoja = document.getElementById('import-hoja-select').value;
+            if (!workbookImportadoGlobal || !nombreHoja) return;
+
+            contenedorPreview.innerHTML = '<p>Procesando hoja seleccionada...</p>';
+
+            const filas = XLSX.utils.sheet_to_json(workbookImportadoGlobal.Sheets[nombreHoja], { header: 1, defval: '' });
+            const estructura = detectarEncabezadosHojaImport(filas);
+
+            if (!estructura) {
+                contenedorPreview.innerHTML = '<p style="color: red;">No se encontró una columna "Cédula" en esta hoja. Seleccione otra hoja.</p>';
+                return;
+            }
+
+            const { data: estudiantesBD } = await supabaseClient.from('estudiantes').select('cedula, nombre, activo');
+            const mapaEstudiantes = new Map();
+            (estudiantesBD || []).forEach(e => mapaEstudiantes.set(String(e.cedula).trim(), e));
+
+            const materiasNoReconocidas = new Set();
+            datosParaImportar = [];
+
+            for (let r = estructura.filaDatosInicio; r < filas.length; r++) {
+                const fila = filas[r] || [];
+                const cedulaRaw = fila[estructura.colCedula];
+                if (cedulaRaw === '' || cedulaRaw === null || cedulaRaw === undefined) continue;
+
+                const cedula = String(cedulaRaw).trim().replace(/\.0$/, '');
+                if (!/^[0-9]+$/.test(cedula)) continue;
+
+                const nombreExcel = estructura.colNombre !== -1 ? String(fila[estructura.colNombre] || '').trim() : '';
+                const estBD = mapaEstudiantes.get(cedula);
+
+                let materiasFila = [];
+                estructura.bloques.forEach(bloque => {
+                    const claveMapeo = bloque.materiaExcel.trim().toLowerCase();
+                    const materiaApp = MAPEO_MATERIA_EXCEL[claveMapeo];
+                    if (!materiaApp) {
+                        materiasNoReconocidas.add(bloque.materiaExcel);
+                        return;
+                    }
+
+                    const promedioRaw = fila[bloque.colPromedio];
+                    const promedio = (promedioRaw === '' || promedioRaw === null || promedioRaw === undefined) ? null : parseFloat(promedioRaw);
+                    const comentario = bloque.colComentario !== -1 ? String(fila[bloque.colComentario] || '').trim() : '';
+
+                    if (promedio === null || isNaN(promedio)) return;
+
+                    const nombreMateriaLimpia = nombreMateriaLimpio(materiaApp);
+                    if (MATERIAS_OPCIONALES_SI_CERO.includes(nombreMateriaLimpia) && promedio === 0 && !comentario) {
+                        return; // Instrumento no cursado por este estudiante, se omite.
+                    }
+
+                    materiasFila.push({ materia: materiaApp, promedio, comentario });
+                });
+
+                if (materiasFila.length === 0) continue;
+
+                datosParaImportar.push({
+                    cedula,
+                    nombreExcel,
+                    encontrado: !!estBD,
+                    activo: estBD ? estBD.activo !== false : null,
+                    materias: materiasFila
+                });
+            }
+
+            renderizarPreviewImportacion(materiasNoReconocidas);
+        }
+
+        function renderizarPreviewImportacion(materiasNoReconocidas) {
+            const contenedorPreview = document.getElementById('contenedor-preview-import');
+            const periodo = document.getElementById('import-periodo-select').value;
+
+            if (datosParaImportar.length === 0) {
+                contenedorPreview.innerHTML = '<p style="color: #64748b;">No se encontraron filas de estudiantes con datos de notas en esta hoja.</p>';
+                return;
+            }
+
+            const totalOk = datosParaImportar.filter(d => d.encontrado).length;
+            const totalNoEncontrados = datosParaImportar.filter(d => !d.encontrado).length;
+            const totalNotas = datosParaImportar.reduce((acc, d) => acc + d.materias.length, 0);
+
+            let html = `
+                <p><b>Periodo destino:</b> ${periodo} — <b>Año Lectivo Activo:</b> ${anioLectivoActivo}</p>
+                <p style="color: #166534;"><b>${totalOk}</b> estudiantes encontrados en la matrícula — <b>${totalNotas}</b> notas listas para importar.</p>
+                ${totalNoEncontrados > 0 ? `<p style="color: #991b1b;"><b>${totalNoEncontrados}</b> cédulas del Excel NO coinciden con ningún estudiante matriculado y NO se importarán. Revíselas abajo.</p>` : ''}
+                ${materiasNoReconocidas.size > 0 ? `<p style="color: #92400e;"><b>Materias del Excel no reconocidas (se ignoraron):</b> ${Array.from(materiasNoReconocidas).join(', ')}</p>` : ''}
+                <table class="data-table">
+                    <thead><tr><th>Cédula</th><th style="text-align:left;">Nombre (Excel)</th><th>Estado</th><th>Materias a importar</th></tr></thead>
+                    <tbody>
+            `;
+
+            datosParaImportar.forEach(d => {
+                const estadoTxt = !d.encontrado ? '<span style="color:#991b1b;">NO ENCONTRADO</span>' : (d.activo ? '<span style="color:#166534;">OK</span>' : '<span style="color:#92400e;">OCULTO</span>');
+                html += `<tr><td>${d.cedula}</td><td style="text-align:left;">${d.nombreExcel}</td><td>${estadoTxt}</td><td style="text-align:left; font-size:12px;">${d.materias.map(m => nombreMateriaLimpio(m.materia)).join(', ')}</td></tr>`;
+            });
+
+            html += '</tbody></table>';
+            contenedorPreview.innerHTML = html;
+
+            if (totalOk > 0) {
+                document.getElementById('fieldset-confirmar-import').style.display = 'block';
+            }
+        }
+
+        async function ejecutarImportacionExcel() {
+            const periodo = document.getElementById('import-periodo-select').value;
+            const msgSpan = document.getElementById('import-progreso-msg');
+
+            const filasValidas = datosParaImportar.filter(d => d.encontrado);
+            if (filasValidas.length === 0) {
+                alert('No hay estudiantes válidos para importar.');
+                return;
+            }
+
+            if (!confirm(`¿Importar ${filasValidas.reduce((a, d) => a + d.materias.length, 0)} notas para ${filasValidas.length} estudiantes en el ${periodo} del Año Lectivo ${anioLectivoActivo}? Si una materia ya tenía nota guardada para ese estudiante/periodo/año, será REEMPLAZADA por la del Excel.`)) {
+                return;
+            }
+
+            msgSpan.style.color = '#166534';
+            msgSpan.innerText = 'Importando... no cierre esta pestaña.';
+
+            let registros = [];
+            filasValidas.forEach(d => {
+                d.materias.forEach(m => {
+                    registros.push({
+                        cedula_estudiante: d.cedula,
+                        materia: m.materia,
+                        periodo: periodo,
+                        anio_lectivo: anioLectivoActivo,
+                        promedio: m.promedio,
+                        comentario: m.comentario
+                    });
+                });
+            });
+
+            let importadas = 0;
+            const tamanoLote = 200;
+            for (let i = 0; i < registros.length; i += tamanoLote) {
+                const lote = registros.slice(i, i + tamanoLote);
+                const { error } = await supabaseClient.from('notas').upsert(lote, { onConflict: 'cedula_estudiante,materia,periodo,anio_lectivo' });
+                if (error) {
+                    msgSpan.style.color = '#991b1b';
+                    msgSpan.innerText = `Error al importar el lote ${i / tamanoLote + 1}: ${error.message}`;
+                    return;
+                }
+                importadas += lote.length;
+                msgSpan.innerText = `Importando... ${importadas} de ${registros.length} notas.`;
+            }
+
+            msgSpan.style.color = '#166534';
+            msgSpan.innerText = `¡Listo! Se importaron ${importadas} notas para ${filasValidas.length} estudiantes en el ${periodo} del Año Lectivo ${anioLectivoActivo}.`;
         }
 
         async function cargarCuadrosRegistro() {
             const nivel = document.getElementById('reg-nivel-sel').value;
-            const anioSeleccionado = document.getElementById('reg-anio-sel') ? parseInt(document.getElementById('reg-anio-sel').value) : 2026;
+            const anio = parseInt(document.getElementById('reg-anio-sel').value, 10) || anioLectivoActivo;
             const contenedor = document.getElementById('contenedor-cuadros-registro');
 
             if (!nivel) {
-                contenedor.innerHTML = '<p style="color: #64748b;">Seleccione un nivel educativo para desplegar el registro histórico.</p>';
+                contenedor.innerHTML = '<p style="color: #64748b;">Seleccione un año y un nivel educativo para desplegar el registro histórico.</p>';
                 return;
             }
 
-            contenedor.innerHTML = `<p>Cargando registro histórico institucional para el año ${anioSeleccionado}...</p>`;
+            contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioSeleccionado);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true);
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anio);
 
             if (!estudiantes || estudiantes.length === 0) {
                 contenedor.innerHTML = `<p>No hay estudiantes matriculados en ${nivel}.</p>`;
@@ -2038,11 +2497,11 @@
 
             const listaMaterias = Array.from(materiasSet);
 
-            let html = `<h3>Registro Histórico (${anioSeleccionado}) - Nivel: ${nivel}</h3>`;
+            let html = `<h3>Registro Histórico - Nivel: ${nivel} - Año Lectivo: ${anio}</h3>`;
             html += `<table class="data-table"><thead><tr><th>Estudiante</th><th>Cédula</th><th>Profesores / Inst</th>`;
             
             if (listaMaterias.length === 0) {
-                html += `<th>Sin materias registradas para el año ${anioSeleccionado}</th></tr></thead><tbody>`;
+                html += `<th>Sin materias registradas aún</th></tr></thead><tbody>`;
             } else {
                 listaMaterias.forEach(mat => {
                     html += `<th>${mat}<br><span style="font-size:10px; font-weight:normal;">1°P | 2°P | Final (50%-50%)</span></th>`;
@@ -2084,7 +2543,7 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel);
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true);
             if (error || !data || data.length === 0) {
                 selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
                 return;
@@ -2112,9 +2571,8 @@
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
             const docenteSeleccionado = estData.docente_academico || '[Sin asignar]';
-            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
 
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula).eq('anio_lectivo', anioActualConsulta);
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
             let tablaMateriasHTML = '';
             let reflexionesDocentesHTML = '';
@@ -2130,7 +2588,7 @@
             ];
 
             if (materiasUnicas.length === 0) {
-                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante en el año ${anioActualConsulta}.</td></tr>`;
+                tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
             } else {
                 materiasUnicas.forEach((mat, index) => {
                     const notaP1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
@@ -2213,8 +2671,8 @@
             }
 
             const tituloInformeHogar = periodoSel === 'Primer Periodo' 
-                ? `INFORME OFICIAL AL HOGAR - PRIMER PERIODO (${anioActualConsulta})` 
-                : `INFORME OFICIAL AL HOGAR - SEGUNDO PERIODO Y ANUAL (${anioActualConsulta})`;
+                ? 'INFORME OFICIAL AL HOGAR - PRIMER PERIODO' 
+                : 'INFORME OFICIAL AL HOGAR - SEGUNDO PERIODO Y ANUAL';
 
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
@@ -2370,9 +2828,8 @@
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles);
-            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioActualConsulta);
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).eq('activo', true);
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioLectivoActivo);
 
             if (!estudiantes || estudiantes.length === 0) {
                 contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${ciclo}.</p>`;
@@ -2380,7 +2837,7 @@
             }
 
             let html = `
-                <h3>Listado de ${ciclo} con Instrumentos y Notas (Año ${anioActualConsulta})</h3>
+                <h3>Listado de ${ciclo} con Instrumentos y Notas</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -2442,20 +2899,33 @@
         }
 
         async function procesarPromocionAutomatica() {
-            const msgSpan = document.getElementById('promocion-msg');
-            msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
+            const msgSpan = document.getElementById('promocion-msg') || document.getElementById('promocion-msg-matricula');
 
-            const anioActualConsulta = document.getElementById('filtro-anio-lectivo') ? parseInt(document.getElementById('filtro-anio-lectivo').value) : anioLectivoActivoGlobal;
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*');
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioActualConsulta);
+            if (usuarioRolActual !== 'admin') {
+                alert('Acceso denegado: Solo los administradores pueden procesar la promoción.');
+                return;
+            }
+
+            const confirmar = confirm(
+                `¿Procesar la Promoción de Fin de Curso para el Año Lectivo ${anioLectivoActivo}?\n\n` +
+                'Esto revisará los promedios de todos los estudiantes activos, subirá de nivel a quienes aprobaron todas las materias registradas, marcará como "Graduado" a quienes estaban en Sexto, y guardará un registro PERMANENTE de este proceso bajo este año lectivo (no se borran los años anteriores).\n\n' +
+                '¿Desea continuar?'
+            );
+            if (!confirmar) return;
+
+            if (msgSpan) msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
+
+            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
+            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioLectivoActivo);
 
             if (!estudiantes || !notas) {
-                msgSpan.innerText = 'No hay datos suficientes para procesar.';
+                if (msgSpan) msgSpan.innerText = 'No hay datos suficientes para procesar.';
                 return;
             }
 
             const secuenciaNiveles = { 'Primero': 'Segundo', 'Segundo': 'Tercero', 'Tercero': 'Cuarto', 'Cuarto': 'Quinto', 'Quinto': 'Sexto', 'Sexto': 'Graduado' };
             let promovidosCount = 0;
+            let registrosHistorial = [];
 
             for (const est of estudiantes) {
                 const notasEst = notas.filter(n => n.cedula_estudiante === est.cedula);
@@ -2477,10 +2947,73 @@
                     if (nuevoNivel) {
                         await supabaseClient.from('estudiantes').update({ nivel: nuevoNivel }).eq('cedula', est.cedula);
                         promovidosCount++;
+                        registrosHistorial.push({
+                            anio_lectivo: anioLectivoActivo,
+                            cedula_estudiante: est.cedula,
+                            nombre_estudiante: est.nombre,
+                            nivel_origen: est.nivel,
+                            nivel_destino: nuevoNivel,
+                            estado: nuevoNivel === 'Graduado' ? 'Graduado' : 'Promovido'
+                        });
                     }
                 }
             }
-            msgSpan.innerText = `¡Proceso finalizado! Estudiantes promovidos automáticamente: ${promovidosCount}`;
+
+            if (registrosHistorial.length > 0) {
+                await supabaseClient.from('historial_promociones').insert(registrosHistorial);
+            }
+
+            const mensajeFinal = `¡Proceso finalizado para el Año Lectivo ${anioLectivoActivo}! Estudiantes promovidos: ${promovidosCount}. El detalle quedó guardado en el historial de promociones de ese año.`;
+            document.querySelectorAll('#promocion-msg, #promocion-msg-matricula').forEach(el => el.innerText = mensajeFinal);
+
+            cargarSelectorEstudiantesEdicion();
+            cargarTablaEstudiantesNivel();
+
+            if (confirm(`El proceso del Año Lectivo ${anioLectivoActivo} terminó.\n\n¿Desea avanzar el Año Lectivo Activo del sistema a ${anioLectivoActivo + 1} para comenzar a calificar el nuevo curso? (Los datos de ${anioLectivoActivo} y anteriores quedan guardados intactos)`)) {
+                anioLectivoActivo = anioLectivoActivo + 1;
+                await supabaseClient.from('configuracion_periodos').update({ anio_lectivo_activo: anioLectivoActivo }).eq('id', 1);
+                const inputAnio = document.getElementById('cfg-anio-activo');
+                if (inputAnio) inputAnio.value = anioLectivoActivo;
+                const spanAnio = document.getElementById('span-anio-activo-matricula');
+                if (spanAnio) spanAnio.textContent = anioLectivoActivo;
+                alert(`El Año Lectivo Activo ahora es ${anioLectivoActivo}.`);
+            }
+        }
+
+        async function verHistorialPromociones() {
+            const contenedor = document.getElementById('contenedor-historial-promociones');
+            if (!contenedor) return;
+
+            const anioConsulta = prompt('¿De qué Año Lectivo desea ver el historial de promociones?', anioLectivoActivo);
+            if (!anioConsulta) return;
+
+            contenedor.innerHTML = '<p>Cargando historial...</p>';
+
+            const { data, error } = await supabaseClient.from('historial_promociones').select('*').eq('anio_lectivo', parseInt(anioConsulta, 10)).order('nivel_destino').order('nombre_estudiante');
+
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar el historial: ' + error.message + ' (recuerde crear la tabla historial_promociones en Supabase).</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = `<p style="color: #64748b;">No hay registros de promoción guardados para el Año Lectivo ${anioConsulta}.</p>`;
+                return;
+            }
+
+            let html = `
+                <h3>Historial de Promoción - Año Lectivo ${anioConsulta}</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Cédula</th><th style="text-align:left;">Nombre</th><th>Nivel Origen</th><th>Nivel Destino</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+            `;
+            data.forEach(r => {
+                html += `<tr><td>${r.cedula_estudiante}</td><td style="text-align:left;">${r.nombre_estudiante}</td><td>${r.nivel_origen}</td><td>${r.nivel_destino}</td><td>${r.estado}</td></tr>`;
+            });
+            html += '</tbody></table><button type="button" class="action-btn" style="margin-top:10px;" onclick="window.print()">Imprimir esta lista</button>';
+            contenedor.innerHTML = html;
         }
 
         async function cargarContactosPorNivel() {
@@ -2494,7 +3027,7 @@
 
             contenedor.innerHTML = '<p>Cargando lista de contactos...</p>';
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).order('nombre');
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true).order('nombre');
 
             if (error) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar contactos: ' + error.message + '</p>';
@@ -2568,7 +3101,7 @@
                 tituloCicloNivel = `NIVEL: ${seleccion.toUpperCase()}`;
             }
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('*').in('nivel', nivelesAConsultar);
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').in('nivel', nivelesAConsultar).eq('activo', true);
 
             if (error) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
@@ -2639,7 +3172,7 @@
             else if (seleccion === 'Segundo Ciclo') nivelesAConsultar = ['Cuarto', 'Quinto', 'Sexto'];
             else nivelesAConsultar = [seleccion];
 
-            const { data, error } = await supabaseClient.from('estudiantes').select('cedula, nombre, nivel').in('nivel', nivelesAConsultar);
+            const { data, error } = await supabaseClient.from('estudiantes').select('cedula, nombre, nivel').in('nivel', nivelesAConsultar).eq('activo', true);
 
             if (error || !data || data.length === 0) {
                 alert('No hay estudiantes para exportar.');
