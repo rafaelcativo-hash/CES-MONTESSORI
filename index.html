@@ -2721,7 +2721,16 @@
 
             let tablaMateriasHTML = '';
             let reflexionesDocentesHTML = '';
-            const materiasUnicas = notas ? [...new Set(notas.map(n => n.materia))] : [];
+            let materiasUnicas = notas ? [...new Set(notas.map(n => n.materia))] : [];
+
+            // Si el estudiante está marcado como "No lleva" alguna materia (ej.
+            // Taller de Percusión), se excluye del informe por completo, incluso
+            // si existe una nota histórica de antes de marcarlo así.
+            materiasUnicas = materiasUnicas.filter(mat => {
+                const campo = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpio(mat)];
+                return !(campo && estData[campo] === 'No lleva');
+            });
+
             materiasUnicas.sort((a, b) => {
                 const grupoA = a.startsWith('[Académica]') ? 0 : 1;
                 const grupoB = b.startsWith('[Académica]') ? 0 : 1;
@@ -2832,18 +2841,14 @@
                             <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe">
                         </div>
 
-                        <div style="text-align: center; margin-bottom: 8px;">
+                        <div style="text-align: center; margin-bottom: 4px;">
                             <p style="margin: 0; font-size: 18px; color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reporte de Calificaciones</p>
                             <p style="margin: 2px 0 0 0; font-size: 10px; color: #64748b;"><b style="color: var(--accent);">Año Lectivo ${anioLectivoActivo}</b> • Dirección Regional de Heredia - Circuito 04 - Centro Educativo Shkénuk</p>
                             <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase;">${tituloInformeHogar}</p>
                         </div>
 
-                        <div style="margin-bottom: 10px; font-size: 13px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
-                                <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
-                                <p style="margin: 3px 0;"><b>Nivel:</b> ${estData.nivel}</p>
-                            </div>
+                        <div style="margin-bottom: 8px; font-size: 12px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <b>Estudiante:</b> ${estData.nombre} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${estData.cedula} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${estData.nivel}
                         </div>
 
                         <div style="margin-bottom: 15px;">
