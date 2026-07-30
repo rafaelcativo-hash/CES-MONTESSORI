@@ -146,6 +146,7 @@
             <button class="tab-btn active" data-tab="matricula" data-role-req="admin" onclick="cambiarPestana('matricula', event)">Matrícula</button>
             <button class="tab-btn" data-tab="listas" data-role-req="admin" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
             <button class="tab-btn" data-tab="calificar" data-role-req="all" onclick="cambiarPestana('calificar', event)">Calificar</button>
+            <button class="tab-btn hidden-by-role" data-tab="mimatricula" onclick="cambiarPestana('mimatricula', event)">Mi Matrícula (Editar Datos)</button>
             <button class="tab-btn" data-tab="importar" data-role-req="admin" onclick="cambiarPestana('importar', event)">Importar Notas (Excel)</button>
             <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
@@ -328,7 +329,7 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Edufi</label>
+                                <label>Educación Física</label>
                                 <select id="mat-doc-edufi" class="select-docente-predefinido" data-materia="Edufi">
                                     <option value="Santiago Jimenez">Santiago Jimenez</option>
                                 </select>
@@ -510,7 +511,7 @@
                                     <option value="[Artística] Taller de Percusión">Taller de Percusión (Grupal - Sin reflexión)</option>
                                     <option value="[Artística] Danza">Danza (Con reflexión)</option>
                                     <option value="[Artística] Artes Plásticas">Artes Plásticas (Con reflexión)</option>
-                                    <option value="[Artística] Edufi">Edufi (Con reflexión)</option>
+                                    <option value="[Artística] Edufi">Educación Física (Con reflexión)</option>
                                     <option value="[Artística] Piano">Piano (Individual - Solo matriculados)</option>
                                     <option value="[Artística] Guitarra">Guitarra (Individual - Solo matriculados)</option>
                                     <option value="[Artística] Ukulele">Ukulele (Individual - Solo matriculados)</option>
@@ -574,6 +575,75 @@
                     <button type="button" class="action-btn" onclick="ejecutarImportacionExcel()">Importar Notas y Comentarios a Supabase</button>
                     <span id="import-progreso-msg" style="margin-left: 15px; font-weight: 600;"></span>
                 </fieldset>
+            </section>
+
+            <!-- 4.C MI MATRÍCULA (SOLO DOCENTES ACADÉMICOS) -->
+            <section id="mimatricula" class="tab-content">
+                <h2>Mi Matrícula — Edición de Datos de Contacto</h2>
+                <p style="font-size: 12px; color: #64748b; margin-top: 0;">
+                    Como docente académico, puede actualizar la <b>Ubicación/Dirección</b>, los datos de los <b>Encargados</b> y las <b>Observaciones</b> de los estudiantes de su(s) nivel(es) asignado(s). El resto de la información (nombre, cédula, nivel, docentes asignados, instrumentos, foto, etc.) está restringido por seguridad y solo lo puede modificar un administrador.
+                </p>
+                <fieldset>
+                    <legend>Seleccionar Nivel</legend>
+                    <div class="form-group" style="max-width: 300px;">
+                        <label>Nivel</label>
+                        <select id="mimat-nivel-sel" onchange="cargarMiMatriculaDocente()">
+                            <option value="">-- Seleccione un nivel --</option>
+                            <option value="Primero">Primero</option>
+                            <option value="Segundo">Segundo</option>
+                            <option value="Tercero">Tercero</option>
+                            <option value="Cuarto">Cuarto</option>
+                            <option value="Quinto">Quinto</option>
+                            <option value="Sexto">Sexto</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                <div id="contenedor-mimatricula-tabla" style="margin-top: 15px;">
+                    <p style="color: #64748b;">Seleccione un nivel para ver sus estudiantes.</p>
+                </div>
+
+                <div id="contenedor-mimatricula-form" style="display: none; margin-top: 20px;">
+                    <fieldset>
+                        <legend>Editando a: <span id="mimat-nombre-editando"></span></legend>
+                        <input type="hidden" id="mimat-cedula-actual">
+
+                        <h4 style="margin-bottom: 8px;">Ubicación / Dirección (Opcional)</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Provincia</label><input type="text" id="mimat-provincia"></div>
+                            <div class="form-group"><label>Cantón</label><input type="text" id="mimat-canton"></div>
+                            <div class="form-group"><label>Distrito</label><input type="text" id="mimat-distrito"></div>
+                        </div>
+                        <div class="form-group"><label>Otras Señas / Dirección Detalles</label><textarea id="mimat-dir-detalles" rows="2"></textarea></div>
+
+                        <h4 style="margin-bottom: 8px;">Primer Encargado (Opcional)</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="mimat-enc1-nombre"></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="mimat-enc1-correo"></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="mimat-enc1-cel"></div>
+                            <div class="form-group"><label>Profesión u Oficio</label><input type="text" id="mimat-enc1-profesion"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Lugar de Trabajo</label><input type="text" id="mimat-enc1-trabajo"></div>
+                        </div>
+
+                        <h4 style="margin-bottom: 8px;">Segundo Encargado (Opcional)</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Nombre Completo</label><input type="text" id="mimat-enc2-nombre"></div>
+                            <div class="form-group"><label>Correo Electrónico</label><input type="email" id="mimat-enc2-correo"></div>
+                            <div class="form-group"><label>Contacto Celular</label><input type="tel" id="mimat-enc2-cel"></div>
+                            <div class="form-group"><label>Profesión u Oficio</label><input type="text" id="mimat-enc2-profesion"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Lugar de Trabajo</label><input type="text" id="mimat-enc2-trabajo"></div>
+                        </div>
+
+                        <h4 style="margin-bottom: 8px;">Observaciones (Opcional)</h4>
+                        <div class="form-group">
+                            <textarea id="mimat-observaciones" rows="3" placeholder="Anotaciones relevantes sobre el estudiante..."></textarea>
+                        </div>
+
+                        <button type="button" class="action-btn" onclick="guardarMiMatriculaDocente()">Guardar Cambios</button>
+                        <button type="button" class="warning-btn" onclick="document.getElementById('contenedor-mimatricula-form').style.display='none';">Cancelar</button>
+                        <span id="mimat-msg" style="margin-left: 15px; font-weight: 600;"></span>
+                    </fieldset>
+                </div>
             </section>
 
             <!-- 5. INFORMES AL HOGAR -->
@@ -700,6 +770,14 @@
                                     <label>Especialidad / Materia / Disciplina</label>
                                     <input type="text" id="doc-esp" required placeholder="Ej. Académica, Danza, Solfeo, Taller de Percusión, Piano">
                                 </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Ciclo Asignado (solo aplica a Académicos)</label>
+                                    <select id="doc-ciclo">
+                                        <option value="Ambos Ciclos">Ambos Ciclos (ej. Inglés, es el mismo docente en todos los niveles)</option>
+                                        <option value="Primer Ciclo">Primer Ciclo (Primero, Segundo y Tercero)</option>
+                                        <option value="Segundo Ciclo">Segundo Ciclo (Cuarto, Quinto y Sexto)</option>
+                                    </select>
+                                </div>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
                                 <button type="submit" id="btn-submit-docente" class="action-btn">Registrar Docente</button>
@@ -820,6 +898,7 @@
         let docenteTipoActual = 'artistico'; 
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
+        let docenteCicloGlobal = 'Ambos Ciclos';
         let anioLectivoActivo = 2026;
 
         // =====================================================================
@@ -970,7 +1049,12 @@
                 cargarTablaRolesUsuarios();
             }
             if (idSeccion === 'calificar') {
+                aplicarRestriccionNivelDocente();
                 aplicarRestriccionMateriaDocente();
+            }
+            if (idSeccion === 'mimatricula') {
+                aplicarRestriccionNivelDocente('mimat-nivel-sel');
+                cargarMiMatriculaDocente();
             }
         }
 
@@ -998,7 +1082,7 @@
 
             const { data: docData } = await supabaseClient
                 .from('docentes')
-                .select('especialidad, nombre, tipo_docente')
+                .select('especialidad, nombre, tipo_docente, ciclo_asignado')
                 .eq('correo', email)
                 .maybeSingle();
 
@@ -1006,10 +1090,12 @@
                 docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase().trim();
                 docenteNombreGlobal = (docData.nombre || '').trim();
                 docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
+                docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
             } else {
                 docenteEspecialidadGlobal = '';
                 docenteNombreGlobal = '';
                 docenteTipoActual = 'artistico';
+                docenteCicloGlobal = 'Ambos Ciclos';
             }
 
             document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
@@ -1024,8 +1110,49 @@
                 }
             });
 
+            // Un docente académico asignado a un solo ciclo (Primer o Segundo)
+            // solo puede ver/editar su propio ciclo en "Mi Matrícula". Si es
+            // "Ambos Ciclos" (ej. Inglés, que es el mismo docente en todos los
+            // niveles) no se le oculta el botón.
+            const botonMiMatricula = document.querySelector('[data-tab="mimatricula"]');
+            if (botonMiMatricula) {
+                if (usuarioRolActual === 'admin' || docenteTipoActual !== 'academico') {
+                    botonMiMatricula.classList.add('hidden-by-role');
+                } else {
+                    botonMiMatricula.classList.remove('hidden-by-role');
+                }
+            }
+
             if (usuarioRolActual !== 'admin') {
                 cambiarPestana('calificar', null);
+            }
+        }
+
+        function aplicarRestriccionNivelDocente(idSelect) {
+            const selectNivel = document.getElementById(idSelect || 'cal-nivel');
+            if (!selectNivel) return;
+
+            if (usuarioRolActual === 'admin' || docenteCicloGlobal === 'Ambos Ciclos') {
+                for (let opt of selectNivel.options) {
+                    opt.disabled = false;
+                    opt.style.display = '';
+                }
+                return;
+            }
+
+            const nivelesPrimerCiclo = ['Primero', 'Segundo', 'Tercero'];
+            const nivelesSegundoCiclo = ['Cuarto', 'Quinto', 'Sexto'];
+            const nivelesPermitidos = docenteCicloGlobal === 'Primer Ciclo' ? nivelesPrimerCiclo : nivelesSegundoCiclo;
+
+            for (let opt of selectNivel.options) {
+                if (!opt.value) continue;
+                const permitir = nivelesPermitidos.includes(opt.value);
+                opt.disabled = !permitir;
+                opt.style.display = permitir ? '' : 'none';
+            }
+
+            if (selectNivel.options[selectNivel.selectedIndex] && selectNivel.options[selectNivel.selectedIndex].disabled) {
+                selectNivel.value = '';
             }
         }
 
@@ -1255,6 +1382,119 @@
                 }
             }
             cargarTablaEstudiantesNivel();
+        }
+
+        // =====================================================================
+        // MI MATRÍCULA — edición limitada para docentes académicos
+        // =====================================================================
+
+        async function cargarMiMatriculaDocente() {
+            const nivel = document.getElementById('mimat-nivel-sel').value;
+            const contenedor = document.getElementById('contenedor-mimatricula-tabla');
+            document.getElementById('contenedor-mimatricula-form').style.display = 'none';
+
+            if (!nivel) {
+                contenedor.innerHTML = '<p style="color: #64748b;">Seleccione un nivel para ver sus estudiantes.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '<p>Cargando estudiantes...</p>';
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('cedula, nombre, nivel').eq('nivel', nivel).eq('activo', true).order('nombre');
+
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b;">No hay estudiantes activos en este nivel.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead><tr><th>Cédula</th><th style="text-align: left;">Nombre</th><th>Acciones</th></tr></thead>
+                    <tbody>
+            `;
+            data.forEach(est => {
+                html += `
+                    <tr>
+                        <td>${est.cedula}</td>
+                        <td style="text-align: left;"><b>${est.nombre}</b></td>
+                        <td><button type="button" class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="abrirEdicionMiMatricula('${est.cedula}')">Editar Datos</button></td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table>';
+            contenedor.innerHTML = html;
+        }
+
+        async function abrirEdicionMiMatricula(cedula) {
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('cedula', cedula).single();
+            if (error || !data) {
+                alert('No se pudo cargar la información del estudiante.');
+                return;
+            }
+
+            document.getElementById('mimat-cedula-actual').value = cedula;
+            document.getElementById('mimat-nombre-editando').innerText = `${data.nombre} (Cédula: ${cedula})`;
+            document.getElementById('mimat-provincia').value = data.provincia || '';
+            document.getElementById('mimat-canton').value = data.canton || '';
+            document.getElementById('mimat-distrito').value = data.distrito || '';
+            document.getElementById('mimat-dir-detalles').value = data.direccion_detalles || '';
+            document.getElementById('mimat-enc1-nombre').value = data.encargado1_nombre || '';
+            document.getElementById('mimat-enc1-correo').value = data.encargado1_correo || '';
+            document.getElementById('mimat-enc1-cel').value = data.encargado1_cel || '';
+            document.getElementById('mimat-enc1-profesion').value = data.encargado1_profesion || '';
+            document.getElementById('mimat-enc1-trabajo').value = data.encargado1_trabajo || '';
+            document.getElementById('mimat-enc2-nombre').value = data.encargado2_nombre || '';
+            document.getElementById('mimat-enc2-correo').value = data.encargado2_correo || '';
+            document.getElementById('mimat-enc2-cel').value = data.encargado2_cel || '';
+            document.getElementById('mimat-enc2-profesion').value = data.encargado2_profesion || '';
+            document.getElementById('mimat-enc2-trabajo').value = data.encargado2_trabajo || '';
+            document.getElementById('mimat-observaciones').value = data.observaciones || '';
+            document.getElementById('mimat-msg').innerText = '';
+
+            const contenedorForm = document.getElementById('contenedor-mimatricula-form');
+            contenedorForm.style.display = 'block';
+            contenedorForm.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function guardarMiMatriculaDocente() {
+            const cedula = document.getElementById('mimat-cedula-actual').value;
+            if (!cedula) return;
+
+            // Solo se actualizan estos campos — nunca nombre, cédula, nivel,
+            // docentes asignados, instrumentos ni foto, por seguridad.
+            const datos = {
+                provincia: document.getElementById('mimat-provincia').value.trim() || '',
+                canton: document.getElementById('mimat-canton').value.trim() || '',
+                distrito: document.getElementById('mimat-distrito').value.trim() || '',
+                direccion_detalles: document.getElementById('mimat-dir-detalles').value.trim() || '',
+                encargado1_nombre: document.getElementById('mimat-enc1-nombre').value.trim() || '',
+                encargado1_correo: document.getElementById('mimat-enc1-correo').value.trim() || '',
+                encargado1_cel: document.getElementById('mimat-enc1-cel').value.trim() || '',
+                encargado1_profesion: document.getElementById('mimat-enc1-profesion').value.trim() || '',
+                encargado1_trabajo: document.getElementById('mimat-enc1-trabajo').value.trim() || '',
+                encargado2_nombre: document.getElementById('mimat-enc2-nombre').value.trim() || '',
+                encargado2_correo: document.getElementById('mimat-enc2-correo').value.trim() || '',
+                encargado2_cel: document.getElementById('mimat-enc2-cel').value.trim() || '',
+                encargado2_profesion: document.getElementById('mimat-enc2-profesion').value.trim() || '',
+                encargado2_trabajo: document.getElementById('mimat-enc2-trabajo').value.trim() || '',
+                observaciones: document.getElementById('mimat-observaciones').value.trim() || ''
+            };
+
+            const { error } = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedula);
+            const msgSpan = document.getElementById('mimat-msg');
+
+            if (error) {
+                msgSpan.style.color = '#991b1b';
+                msgSpan.innerText = 'Error al guardar: ' + error.message;
+            } else {
+                msgSpan.style.color = '#166534';
+                msgSpan.innerText = '¡Datos actualizados con éxito!';
+            }
         }
 
         async function cargarTablaEstudiantesNivel() {
@@ -1640,7 +1880,7 @@
                         <p style="margin: 4px 0;"><b>Profesor Académico:</b> ${docenteAcad || 'No asignado'}</p>
                         <p style="margin: 4px 0;"><b>Solfeo:</b> ${docSolfeo} | <b>Taller de Percusión:</b> ${docPerc}</p>
                         <p style="margin: 4px 0;"><b>Danza:</b> ${docDanza} | <b>Artes Plásticas:</b> ${docPlast}</p>
-                        <p style="margin: 4px 0;"><b>Inglés:</b> ${docIngles} | <b>Edufi:</b> ${docEdufi}</p>
+                        <p style="margin: 4px 0;"><b>Inglés:</b> ${docIngles} | <b>Educación Física:</b> ${docEdufi}</p>
                         <p style="margin: 4px 0;"><b>Instrumento Principal:</b> ${instr || 'Ninguno'} (Profesor: ${docenteInstr || 'No asignado'})</p>
                         <p style="margin: 4px 0;"><b>Segundo Instrumento (Pago):</b> ${instrSegundo && instrSegundo !== 'Ninguno' ? `${instrSegundo} (Profesor: ${docenteSegundo})` : 'Ninguno'}</p>
                     </div>
@@ -1656,7 +1896,7 @@
                 return;
             }
 
-            let csvContent = '\uFEFFCédula,Nombre,Nivel,Estado,Fecha Nacimiento,Lugar Nacimiento,Fecha Ingreso CES,Institución de Procedencia,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Edufi,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Profesión Encargado 1,Trabajo Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2,Profesión Encargado 2,Trabajo Encargado 2,Observaciones\n';
+            let csvContent = '\uFEFFCédula,Nombre,Nivel,Estado,Fecha Nacimiento,Lugar Nacimiento,Fecha Ingreso CES,Institución de Procedencia,Profesor Académico,Solfeo,Taller Percusión,Danza,Artes Plásticas,Inglés,Educación Física,Instrumento Principal,Profesor Instrumento,Segundo Instrumento (Pago),Profesor 2do Instrumento,Provincia,Cantón,Distrito,Dirección Detalles,Encargado 1,Correo Encargado 1,Celular Encargado 1,Profesión Encargado 1,Trabajo Encargado 1,Encargado 2,Correo Encargado 2,Celular Encargado 2,Profesión Encargado 2,Trabajo Encargado 2,Observaciones\n';
 
             data.forEach(est => {
                 const fila = [
@@ -1799,7 +2039,7 @@
                         <td>${doc.correo}</td>
                         <td>${doc.telefono}</td>
                         <td>
-                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicion('${doc.id}', '${doc.nombre.replace(/'/g, "\\'")}', '${doc.correo.replace(/'/g, "\\'")}', '${doc.telefono.replace(/'/g, "\\'")}', '${doc.especialidad.replace(/'/g, "\\'")}', '${doc.tipo_docente}')">Editar</button>
+                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicion('${doc.id}', '${doc.nombre.replace(/'/g, "\\'")}', '${doc.correo.replace(/'/g, "\\'")}', '${doc.telefono.replace(/'/g, "\\'")}', '${doc.especialidad.replace(/'/g, "\\'")}', '${doc.tipo_docente}', '${doc.ciclo_asignado || 'Ambos Ciclos'}')">Editar</button>
                             <button class="danger-btn" onclick="eliminarDocente('${doc.id}')">Eliminar</button>
                         </td>
                     </tr>
@@ -1975,7 +2215,7 @@
             }
         }
 
-        function cargarDocenteParaEdicion(id, nombre, correo, telefono, especialidad, tipo) {
+        function cargarDocenteParaEdicion(id, nombre, correo, telefono, especialidad, tipo, ciclo) {
             if (usuarioRolActual !== 'admin') {
                 alert('Acceso denegado: Solo los administradores pueden editar docentes.');
                 return;
@@ -1986,6 +2226,7 @@
             document.getElementById('doc-tel').value = telefono;
             document.getElementById('doc-esp').value = especialidad;
             document.getElementById('doc-tipo').value = tipo;
+            document.getElementById('doc-ciclo').value = ciclo || 'Ambos Ciclos';
 
             document.getElementById('docente-legend-title').innerText = `Editando Docente: ${nombre}`;
             document.getElementById('btn-submit-docente').innerText = 'Actualizar Datos del Docente';
@@ -1997,6 +2238,7 @@
         function limpiarFormularioDocente() {
             document.getElementById('form-docente-general').reset();
             document.getElementById('doc-id').value = '';
+            document.getElementById('doc-ciclo').value = 'Ambos Ciclos';
             document.getElementById('docente-legend-title').innerText = 'Registrar Nuevo Docente';
             document.getElementById('btn-submit-docente').innerText = 'Registrar Docente';
             document.getElementById('btn-submit-docente').className = 'action-btn';
@@ -2020,7 +2262,8 @@
                 correo: document.getElementById('doc-correo').value,
                 telefono: document.getElementById('doc-tel').value,
                 especialidad: document.getElementById('doc-esp').value,
-                tipo_docente: document.getElementById('doc-tipo').value
+                tipo_docente: document.getElementById('doc-tipo').value,
+                ciclo_asignado: document.getElementById('doc-ciclo').value
             };
 
             let error = null;
@@ -2732,12 +2975,23 @@
                 return !(campo && estData[campo] === 'No lleva');
             });
 
-            materiasUnicas.sort((a, b) => {
-                const grupoA = a.startsWith('[Académica]') ? 0 : 1;
-                const grupoB = b.startsWith('[Académica]') ? 0 : 1;
-                if (grupoA !== grupoB) return grupoA - grupoB;
-                return a.localeCompare(b, 'es');
-            });
+            // Orden fijo institucional: primero Materias Básicas, luego
+            // Materias Especiales (con el instrumento/canto de cada estudiante
+            // en su lugar, y el segundo instrumento —si tiene— al final).
+            const NOMBRE_MOSTRAR_MATERIA = { 'Artes Plásticas': 'Arte', 'Edufi': 'Educación Física' };
+            const nombreParaMostrar = (n) => NOMBRE_MOSTRAR_MATERIA[n] || n;
+
+            const ordenBasicas = ['Español', 'Matemáticas', 'Ciencias', 'Estudios Sociales', 'Inglés', 'Conducta'];
+            let ordenEspeciales = ['Artes Plásticas', 'Danza'];
+            if (estData.instrumento_principal) ordenEspeciales.push(estData.instrumento_principal);
+            ordenEspeciales.push('Solfeo', 'Edufi', 'Taller de Percusión');
+            if (estData.instrumento_segundo && estData.instrumento_segundo !== 'Ninguno') ordenEspeciales.push(estData.instrumento_segundo);
+
+            const mapaMateriaPorNombre = {};
+            materiasUnicas.forEach(mat => { mapaMateriaPorNombre[nombreMateriaLimpio(mat)] = mat; });
+
+            const filasBasicas = ordenBasicas.filter(n => mapaMateriaPorNombre[n]).map(n => mapaMateriaPorNombre[n]);
+            const filasEspeciales = ordenEspeciales.filter(n => mapaMateriaPorNombre[n]).map(n => mapaMateriaPorNombre[n]);
 
             const coloresElegantes = [
                 { border: '#2563eb', bg: '#eff6ff', textHeader: '#1e40af' },
@@ -2748,74 +3002,85 @@
                 { border: '#4f46e5', bg: '#eef2ff', textHeader: '#3730a3' }
             ];
 
-            if (materiasUnicas.length === 0) {
+            const construirFilaMateria = (mat, indexGlobal) => {
+                const notaP1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
+                const notaP2 = notas.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+
+                const valP1 = notaP1 ? notaP1.promedio : '-';
+                const valP2 = notaP2 ? notaP2.promedio : '-';
+
+                let valAnual = '-';
+                let estado = 'Pendiente';
+
+                if (notaP1 && notaP2) {
+                    valAnual = Number(((notaP1.promedio * 0.5) + (notaP2.promedio * 0.5)).toFixed(2));
+                    if (notaP1.promedio >= 65 && notaP2.promedio >= 65 && valAnual >= 65) {
+                        estado = '<span style="color: #166534; font-weight: bold;">Aprobado</span>';
+                    } else {
+                        estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado</span>';
+                    }
+                } else if (periodoSel === 'Primer Periodo' && notaP1) {
+                    valAnual = valP1;
+                    estado = valP1 >= 65 ? '<span style="color: #166534; font-weight: bold;">Aprobado (Parcial)</span>' : '<span style="color: #991b1b; font-weight: bold;">Reprobado (Parcial)</span>';
+                }
+
+                const notaMatPeriodo = periodoSel === 'Primer Periodo' ? notaP1 : notaP2;
+                const nombreMostrado = nombreParaMostrar(nombreMateriaLimpio(mat));
+
+                tablaMateriasHTML += `
+                    <tr>
+                        <td><b>${nombreMostrado}</b></td>
+                        <td>${valP1}</td>
+                        <td>${valP2}</td>
+                        <td><b>${valAnual}</b></td>
+                        <td>${estado}</td>
+                    </tr>
+                `;
+
+                const esAcademicaPura = mat.includes('Español') || mat.includes('Matemáticas') || mat.includes('Ciencias') || mat.includes('Estudios Sociales');
+                const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
+
+                if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
+                    const nombreMateriaLimpia = nombreMateriaLimpio(mat);
+                    let docenteCargo = 'No asignado';
+                    const campoDoc = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpia];
+
+                    if (campoDoc) {
+                        docenteCargo = estData[campoDoc] || 'No asignado';
+                    } else if (INSTRUMENTOS_INDIVIDUALES.includes(nombreMateriaLimpia)) {
+                        if (estData.instrumento_principal === nombreMateriaLimpia) {
+                            docenteCargo = estData.docente_asignado || 'No asignado';
+                        } else if (estData.instrumento_segundo === nombreMateriaLimpia) {
+                            docenteCargo = estData.docente_segundo || 'No asignado';
+                        }
+                    }
+
+                    const estiloColor = coloresElegantes[indexGlobal % coloresElegantes.length];
+
+                    reflexionesDocentesHTML += `
+                        <div class="reflexion-item" style="padding: 12px 15px; border-radius: 6px; border-left: 4px solid ${estiloColor.border}; border: 1px solid ${estiloColor.border}; background-color: ${estiloColor.bg}; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px;">
+                                <span style="font-weight: bold; color: ${estiloColor.textHeader}; text-transform: uppercase;">Materia / Área: ${nombreMostrado}</span>
+                                <span style="font-style: italic; color: #475569;">Docente: <b>${docenteCargo}</b></span>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #1e293b;">${notaMatPeriodo.comentario}</p>
+                        </div>
+                    `;
+                }
+            };
+
+            if (filasBasicas.length === 0 && filasEspeciales.length === 0) {
                 tablaMateriasHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay calificaciones registradas para este estudiante.</td></tr>`;
             } else {
-                materiasUnicas.forEach((mat, index) => {
-                    const notaP1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                    const notaP2 = notas.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                    
-                    const valP1 = notaP1 ? notaP1.promedio : '-';
-                    const valP2 = notaP2 ? notaP2.promedio : '-';
-                    
-                    let valAnual = '-';
-                    let estado = 'Pendiente';
-
-                    if (notaP1 && notaP2) {
-                        valAnual = Number(((notaP1.promedio * 0.5) + (notaP2.promedio * 0.5)).toFixed(2));
-                        if (notaP1.promedio >= 65 && notaP2.promedio >= 65 && valAnual >= 65) {
-                            estado = '<span style="color: #166534; font-weight: bold;">Aprobado</span>';
-                        } else {
-                            estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado</span>';
-                        }
-                    } else if (periodoSel === 'Primer Periodo' && notaP1) {
-                        valAnual = valP1;
-                        estado = valP1 >= 65 ? '<span style="color: #166534; font-weight: bold;">Aprobado (Parcial)</span>' : '<span style="color: #991b1b; font-weight: bold;">Reprobado (Parcial)</span>';
-                    }
-
-                    const notaMatPeriodo = periodoSel === 'Primer Periodo' ? notaP1 : notaP2;
-
-                    tablaMateriasHTML += `
-                        <tr>
-                            <td><b>${mat}</b></td>
-                            <td>${valP1}</td>
-                            <td>${valP2}</td>
-                            <td><b>${valAnual}</b></td>
-                            <td>${estado}</td>
-                        </tr>
-                    `;
-
-                    const esAcademicaPura = mat.includes('Español') || mat.includes('Matemáticas') || mat.includes('Ciencias') || mat.includes('Estudios Sociales');
-                    const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
-                    
-                    if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
-                        const nombreMateriaLimpia = nombreMateriaLimpio(mat);
-                        let docenteCargo = 'No asignado';
-                        const campoDoc = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpia];
-
-                        if (campoDoc) {
-                            docenteCargo = estData[campoDoc] || 'No asignado';
-                        } else if (INSTRUMENTOS_INDIVIDUALES.includes(nombreMateriaLimpia)) {
-                            if (estData.instrumento_principal === nombreMateriaLimpia) {
-                                docenteCargo = estData.docente_asignado || 'No asignado';
-                            } else if (estData.instrumento_segundo === nombreMateriaLimpia) {
-                                docenteCargo = estData.docente_segundo || 'No asignado';
-                            }
-                        }
-
-                        const estiloColor = coloresElegantes[index % coloresElegantes.length];
-
-                        reflexionesDocentesHTML += `
-                            <div class="reflexion-item" style="padding: 12px 15px; border-radius: 6px; border-left: 4px solid ${estiloColor.border}; border: 1px solid ${estiloColor.border}; background-color: ${estiloColor.bg}; margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px;">
-                                    <span style="font-weight: bold; color: ${estiloColor.textHeader}; text-transform: uppercase;">Materia / Área: ${mat}</span>
-                                    <span style="font-style: italic; color: #475569;">Docente: <b>${docenteCargo}</b></span>
-                                </div>
-                                <p style="margin: 0; font-size: 13px; color: #1e293b;">${notaMatPeriodo.comentario}</p>
-                            </div>
-                        `;
-                    }
-                });
+                let indexGlobal = 0;
+                if (filasBasicas.length > 0) {
+                    tablaMateriasHTML += `<tr><td colspan="5" style="background: #e0f2fe; color: #0c4a6e; font-weight: bold; text-transform: uppercase; text-align: center; padding: 6px;">Materias Básicas</td></tr>`;
+                    filasBasicas.forEach(mat => { construirFilaMateria(mat, indexGlobal); indexGlobal++; });
+                }
+                if (filasEspeciales.length > 0) {
+                    tablaMateriasHTML += `<tr><td colspan="5" style="background: #e0f2fe; color: #0c4a6e; font-weight: bold; text-transform: uppercase; text-align: center; padding: 6px;">Materias Especiales</td></tr>`;
+                    filasEspeciales.forEach(mat => { construirFilaMateria(mat, indexGlobal); indexGlobal++; });
+                }
             }
 
             if (!reflexionesDocentesHTML) {
@@ -2823,8 +3088,11 @@
             }
 
             const tituloInformeHogar = periodoSel === 'Primer Periodo' 
-                ? 'INFORME OFICIAL AL HOGAR - PRIMER PERIODO' 
-                : 'INFORME OFICIAL AL HOGAR - SEGUNDO PERIODO Y ANUAL';
+                ? 'Primer Periodo' 
+                : 'Segundo Periodo y Anual';
+
+            const esPrimerCiclo = ['Primero', 'Segundo', 'Tercero'].includes(estData.nivel);
+            const imagenFirma = esPrimerCiclo ? 'informe%20firma%20jessica.jpeg' : 'informe%20firma%20vero.jpeg';
 
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
@@ -2842,10 +3110,10 @@
                             <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe">
                         </div>
 
-                        <div style="text-align: center; margin-bottom: 4px;">
-                            <p style="margin: 0; font-size: 18px; color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reporte de Calificaciones</p>
-                            <p style="margin: 2px 0 0 0; font-size: 9px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><b style="color: var(--accent);">Año Lectivo ${anioLectivoActivo}</b> • Dirección Regional de Heredia - Circuito 04 - Centro Educativo Shkénuk</p>
-                            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase;">${tituloInformeHogar}</p>
+                        <div style="text-align: center; margin-bottom: 6px;">
+                            <p style="margin: 0; font-size: 15px; color: #000000; font-weight: bold; text-transform: uppercase;">Reporte de Calificaciones ${anioLectivoActivo}</p>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; text-transform: uppercase;">Dirección Regional de Heredia - Circuito Escolar 04</p>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; text-transform: uppercase;">Centro Educativo Shkénuk</p>
                         </div>
 
                         <div style="margin-bottom: 8px; font-size: 12px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -2853,7 +3121,7 @@
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Rendimiento Académico y Artístico Consolidado</h4>
+                            <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Rendimiento Académico y Artístico Consolidado — ${tituloInformeHogar}</h4>
                             <table class="data-table">
                                 <thead>
                                     <tr>
@@ -2870,17 +3138,8 @@
                             </table>
                         </div>
 
-                        <div style="display: flex; justify-content: space-around; margin-top: 25px; text-align: center; page-break-inside: avoid; break-inside: avoid;">
-                            <div style="width: 40%;">
-                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
-                                <p style="margin: 0; font-size: 12px; font-weight: bold;">Flor María Jiménez</p>
-                                <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Directora de la Institución</p>
-                            </div>
-                            <div style="width: 40%;">
-                                <div style="border-bottom: 1px solid var(--primary); margin-bottom: 5px; height: 30px;"></div>
-                                <p style="margin: 0; font-size: 12px; font-weight: bold;"><span>${docenteSeleccionado}</span></p>
-                                <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Docente de Nivel</p>
-                            </div>
+                        <div style="text-align: center; margin-top: 20px; page-break-inside: avoid; break-inside: avoid;">
+                            <img src="${imagenFirma}" alt="Firma Autorizada" style="max-width: 220px; height: auto; display: inline-block;">
                         </div>
 
                         <div class="cita-montessori cita-pie-pagina">
