@@ -71,7 +71,9 @@
         table.data-table th { background-color: var(--primary); color: white; }
         table.data-table tr:nth-child(even) { background-color: #f8fafc; }
 
-        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 100%; max-width: 190mm; box-sizing: border-box; margin-left: auto; margin-right: auto; font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'URW Gothic', 'Segoe UI', sans-serif; }
+        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 100%; max-width: 190mm; box-sizing: border-box; margin-left: auto; margin-right: auto; font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'URW Gothic', 'Segoe UI', sans-serif; font-size: 11px; line-height: 1.35; }
+        .seccion-pagina-1 { display: flex; flex-direction: column; }
+        .cita-pie-pagina { margin-top: auto; }
         .encabezado-informe-full { width: calc(100% + 50px); margin: -25px -25px 2px -25px; text-align: center; }
         .encabezado-informe-full img { width: 100%; height: auto; display: block; object-fit: contain; }
         .cita-montessori { margin-top: 30px; padding: 18px 22px; background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; page-break-inside: avoid; break-inside: avoid; }
@@ -94,6 +96,7 @@
             #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion * { visibility: visible; }
             #preview-matricula-impresion, #plantilla-informe-oficial, #plantilla-lista-nivel-impresion { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
             .encabezado-informe-full { width: calc(100% + 20mm); margin: -10mm -10mm 2px -10mm; }
+            .seccion-pagina-1 { min-height: 250mm; }
             .salto-pagina-forzado { page-break-before: always; break-before: page; }
             .report-preview table.data-table { display: table; width: 100%; }
             .report-preview table.data-table thead { display: table-header-group; }
@@ -146,8 +149,7 @@
             <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio y Carga</button>
-            <button class="tab-btn" data-tab="contactos" data-role-req="admin" onclick="cambiarPestana('contactos', event)">Lista de Contactos</button>
-            <button class="tab-btn" data-tab="listasnivel" data-role-req="admin" onclick="cambiarPestana('listasnivel', event)">Listas por Nivel</button>
+            <button class="tab-btn" data-tab="contactos" data-role-req="admin" onclick="cambiarPestana('contactos', event)">Contactos y Listas por Nivel</button>
         </nav>
 
         <main>
@@ -749,9 +751,9 @@
 
             <!-- 8. LISTA DE CONTACTOS -->
             <section id="contactos" class="tab-content">
-                <h2>Directorio y Contactos de Encargados por Nivel</h2>
+                <h2>Directorio de Contactos y Listas por Nivel</h2>
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Seleccionar Nivel Educativo</legend>
+                    <legend style="color: var(--accent);">Contactos de Encargados por Nivel</legend>
                     <div class="form-grid" style="max-width: 400px;">
                         <div class="form-group">
                             <label>Nivel</label>
@@ -768,16 +770,12 @@
                     </div>
                 </fieldset>
 
-                <div id="contenedor-lista-contactos" style="margin-top: 20px;">
+                <div id="contenedor-lista-contactos" style="margin-top: 20px; margin-bottom: 30px;">
                     <p style="color: #64748b;">Seleccione un nivel educativo para desplegar la lista de estudiantes y los datos de sus encargados.</p>
                 </div>
-            </section>
 
-            <!-- 9. LISTAS POR NIVEL Y CICLO -->
-            <section id="listasnivel" class="tab-content">
-                <h2>Generador de Listas Oficiales por Nivel o Ciclo</h2>
                 <fieldset style="background: #f8fafc; border-color: var(--accent);">
-                    <legend style="color: var(--accent);">Selección de Listas (Individual o por Ciclo)</legend>
+                    <legend style="color: var(--accent);">Generador de Listas Oficiales (Individual o por Ciclo)</legend>
                     <div class="form-grid" style="max-width: 500px;">
                         <div class="form-group">
                             <label>Opción de Listado</label>
@@ -857,10 +855,13 @@
             }
 
             const estilosWord = `
-                body { font-family: 'Century Gothic', 'CenturyGothic', 'Segoe UI', sans-serif; font-size: 11pt; color: #1e293b; }
+                @page { size: 21cm 29.7cm; margin: 1.5cm; }
+                :root { --primary: #1e293b; --secondary: #0f172a; --accent: #2563eb; --accent-hover: #1d4ed8; --bg-light: #f8fafc; --border: #cbd5e1; --text: #334155; }
+                body { font-family: 'Century Gothic', 'CenturyGothic', 'Segoe UI', sans-serif; font-size: 11pt; line-height: 1.35; color: #1e293b; width: 18cm; margin: 0 auto; }
                 table { border-collapse: collapse; width: 100%; }
                 table, th, td { border: 1px solid #94a3b8; }
                 th, td { padding: 6px; text-align: center; }
+                th { background-color: #1e293b; color: #ffffff; }
                 img { max-width: 100%; }
                 h3, h4 { color: #1e293b; }
             `;
@@ -1032,30 +1033,42 @@
                 }
             };
 
+            const mostrarSoloCategoria = (categoria) => {
+                for (let opt of selectMateria.options) {
+                    if (!opt.value) continue;
+                    const esAcademica = opt.value.startsWith('[Académica]');
+                    const permitir = categoria === 'academico' ? esAcademica : !esAcademica;
+                    opt.disabled = !permitir;
+                    opt.style.display = permitir ? '' : 'none';
+                }
+            };
+
             if (usuarioRolActual === 'admin') {
                 mostrarTodo();
                 return;
             }
 
-            // Consulta la carga académica real (misma fuente que "Directorio y Carga").
-            // Si por alguna razón no se encuentra ninguna coincidencia (nombre distinto,
-            // docente no vinculado, etc.), se prioriza que el docente SÍ pueda evaluar:
-            // se muestran todas las materias en vez de bloquearlo por completo.
+            // 1) Restricción obligatoria por categoría: un docente académico
+            //    solo ve materias académicas, uno artístico solo ve materias
+            //    artísticas. Esto SIEMPRE se aplica, sin excepción.
+            const categoria = (docenteTipoActual || '').toLowerCase().includes('acad') ? 'academico' : 'artistico';
+            mostrarSoloCategoria(categoria);
+
+            // 2) Dentro de su categoría, si la carga real (misma fuente que
+            //    "Directorio y Carga") coincide por nombre exacto, se afina
+            //    aún más para mostrar solo sus materias asignadas. Si no hay
+            //    coincidencia, se deja ver toda su categoría (para que
+            //    siempre pueda evaluar, aunque el nombre no calce exacto).
             const materiasReales = docenteNombreGlobal ? await obtenerCargaRealDocente(docenteNombreGlobal) : new Set();
 
-            if (materiasReales.size === 0) {
-                mostrarTodo();
-                cargarGrupoParaCalificar();
-                return;
-            }
-
-            for (let opt of selectMateria.options) {
-                if (!opt.value) continue;
-                const nombreMateria = nombreMateriaLimpio(opt.value);
-                const permitirMateria = materiasReales.has(nombreMateria);
-
-                opt.disabled = !permitirMateria;
-                opt.style.display = permitirMateria ? '' : 'none';
+            if (materiasReales.size > 0) {
+                for (let opt of selectMateria.options) {
+                    if (!opt.value || opt.disabled) continue;
+                    const nombreMateria = nombreMateriaLimpio(opt.value);
+                    const permitirMateria = materiasReales.has(nombreMateria);
+                    opt.disabled = !permitirMateria;
+                    opt.style.display = permitirMateria ? '' : 'none';
+                }
             }
 
             let primeraValida = '';
@@ -2797,7 +2810,6 @@
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
-                        <button type="button" class="warning-btn" onclick="descargarInformePDF()">Guardar como PDF</button>
                         <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-informe-oficial', 'Informe_${estData.cedula}')">Guardar en Word (Editable)</button>
                         <button type="button" class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informe a Encargados</button>
                     </div>
@@ -2855,16 +2867,15 @@
                             </div>
                         </div>
 
-                        <div class="cita-montessori">
+                        <div class="cita-montessori cita-pie-pagina">
                             <p class="texto-cita">"La primera tarea de la educación es agitar la vida, pero dejarla libre para que se desarrolle"</p>
                             <p class="autor-cita">María Montessori</p>
                         </div>
                     </div>
 
                     <div class="salto-pagina-forzado" style="margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px;">
-                        <div class="report-header" style="display: flex; align-items: center; justify-content: flex-start; gap: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
-                            <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Centro Educativo Shkénuk" style="width: 90px; height: 90px; object-fit: contain; flex-shrink: 0;">
-                            <div>
+                        <div class="report-header" style="display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+                            <div style="text-align: center;">
                                 <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Registro CES Montessori</h3>
                                 <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Reflexiones Docentes • ${periodoSel}</p>
                             </div>
@@ -2877,6 +2888,10 @@
                         <div class="cita-montessori">
                             <p class="texto-cita">"No hay nadie que lo sepa todo, ni nadie que no sepa nada. Entre todos sabemos todo"</p>
                             <p class="autor-cita">Paulo Freire</p>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 25px;">
+                            <img src="ces%20mano.png" alt="Cierre CES Montessori" style="max-width: 160px; height: auto; display: inline-block;">
                         </div>
                     </div>
                 </div>
