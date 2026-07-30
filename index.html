@@ -91,12 +91,12 @@
         .logout-btn:hover { background: #dc2626; }
 
         @media print {
-            @page { margin: 10mm; }
+            @page { margin: 8mm 10mm; }
             body * { visibility: hidden; }
             #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion * { visibility: visible; }
             #preview-matricula-impresion, #plantilla-informe-oficial, #plantilla-lista-nivel-impresion { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
             .encabezado-informe-full { width: calc(100% + 20mm); margin: -10mm -10mm 2px -10mm; }
-            .seccion-pagina-1 { min-height: 250mm; }
+            .seccion-pagina-1 { min-height: 265mm; }
             .salto-pagina-forzado { page-break-before: always; break-before: page; }
             .report-preview table.data-table { display: table; width: 100%; }
             .report-preview table.data-table thead { display: table-header-group; }
@@ -143,7 +143,6 @@
         <nav id="app-nav">
             <button class="tab-btn active" data-tab="matricula" data-role-req="admin" onclick="cambiarPestana('matricula', event)">Matrícula</button>
             <button class="tab-btn" data-tab="listas" data-role-req="admin" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
-            <button class="tab-btn" data-tab="registro" data-role-req="admin" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
             <button class="tab-btn" data-tab="calificar" data-role-req="all" onclick="cambiarPestana('calificar', event)">Calificar</button>
             <button class="tab-btn" data-tab="importar" data-role-req="admin" onclick="cambiarPestana('importar', event)">Importar Notas (Excel)</button>
             <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
@@ -303,6 +302,10 @@
                                 <select id="mat-doc-percursion" class="select-docente-predefinido" data-materia="Taller de Percusión">
                                     <option value="Luis De La O Jimenez">Luis De La O Jimenez</option>
                                 </select>
+                                <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; margin-top: 6px; font-size: 12px;">
+                                    <input type="checkbox" id="mat-no-percusion" style="width: auto;" onchange="document.getElementById('mat-doc-percursion').disabled = this.checked;">
+                                    No lleva Taller de Percusión
+                                </label>
                             </div>
                             <div class="form-group">
                                 <label>Danza</label>
@@ -863,6 +866,8 @@
                 th, td { padding: 6px; text-align: center; }
                 th { background-color: #1e293b; color: #ffffff; }
                 img { max-width: 100%; }
+                .encabezado-informe-full { width: 18cm; margin: 0 0 4px 0; text-align: center; }
+                .encabezado-informe-full img { width: 18cm; height: auto; }
                 h3, h4 { color: #1e293b; }
             `;
 
@@ -1388,7 +1393,12 @@
             document.getElementById('mat-docente-acad').value = data.docente_academico || '';
             
             if (document.getElementById('mat-doc-solfeo')) document.getElementById('mat-doc-solfeo').value = data.docente_solfeo || 'Rafael Cativo Romero';
-            if (document.getElementById('mat-doc-percursion')) document.getElementById('mat-doc-percursion').value = data.docente_percursion || 'Luis De La O Jimenez';
+            if (document.getElementById('mat-doc-percursion')) {
+                const noLlevaPercusion = data.docente_percursion === 'No lleva';
+                document.getElementById('mat-no-percusion').checked = noLlevaPercusion;
+                document.getElementById('mat-doc-percursion').disabled = noLlevaPercusion;
+                document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De La O Jimenez' : (data.docente_percursion || 'Luis De La O Jimenez');
+            }
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
             if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro';
             if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises';
@@ -1445,6 +1455,7 @@
             btnSubmit.innerText = 'Guardar Matrícula Rápida';
             btnSubmit.className = 'action-btn';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
+            document.getElementById('mat-doc-percursion').disabled = false;
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
             cargarDocentesEnMatricula();
         }
@@ -1475,7 +1486,7 @@
                 nivel: document.getElementById('mat-nivel').value || 'Primero',
                 docente_academico: document.getElementById('mat-docente-acad').value || '',
                 docente_solfeo: document.getElementById('mat-doc-solfeo').value || '',
-                docente_percursion: document.getElementById('mat-doc-percursion').value || '',
+                docente_percursion: document.getElementById('mat-no-percusion').checked ? 'No lleva' : (document.getElementById('mat-doc-percursion').value || ''),
                 docente_danza: document.getElementById('mat-doc-danza').value || '',
                 docente_plasticas: document.getElementById('mat-doc-plasticas').value || '',
                 docente_ingles: document.getElementById('mat-doc-ingles').value || '',
@@ -2183,6 +2194,14 @@
                 estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico || est.instrumento_segundo === instrumentoEspecifico);
             }
 
+            // Excluye estudiantes marcados como "No lleva" esta materia (ej. Taller
+            // de Percusión), para que no aparezcan en la planilla ni se les genere
+            // nota, y así tampoco aparezcan en su Informe al Hogar.
+            const campoMateriaActual = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpio(materia)];
+            if (campoMateriaActual) {
+                estudiantes = estudiantes.filter(est => est[campoMateriaActual] !== 'No lleva');
+            }
+
             if (estudiantes.length === 0) {
                 contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
@@ -2759,26 +2778,17 @@
                     const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
                     
                     if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
-                        let docenteCargo = docenteSeleccionado;
-                        if (mat.includes('Danza')) {
-                            docenteCargo = estData.docente_danza || 'Vanesa De La O Jimenez';
-                        } else if (mat.includes('Plásticas')) {
-                            docenteCargo = estData.docente_plasticas || 'Mirta Castro';
-                        } else if (mat.includes('Edufi')) {
-                            docenteCargo = estData.docente_edufi || 'Santiago Jimenez';
-                        } else if (mat.includes('Solfeo')) {
-                            docenteCargo = estData.docente_solfeo || 'Rafael Cativo Romero';
-                        } else if (mat.includes('Percusión')) {
-                            docenteCargo = estData.docente_percursion || 'Luis De La O Jimenez';
-                        } else {
-                            const instrumentosIndividuales = ['Piano', 'Guitarra', 'Ukulele', 'Batería', 'Bajo', 'Canto'];
-                            let esInstrumento = false;
-                            instrumentosIndividuales.forEach(instr => {
-                                if (mat.includes(instr)) esInstrumento = true;
-                            });
+                        const nombreMateriaLimpia = nombreMateriaLimpio(mat);
+                        let docenteCargo = 'No asignado';
+                        const campoDoc = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpia];
 
-                            if (esInstrumento) {
-                                docenteCargo = estData.docente_asignado || 'Profesor de Instrumento';
+                        if (campoDoc) {
+                            docenteCargo = estData[campoDoc] || 'No asignado';
+                        } else if (INSTRUMENTOS_INDIVIDUALES.includes(nombreMateriaLimpia)) {
+                            if (estData.instrumento_principal === nombreMateriaLimpia) {
+                                docenteCargo = estData.docente_asignado || 'No asignado';
+                            } else if (estData.instrumento_segundo === nombreMateriaLimpia) {
+                                docenteCargo = estData.docente_segundo || 'No asignado';
                             }
                         }
 
@@ -2821,14 +2831,13 @@
                             <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe">
                         </div>
 
-                        <div style="text-align: center; margin-bottom: 20px;">
-                            <p style="margin: 0; font-size: 20px; color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reporte de Calificaciones</p>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">Año Lectivo ${anioLectivoActivo}</p>
-                            <p style="margin: 6px 0 0 0; font-size: 11px; color: #64748b;">Dirección Regional de Heredia - Circuito 04 - Centro Educativo Shkénuk</p>
-                            <p style="margin: 8px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold; text-transform: uppercase;">${tituloInformeHogar}</p>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <p style="margin: 0; font-size: 18px; color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reporte de Calificaciones</p>
+                            <p style="margin: 2px 0 0 0; font-size: 10px; color: #64748b;"><b style="color: var(--accent);">Año Lectivo ${anioLectivoActivo}</b> • Dirección Regional de Heredia - Circuito 04 - Centro Educativo Shkénuk</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase;">${tituloInformeHogar}</p>
                         </div>
 
-                        <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                        <div style="margin-bottom: 10px; font-size: 13px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <p style="margin: 3px 0;"><b>Estudiante:</b> ${estData.nombre}</p>
                                 <p style="margin: 3px 0;"><b>Cédula:</b> ${estData.cedula}</p>
@@ -2836,8 +2845,8 @@
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 25px;">
-                            <h4 style="color: var(--primary); margin-bottom: 8px;">Rendimiento Académico y Artístico Consolidado</h4>
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Rendimiento Académico y Artístico Consolidado</h4>
                             <table class="data-table">
                                 <thead>
                                     <tr>
