@@ -146,7 +146,7 @@
             <button class="tab-btn active" data-tab="matricula" data-role-req="admin" onclick="cambiarPestana('matricula', event)">Matrícula</button>
             <button class="tab-btn" data-tab="listas" data-role-req="admin" onclick="cambiarPestana('listas', event)">Listas y Promoción</button>
             <button class="tab-btn" data-tab="calificar" data-role-req="all" onclick="cambiarPestana('calificar', event)">Calificar</button>
-            <button class="tab-btn hidden-by-role" data-tab="mimatricula" onclick="cambiarPestana('mimatricula', event)">Mi Matrícula (Editar Datos)</button>
+            <button class="tab-btn hidden-by-role" data-tab="mimatricula" onclick="cambiarPestana('mimatricula', event)">Información del Estudiante</button>
             <button class="tab-btn" data-tab="importar" data-role-req="admin" onclick="cambiarPestana('importar', event)">Importar Notas (Excel)</button>
             <button class="tab-btn" data-tab="hogar" data-role-req="admin" onclick="cambiarPestana('hogar', event)">Informes al Hogar</button>
             <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
@@ -579,7 +579,7 @@
 
             <!-- 4.C MI MATRÍCULA (SOLO DOCENTES ACADÉMICOS) -->
             <section id="mimatricula" class="tab-content">
-                <h2>Mi Matrícula — Edición de Datos de Contacto</h2>
+                <h2>Información del Estudiante</h2>
                 <p style="font-size: 12px; color: #64748b; margin-top: 0;">
                     Como docente académico, puede actualizar la <b>Ubicación/Dirección</b>, los datos de los <b>Encargados</b> y las <b>Observaciones</b> de los estudiantes de su(s) nivel(es) asignado(s). El resto de la información (nombre, cédula, nivel, docentes asignados, instrumentos, foto, etc.) está restringido por seguridad y solo lo puede modificar un administrador.
                 </p>
@@ -1020,8 +1020,16 @@
         }
 
         function cambiarPestana(idSeccion, evt) {
-            if (usuarioRolActual !== 'admin' && idSeccion !== 'calificar') {
-                idSeccion = 'calificar';
+            if (usuarioRolActual !== 'admin') {
+                // Un docente estándar solo puede entrar a "Calificar" siempre.
+                // A "mimatricula" (Editar Matrícula limitada) solo puede
+                // entrar si además es docente académico (mismo criterio que
+                // se usa para mostrar/ocultar el botón en verificarRolUsuario).
+                const esAcademico = docenteTipoActual === 'academico';
+                const tabsPermitidos = esAcademico ? ['calificar', 'mimatricula'] : ['calificar'];
+                if (!tabsPermitidos.includes(idSeccion)) {
+                    idSeccion = 'calificar';
+                }
             }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -3139,7 +3147,7 @@
                         </div>
 
                         <div style="text-align: center; margin-top: 20px; page-break-inside: avoid; break-inside: avoid;">
-                            <img src="${imagenFirma}" alt="Firma Autorizada" style="max-width: 220px; height: auto; display: inline-block;">
+                            <img src="${imagenFirma}" alt="Firma Autorizada" style="max-width: 253px; height: auto; display: inline-block;">
                         </div>
 
                         <div class="cita-montessori cita-pie-pagina">
