@@ -154,6 +154,7 @@
             <button class="tab-btn" data-tab="configuracion" data-role-req="admin" onclick="cambiarPestana('configuracion', event)">Configuración</button>
             <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio y Carga</button>
             <button class="tab-btn" data-tab="contactos" data-role-req="admin" onclick="cambiarPestana('contactos', event)">Contactos y Listas por Nivel</button>
+            <button class="tab-btn" data-tab="financiero" data-role-req="admin" onclick="cambiarPestana('financiero', event)">Control Financiero</button>
         </nav>
 
         <main>
@@ -888,6 +889,82 @@
                 </div>
                 <div id="listanivel-msg" class="notification" style="width: 100%; text-align: right;"></div>
             </section>
+
+            <!-- 9. CONTROL FINANCIERO -->
+            <section id="financiero" class="tab-content">
+                <h2>Control Financiero</h2>
+
+                <div class="sub-panel-tabs" style="margin-top: 15px;">
+                    <button class="sub-tab-btn active" onclick="cambiarSubPestanaFinanciero('matmat', event)">Matrícula y Materiales</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaFinanciero('mensual', event)">Mensualidades</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaFinanciero('stats', event)">Estadísticas</button>
+                </div>
+
+                <!-- SUB-PANEL 1: MATRÍCULA Y MATERIALES (pago único / semestral) -->
+                <div id="sub-financiero-matmat" class="sub-doc-panel">
+                    <p style="color: #64748b; font-size: 13px;">Marque cada casilla con un clic para registrar el pago. La <b>Matrícula</b> es anual y los <b>Materiales</b> se marcan dos veces al año (I y II semestre). No requieren seleccionar mes.</p>
+                    <div class="form-grid" style="max-width: 300px; margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>Filtrar por Nivel</label>
+                            <select id="fin-matmat-nivel-sel" onchange="cargarTablaMatriculaMateriales()">
+                                <option value="">-- Todos los niveles --</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="contenedor-fin-matmat" style="overflow-x: auto;">
+                        <p>Cargando estudiantes...</p>
+                    </div>
+                </div>
+
+                <!-- SUB-PANEL 2: MENSUALIDADES (control mes a mes) -->
+                <div id="sub-financiero-mensual" class="sub-doc-panel" style="display: none;">
+                    <p style="color: #64748b; font-size: 13px;">Cuadrícula mensual: un clic por casilla marca la mensualidad como pagada para ese estudiante en ese mes.</p>
+                    <div class="form-grid" style="max-width: 500px; margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>Año Lectivo</label>
+                            <select id="fin-mensual-anio-sel" onchange="cargarGrillaMensualidades()"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Filtrar por Nivel</label>
+                            <select id="fin-mensual-nivel-sel" onchange="cargarGrillaMensualidades()">
+                                <option value="">-- Todos los niveles --</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="contenedor-fin-mensual" style="overflow-x: auto;">
+                        <p>Cargando estudiantes...</p>
+                    </div>
+                </div>
+
+                <!-- SUB-PANEL 3: ESTADÍSTICAS -->
+                <div id="sub-financiero-stats" class="sub-doc-panel" style="display: none;">
+                    <div class="form-grid" style="max-width: 500px; margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>Año Lectivo</label>
+                            <select id="fin-stats-anio-sel" onchange="cargarEstadisticasFinancieras()"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mes a Revisar (Mensualidad)</label>
+                            <select id="fin-stats-mes-sel" onchange="cargarEstadisticasFinancieras()"></select>
+                        </div>
+                    </div>
+                    <div id="contenedor-fin-stats">
+                        <p>Cargando estadísticas...</p>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -1092,6 +1169,22 @@
                 aplicarRestriccionNivelDocente('mimat-nivel-sel');
                 cargarMiMatriculaDocente();
             }
+            if (idSeccion === 'financiero') {
+                inicializarSelectAnios('fin-mensual-anio-sel', anioLectivoActivo);
+                inicializarSelectAnios('fin-stats-anio-sel', anioLectivoActivo);
+                inicializarSelectMesesFinanciero();
+                cargarTablaMatriculaMateriales();
+            }
+        }
+
+        function cambiarSubPestanaFinanciero(subId, evt) {
+            document.querySelectorAll('#financiero .sub-doc-panel').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#financiero .sub-tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`sub-financiero-${subId}`).style.display = 'block';
+            if (evt) evt.currentTarget.classList.add('active');
+            if (subId === 'matmat') cargarTablaMatriculaMateriales();
+            if (subId === 'mensual') cargarGrillaMensualidades();
+            if (subId === 'stats') cargarEstadisticasFinancieras();
         }
 
         function cambiarSubPestanaDocente(subSubId, evt) {
@@ -3726,6 +3819,226 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // =====================================================================
+        // CONTROL FINANCIERO
+        // - Matrícula (matricula_pagada) y Materiales (materiales_sem1_pagado /
+        //   materiales_sem2_pagado) viven como columnas directas en
+        //   "estudiantes": son eventos anuales/semestrales, un solo clic, sin
+        //   necesidad de elegir periodo.
+        // - Mensualidad de permanencia vive en la tabla "control_financiero"
+        //   (una fila por estudiante/mes), igual patrón que ya se usa con
+        //   "notas": upsert con onConflict 'cedula_estudiante,periodo_mes'.
+        // =====================================================================
+        const MESES_FINANCIERO = [
+            { num: '01', nombre: 'Enero' }, { num: '02', nombre: 'Febrero' }, { num: '03', nombre: 'Marzo' },
+            { num: '04', nombre: 'Abril' }, { num: '05', nombre: 'Mayo' }, { num: '06', nombre: 'Junio' },
+            { num: '07', nombre: 'Julio' }, { num: '08', nombre: 'Agosto' }, { num: '09', nombre: 'Septiembre' },
+            { num: '10', nombre: 'Octubre' }, { num: '11', nombre: 'Noviembre' }, { num: '12', nombre: 'Diciembre' }
+        ];
+
+        function inicializarSelectMesesFinanciero() {
+            const select = document.getElementById('fin-stats-mes-sel');
+            if (!select) return;
+            select.innerHTML = '';
+            const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
+            MESES_FINANCIERO.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.num;
+                opt.textContent = m.nombre;
+                if (m.num === mesActual) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        // ---------- SUB-PANEL 1: MATRÍCULA Y MATERIALES ----------
+        async function cargarTablaMatriculaMateriales() {
+            const contenedor = document.getElementById('contenedor-fin-matmat');
+            const nivel = document.getElementById('fin-matmat-nivel-sel').value;
+            contenedor.innerHTML = '<p>Cargando estudiantes...</p>';
+
+            let query = supabaseClient.from('estudiantes').select('cedula, nombre, nivel, matricula_pagada, materiales_sem1_pagado, materiales_sem2_pagado').eq('activo', true);
+            if (nivel) query = query.eq('nivel', nivel);
+            const { data, error } = await query.order('nivel').order('nombre');
+
+            if (error) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
+                return;
+            }
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">No hay estudiantes matriculados.</p>';
+                return;
+            }
+
+            let filas = '';
+            data.forEach(est => {
+                filas += `
+                    <tr>
+                        <td style="text-align: left;"><b>${est.nombre || ''}</b></td>
+                        <td>${est.nivel || ''}</td>
+                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.matricula_pagada ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${est.cedula}', 'matricula_pagada')"></td>
+                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.materiales_sem1_pagado ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${est.cedula}', 'materiales_sem1_pagado')"></td>
+                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.materiales_sem2_pagado ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${est.cedula}', 'materiales_sem2_pagado')"></td>
+                    </tr>
+                `;
+            });
+
+            contenedor.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Estudiante</th>
+                            <th>Nivel</th>
+                            <th>Matrícula</th>
+                            <th>Materiales I Sem.</th>
+                            <th>Materiales II Sem.</th>
+                        </tr>
+                    </thead>
+                    <tbody>${filas}</tbody>
+                </table>
+            `;
+        }
+
+        async function guardarEstadoPagoAnual(checkbox, cedula, campo) {
+            checkbox.disabled = true;
+            const { error } = await supabaseClient.from('estudiantes').update({ [campo]: checkbox.checked }).eq('cedula', cedula);
+            checkbox.disabled = false;
+            if (error) {
+                checkbox.checked = !checkbox.checked;
+                alert('Error al guardar: ' + error.message);
+            }
+        }
+
+        // ---------- SUB-PANEL 2: MENSUALIDADES (cuadrícula mes a mes) ----------
+        async function cargarGrillaMensualidades() {
+            const contenedor = document.getElementById('contenedor-fin-mensual');
+            const nivel = document.getElementById('fin-mensual-nivel-sel').value;
+            const anio = document.getElementById('fin-mensual-anio-sel').value || anioLectivoActivo;
+            contenedor.innerHTML = '<p>Cargando estudiantes...</p>';
+
+            let queryEst = supabaseClient.from('estudiantes').select('cedula, nombre, nivel').eq('activo', true);
+            if (nivel) queryEst = queryEst.eq('nivel', nivel);
+            const { data: estudiantes, error: errEst } = await queryEst.order('nivel').order('nombre');
+
+            if (errEst) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + errEst.message + '</p>';
+                return;
+            }
+            if (!estudiantes || estudiantes.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">No hay estudiantes matriculados.</p>';
+                return;
+            }
+
+            const { data: pagos, error: errPagos } = await supabaseClient.from('control_financiero').select('cedula_estudiante, periodo_mes, mensualidad_pagada').eq('anio_lectivo', parseInt(anio, 10));
+
+            if (errPagos) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar mensualidades: ' + errPagos.message + '</p>';
+                return;
+            }
+
+            let filas = '';
+            estudiantes.forEach(est => {
+                filas += `<tr><td style="text-align: left;"><b>${est.nombre || ''}</b></td><td>${est.nivel || ''}</td>`;
+                MESES_FINANCIERO.forEach(m => {
+                    const periodoMes = `${anio}-${m.num}`;
+                    const registro = pagos ? pagos.find(p => p.cedula_estudiante === est.cedula && p.periodo_mes === periodoMes) : null;
+                    const pagada = registro ? registro.mensualidad_pagada : false;
+                    filas += `<td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${pagada ? 'checked' : ''} onchange="guardarMensualidad(this, '${est.cedula}', '${periodoMes}', ${anio})"></td>`;
+                });
+                filas += `</tr>`;
+            });
+
+            const encabezadoMeses = MESES_FINANCIERO.map(m => `<th>${m.nombre.substring(0, 3)}</th>`).join('');
+
+            contenedor.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Estudiante</th>
+                            <th>Nivel</th>
+                            ${encabezadoMeses}
+                        </tr>
+                    </thead>
+                    <tbody>${filas}</tbody>
+                </table>
+            `;
+        }
+
+        async function guardarMensualidad(checkbox, cedula, periodoMes, anio) {
+            checkbox.disabled = true;
+            const datos = {
+                cedula_estudiante: String(cedula),
+                periodo_mes: String(periodoMes),
+                anio_lectivo: parseInt(anio, 10),
+                mensualidad_pagada: checkbox.checked
+            };
+            const { error } = await supabaseClient.from('control_financiero').upsert([datos], { onConflict: 'cedula_estudiante,periodo_mes' });
+            checkbox.disabled = false;
+            if (error) {
+                checkbox.checked = !checkbox.checked;
+                alert('Error al guardar: ' + error.message);
+            }
+        }
+
+        // ---------- SUB-PANEL 3: ESTADÍSTICAS ----------
+        async function cargarEstadisticasFinancieras() {
+            const contenedor = document.getElementById('contenedor-fin-stats');
+            const anio = document.getElementById('fin-stats-anio-sel').value || anioLectivoActivo;
+            const mes = document.getElementById('fin-stats-mes-sel').value || String(new Date().getMonth() + 1).padStart(2, '0');
+            const periodoMes = `${anio}-${mes}`;
+            contenedor.innerHTML = '<p>Calculando estadísticas...</p>';
+
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('cedula, nombre, nivel, matricula_pagada, materiales_sem1_pagado, materiales_sem2_pagado').eq('activo', true);
+
+            if (errEst) {
+                contenedor.innerHTML = '<p style="color: red;">Error: ' + errEst.message + '</p>';
+                return;
+            }
+            if (!estudiantes || estudiantes.length === 0) {
+                contenedor.innerHTML = '<p style="color: #64748b;">No hay estudiantes activos.</p>';
+                return;
+            }
+
+            const { data: pagosMes } = await supabaseClient.from('control_financiero').select('cedula_estudiante, mensualidad_pagada').eq('periodo_mes', periodoMes).eq('anio_lectivo', parseInt(anio, 10));
+
+            const total = estudiantes.length;
+            const matriculaAlDia = estudiantes.filter(e => e.matricula_pagada).length;
+            const sem1AlDia = estudiantes.filter(e => e.materiales_sem1_pagado).length;
+            const sem2AlDia = estudiantes.filter(e => e.materiales_sem2_pagado).length;
+
+            const cedulasPagadasMes = new Set((pagosMes || []).filter(p => p.mensualidad_pagada).map(p => p.cedula_estudiante));
+            const mensualidadAlDia = cedulasPagadasMes.size;
+            const morosos = estudiantes.filter(e => !cedulasPagadasMes.has(e.cedula));
+
+            const pct = (n) => total > 0 ? Math.round((n / total) * 100) : 0;
+            const nombreMes = (MESES_FINANCIERO.find(m => m.num === mes) || {}).nombre || mes;
+
+            const tarjeta = (titulo, n, color) => `
+                <div style="background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 18px; text-align: center; min-width: 160px; flex: 1;">
+                    <div style="font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 6px;">${titulo}</div>
+                    <div style="font-size: 26px; font-weight: bold; color: ${color};">${pct(n)}%</div>
+                    <div style="font-size: 11px; color: #94a3b8;">${n} de ${total} estudiantes</div>
+                </div>
+            `;
+
+            const filasMorosos = morosos.length > 0
+                ? morosos.map(e => `<tr><td style="text-align: left;">${e.nombre || ''}</td><td>${e.nivel || ''}</td></tr>`).join('')
+                : `<tr><td colspan="2" style="color: #166534;">¡Todos al día este mes!</td></tr>`;
+
+            contenedor.innerHTML = `
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+                    ${tarjeta('Matrícula Pagada', matriculaAlDia, '#166534')}
+                    ${tarjeta('Materiales I Sem.', sem1AlDia, '#2563eb')}
+                    ${tarjeta('Materiales II Sem.', sem2AlDia, '#2563eb')}
+                    ${tarjeta(`Mensualidad al Día (${nombreMes})`, mensualidadAlDia, '#d97706')}
+                </div>
+                <h3 style="color: var(--primary);">Estudiantes Morosos en Mensualidad — ${nombreMes} ${anio} (${morosos.length})</h3>
+                <table class="data-table">
+                    <thead><tr><th style="text-align: left;">Estudiante</th><th>Nivel</th></tr></thead>
+                    <tbody>${filasMorosos}</tbody>
+                </table>
+            `;
         }
     </script>
 </body>
