@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         :root {
             --primary: #1e293b;
@@ -138,6 +139,7 @@
             <div>
                 <span id="user-email-display" style="margin-right: 15px; font-size: 14px;"></span>
                 <span id="user-role-badge" style="margin-right: 15px; padding: 3px 8px; border-radius: 4px; font-size: 11px; background: #e0f2fe; color: #0369a1; font-weight: bold;"></span>
+                <button id="btn-alternar-vista" class="warning-btn" style="display: none; margin-right: 15px; padding: 5px 10px; font-size: 12px;" onclick="alternarVistaDocente()"></button>
                 <button class="logout-btn" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
         </header>
@@ -894,11 +896,27 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // ============================================================
+        // ENVÍO REAL DE INFORMES POR CORREO (EmailJS conectado a
+        // slmontessori@gmail.com). Sustituya estos 3 valores por los
+        // que le entregue su cuenta de EmailJS — vea las instrucciones
+        // que le indiqué aparte. Mientras estén así, el sistema queda
+        // en modo prueba (mensaje simulado, no se envía nada real).
+        // ============================================================
+        const EMAILJS_PUBLIC_KEY  = 'PEGUE_AQUI_SU_PUBLIC_KEY';
+        const EMAILJS_SERVICE_ID  = 'PEGUE_AQUI_SU_SERVICE_ID';
+        const EMAILJS_TEMPLATE_ID = 'PEGUE_AQUI_SU_TEMPLATE_ID';
+        const EMAILJS_MODO_PRUEBA = EMAILJS_PUBLIC_KEY.startsWith('PEGUE_AQUI');
+        if (window.emailjs && !EMAILJS_MODO_PRUEBA) {
+            emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+        }
+
         let usuarioRolActual = 'docente';
         let docenteTipoActual = 'artistico'; 
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
         let docenteCicloGlobal = 'Ambos Ciclos';
+        let modoVistaDocente = false; // true = un admin está viendo el sistema "como docente" (ver mi carga académica)
         let anioLectivoActivo = 2026;
 
         // =====================================================================
@@ -1019,9 +1037,19 @@
             inicializarSelectAnios('filtro-anio-lectivo', anioLectivoActivo);
         }
 
+        // Un usuario es "admin activo" si su rol real es admin Y no está
+        // usando el interruptor "Ver como Docente". Esto es solo para la
+        // VISTA/navegación; las validaciones de guardado en Supabase siguen
+        // revisando usuarioRolActual real, ya que quien alterna la vista
+        // sigue siendo administrador de verdad.
+        function esAdminActivo() {
+            return usuarioRolActual === 'admin' && !modoVistaDocente;
+        }
+
         function cambiarPestana(idSeccion, evt) {
-            if (usuarioRolActual !== 'admin') {
-                // Un docente estándar solo puede entrar a "Calificar" siempre.
+            if (!esAdminActivo()) {
+                // Un docente estándar (o un admin en modo "Ver como Docente")
+                // solo puede entrar a "Calificar" siempre.
                 // A "mimatricula" (Editar Matrícula limitada) solo puede
                 // entrar si además es docente académico (mismo criterio que
                 // se usa para mostrar/ocultar el botón en verificarRolUsuario).
@@ -1076,6 +1104,8 @@
         }
 
         async function verificarRolUsuario(email) {
+            modoVistaDocente = false; // cada login inicia siempre en la vista real de su rol
+
             const { data: roleData } = await supabaseClient
                 .from('user_roles')
                 .select('role')
@@ -1106,12 +1136,31 @@
                 docenteCicloGlobal = 'Ambos Ciclos';
             }
 
-            document.getElementById('user-role-badge').innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
-            
+            aplicarVisibilidadPorRol();
+
+            if (usuarioRolActual !== 'admin') {
+                cambiarPestana('calificar', null);
+            }
+        }
+
+        // Aplica la visibilidad de pestañas/botones según el rol real y el
+        // interruptor "Ver como Docente". La llama verificarRolUsuario al
+        // iniciar sesión, y alternarVistaDocente cada vez que se cambia
+        // de vista.
+        function aplicarVisibilidadPorRol() {
+            const admin = esAdminActivo();
+
+            const badge = document.getElementById('user-role-badge');
+            if (usuarioRolActual === 'admin' && modoVistaDocente) {
+                badge.innerText = `Rol: ADMIN — Viendo como Docente${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
+            } else {
+                badge.innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
+            }
+
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
             botonesNav.forEach(btn => {
                 const rolRequerido = btn.getAttribute('data-role-req');
-                if (usuarioRolActual !== 'admin' && rolRequerido === 'admin') {
+                if (!admin && rolRequerido === 'admin') {
                     btn.classList.add('hidden-by-role');
                 } else {
                     btn.classList.remove('hidden-by-role');
@@ -1121,26 +1170,44 @@
             // Un docente académico asignado a un solo ciclo (Primer o Segundo)
             // solo puede ver/editar su propio ciclo en "Mi Matrícula". Si es
             // "Ambos Ciclos" (ej. Inglés, que es el mismo docente en todos los
-            // niveles) no se le oculta el botón.
+            // niveles) no se le oculta el botón. Un admin en su vista normal
+            // (sin alternar) no ve este botón porque usa "Matrícula" completa.
             const botonMiMatricula = document.querySelector('[data-tab="mimatricula"]');
             if (botonMiMatricula) {
-                if (usuarioRolActual === 'admin' || docenteTipoActual !== 'academico') {
+                if (admin || docenteTipoActual !== 'academico') {
                     botonMiMatricula.classList.add('hidden-by-role');
                 } else {
                     botonMiMatricula.classList.remove('hidden-by-role');
                 }
             }
 
-            if (usuarioRolActual !== 'admin') {
-                cambiarPestana('calificar', null);
+            // El interruptor solo aparece para un administrador real que
+            // ADEMÁS tiene su propio registro de docente académico (correo
+            // coincide en la tabla "docentes"). Así puede alternar entre
+            // gestionar todo el sistema y ver/editar únicamente su propia
+            // carga académica, sin cerrar sesión.
+            const btnAlternar = document.getElementById('btn-alternar-vista');
+            if (btnAlternar) {
+                if (usuarioRolActual === 'admin' && docenteTipoActual === 'academico') {
+                    btnAlternar.style.display = 'inline-block';
+                    btnAlternar.innerText = modoVistaDocente ? '⇄ Volver a Administrador' : '⇄ Ver como Docente';
+                } else {
+                    btnAlternar.style.display = 'none';
+                }
             }
+        }
+
+        function alternarVistaDocente() {
+            modoVistaDocente = !modoVistaDocente;
+            aplicarVisibilidadPorRol();
+            cambiarPestana(modoVistaDocente ? 'calificar' : 'matricula', null);
         }
 
         function aplicarRestriccionNivelDocente(idSelect) {
             const selectNivel = document.getElementById(idSelect || 'cal-nivel');
             if (!selectNivel) return;
 
-            if (usuarioRolActual === 'admin' || docenteCicloGlobal === 'Ambos Ciclos') {
+            if (esAdminActivo() || docenteCicloGlobal === 'Ambos Ciclos') {
                 for (let opt of selectNivel.options) {
                     opt.disabled = false;
                     opt.style.display = '';
@@ -1185,7 +1252,7 @@
                 }
             };
 
-            if (usuarioRolActual === 'admin') {
+            if (esAdminActivo()) {
                 mostrarTodo();
                 return;
             }
@@ -3236,13 +3303,42 @@
                 return;
             }
 
+            if (EMAILJS_MODO_PRUEBA) {
+                msg.className = 'notification error';
+                msg.innerText = 'MODO PRUEBA: el envío real de correos todavía no está configurado (faltan las claves de EmailJS conectadas a slmontessori@gmail.com). Ningún correo fue enviado.';
+                msg.style.display = 'block';
+                return;
+            }
+
+            const tablaNotasEl = document.querySelector('#plantilla-informe-oficial .data-table');
+            const reflexionesEl = document.querySelector('#plantilla-informe-oficial .reflexiones-container');
+            const tablaNotasHTML = tablaNotasEl ? tablaNotasEl.outerHTML : '';
+            const reflexionesHTML = reflexionesEl ? reflexionesEl.outerHTML : '';
+
             msg.className = 'notification success';
-            msg.innerText = `Enviando informes de ${periodoSel} desde educativoshkenuk@gmail.com a: ${destinatarios.join(', ')}...`;
+            msg.innerText = `Enviando informes de ${periodoSel} desde slmontessori@gmail.com a: ${destinatarios.join(', ')}...`;
             msg.style.display = 'block';
 
-            setTimeout(() => {
+            try {
+                const envios = destinatarios.map(correo => emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email: correo,
+                    nombre_estudiante: estData.nombre,
+                    cedula: estData.cedula,
+                    nivel: estData.nivel,
+                    periodo: periodoSel,
+                    anio_lectivo: anioLectivoActivo,
+                    tabla_notas_html: tablaNotasHTML,
+                    reflexiones_html: reflexionesHTML
+                }));
+
+                await Promise.all(envios);
+
+                msg.className = 'notification success';
                 msg.innerText = `¡Informes de ${periodoSel} enviados exitosamente y de forma simultánea a los encargados de ${estData.nombre}!`;
-            }, 2000);
+            } catch (err) {
+                msg.className = 'notification error';
+                msg.innerText = 'Error al enviar el informe: ' + (err && err.text ? err.text : (err && err.message ? err.message : err));
+            }
         }
 
         async function cargarListasCiclo(ciclo, evt) {
