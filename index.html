@@ -76,7 +76,7 @@
         .seccion-pagina-1 { display: flex; flex-direction: column; }
         .cita-pie-pagina { margin-top: auto; }
         .encabezado-informe-full { width: calc(100% + 50px); margin: -25px -25px 0 -25px; text-align: center; }
-        .encabezado-informe-full img { width: auto; max-width: 100%; max-height: 86px; height: auto; display: block; object-fit: contain; margin: 0 auto; }
+        .encabezado-informe-full img { width: auto; max-width: 100%; max-height: 86px; height: auto; display: block; margin: 0 auto; }
         .cita-montessori { margin-top: 30px; padding: 18px 22px; background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; page-break-inside: avoid; break-inside: avoid; }
         .cita-montessori p.texto-cita { margin: 0; font-size: 13px; font-style: italic; color: #334155; line-height: 1.5; }
         .cita-montessori p.autor-cita { margin: 8px 0 0 0; font-size: 12px; font-weight: bold; color: var(--primary); text-align: right; }
@@ -94,8 +94,8 @@
         @media print {
             @page { margin: 6mm 10mm; }
             body * { visibility: hidden; }
-            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-lista-nivel-impresion { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
+            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion *, #plantilla-reporte-financiero, #plantilla-reporte-financiero * { visibility: visible; }
+            #preview-matricula-impresion, #plantilla-lista-nivel-impresion, #plantilla-reporte-financiero { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
             #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 6mm 10mm 8mm 10mm; box-sizing: border-box; }
             .encabezado-informe-full { width: calc(100% + 20mm); margin: -6mm -10mm 0 -10mm; }
             .encabezado-informe-full img { width: auto; max-width: 100%; max-height: 24mm; height: auto; }
@@ -3793,7 +3793,7 @@
 
                 <div class="report-preview" id="plantilla-lista-nivel-impresion">
                     <div style="width: 100%; margin-bottom: 2px; text-align: center;">
-                        <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe" style="width: 100%; height: auto; display: block; max-height: 140px; object-fit: contain; margin: 0 auto;">
+                        <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe" style="width: auto; max-width: 100%; height: auto; max-height: 140px; display: block; margin: 0 auto;">
                     </div>
 
                     <div style="text-align: center; margin-bottom: 20px;">
@@ -4225,11 +4225,6 @@
                     </div>
 
                     ${estaAlDia ? bloqueAlDia : bloqueMoroso}
-
-                    <div class="cita-montessori cita-pie-pagina">
-                        <p class="texto-cita">"La primera tarea de la educación es agitar la vida, pero dejarla libre para que se desarrolle"</p>
-                        <p class="autor-cita">María Montessori</p>
-                    </div>
                 </div>
             `;
         }
