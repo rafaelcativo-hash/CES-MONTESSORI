@@ -4128,28 +4128,32 @@
             const mesesAEvaluar = MESES_FINANCIERO.slice(0, indiceCorte + 1);
 
             const pendientes = [];
-            const estadosMensuales = [];
+            const filasPorMes = [];
             mesesAEvaluar.forEach(m => {
                 const periodoMes = `${anio}-${m.num}`;
                 const registro = pagos ? pagos.find(p => p.periodo_mes === periodoMes) : null;
                 const pagada = registro ? registro.mensualidad_pagada : false;
                 if (!pagada) pendientes.push(`Mensualidad de ${m.nombre}`);
-                estadosMensuales.push({ abrev: m.nombre.substring(0, 3), pagada });
+                filasPorMes.push(`<tr><td style="text-align: left;">Mensualidad — ${m.nombre} ${anio}</td><td>${pagada ? '<span style="color: #166534; font-weight: bold;">Pagado ✔</span>' : '<span style="color: #991b1b; font-weight: bold;">Pendiente ✘</span>'}</td></tr>`);
             });
 
-            // Cuadrícula compacta de mensualidades en 2 filas (tipo calendario),
-            // en vez de una lista larga, para que todo quepa en una sola hoja.
-            const mitad = Math.ceil(estadosMensuales.length / 2);
-            const filaSuperior = estadosMensuales.slice(0, mitad);
-            const filaInferior = estadosMensuales.slice(mitad);
-            const celdaMes = (m) => `<td style="padding: 3px 2px; text-align: center;">${m.pagada ? '<span style="color: #166534; font-weight: bold;">✔</span>' : '<span style="color: #991b1b; font-weight: bold;">✘</span>'}</td>`;
-            const construirFilaGrid = (fila) => fila.length ? `
-                <table class="data-table" style="font-size: 10px; margin-bottom: 3px;">
-                    <thead><tr>${fila.map(m => `<th style="padding: 3px 2px;">${m.abrev}</th>`).join('')}</tr></thead>
-                    <tbody><tr>${fila.map(celdaMes).join('')}</tr></tbody>
+            // Misma tabla Concepto/Estado de siempre, pero partida en 2 columnas
+            // lado a lado (en vez de una sola columna larga) para que quepa en una hoja.
+            const mitad = Math.ceil(filasPorMes.length / 2);
+            const columnaIzquierda = filasPorMes.slice(0, mitad).join('');
+            const columnaDerecha = filasPorMes.slice(mitad).join('');
+            const tablaMensualidad = (filas) => filas ? `
+                <table class="data-table" style="font-size: 10.5px; flex: 1;">
+                    <thead><tr><th>Concepto</th><th>Estado</th></tr></thead>
+                    <tbody>${filas}</tbody>
                 </table>
             ` : '';
-            const gridMensualidad = construirFilaGrid(filaSuperior) + construirFilaGrid(filaInferior);
+            const gridMensualidad = `
+                <div style="display: flex; gap: 10px;">
+                    ${tablaMensualidad(columnaIzquierda)}
+                    ${tablaMensualidad(columnaDerecha)}
+                </div>
+            `;
 
             // Materiales I Sem. se exige a partir de Marzo, II Sem. a partir de Agosto
             const requiereSem1 = mesCorte >= '03';
