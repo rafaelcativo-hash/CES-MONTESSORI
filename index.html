@@ -898,6 +898,7 @@
                     <button class="sub-tab-btn active" onclick="cambiarSubPestanaFinanciero('matmat', event)">Matrícula y Materiales</button>
                     <button class="sub-tab-btn" onclick="cambiarSubPestanaFinanciero('mensual', event)">Mensualidades</button>
                     <button class="sub-tab-btn" onclick="cambiarSubPestanaFinanciero('stats', event)">Estadísticas</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubPestanaFinanciero('reporte', event)">Reporte / Estado de Cuenta</button>
                 </div>
 
                 <!-- SUB-PANEL 1: MATRÍCULA Y MATERIALES (pago único / semestral) -->
@@ -963,6 +964,42 @@
                     <div id="contenedor-fin-stats">
                         <p>Cargando estadísticas...</p>
                     </div>
+                </div>
+
+                <!-- SUB-PANEL 4: REPORTE / ESTADO DE CUENTA (PDF + Word) -->
+                <div id="sub-financiero-reporte" class="sub-doc-panel" style="display: none;">
+                    <fieldset>
+                        <legend>Selección para Estado de Cuenta</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nivel Educativo</label>
+                                <select id="fin-rep-nivel-sel" required onchange="cargarEstudiantesReporteFinanciero()">
+                                    <option value="">Seleccione el nivel</option>
+                                    <option value="Primero">Primero</option>
+                                    <option value="Segundo">Segundo</option>
+                                    <option value="Tercero">Tercero</option>
+                                    <option value="Cuarto">Cuarto</option>
+                                    <option value="Quinto">Quinto</option>
+                                    <option value="Sexto">Sexto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Estudiante</label>
+                                <select id="fin-rep-estudiante-sel" required onchange="generarReporteFinancieroVisual()">
+                                    <option value="">Primero seleccione un nivel</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Mes de Corte (evalúa hasta este mes)</label>
+                                <select id="fin-rep-mes-sel" onchange="generarReporteFinancieroVisual()"></select>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <div id="contenedor-vista-reporte-fin" style="overflow-x: auto;">
+                        <p style="color: #64748b; text-align: center;">Seleccione nivel, estudiante y mes de corte para generar el estado de cuenta.</p>
+                    </div>
+                    <div id="fin-rep-msg" class="notification" style="width: 100%; text-align: right;"></div>
                 </div>
             </section>
         </main>
@@ -1172,7 +1209,8 @@
             if (idSeccion === 'financiero') {
                 inicializarSelectAnios('fin-mensual-anio-sel', anioLectivoActivo);
                 inicializarSelectAnios('fin-stats-anio-sel', anioLectivoActivo);
-                inicializarSelectMesesFinanciero();
+                inicializarSelectMesesFinanciero('fin-stats-mes-sel');
+                inicializarSelectMesesFinanciero('fin-rep-mes-sel');
                 cargarTablaMatriculaMateriales();
             }
         }
@@ -3838,8 +3876,8 @@
             { num: '10', nombre: 'Octubre' }, { num: '11', nombre: 'Noviembre' }, { num: '12', nombre: 'Diciembre' }
         ];
 
-        function inicializarSelectMesesFinanciero() {
-            const select = document.getElementById('fin-stats-mes-sel');
+        function inicializarSelectMesesFinanciero(idSelect) {
+            const select = document.getElementById(idSelect);
             if (!select) return;
             select.innerHTML = '';
             const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
@@ -4039,6 +4077,195 @@
                     <tbody>${filasMorosos}</tbody>
                 </table>
             `;
+        }
+
+        // ---------- SUB-PANEL 4: REPORTE / ESTADO DE CUENTA ----------
+        async function cargarEstudiantesReporteFinanciero() {
+            const nivel = document.getElementById('fin-rep-nivel-sel').value;
+            const selectEstudiantes = document.getElementById('fin-rep-estudiante-sel');
+            selectEstudiantes.innerHTML = '<option value="">Cargando lista...</option>';
+            document.getElementById('contenedor-vista-reporte-fin').innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione nivel, estudiante y mes de corte para generar el estado de cuenta.</p>';
+
+            if (!nivel) {
+                selectEstudiantes.innerHTML = '<option value="">Primero seleccione un nivel</option>';
+                return;
+            }
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true).order('nombre');
+            if (error || !data || data.length === 0) {
+                selectEstudiantes.innerHTML = '<option value="">No hay estudiantes en este nivel</option>';
+                return;
+            }
+
+            selectEstudiantes.innerHTML = '<option value="">Seleccione un estudiante</option>';
+            data.forEach(est => {
+                const opt = document.createElement('option');
+                opt.value = est.cedula;
+                opt.textContent = `${est.nombre} (Cédula: ${est.cedula})`;
+                opt.dataset.estudiante = JSON.stringify(est);
+                selectEstudiantes.appendChild(opt);
+            });
+        }
+
+        async function generarReporteFinancieroVisual() {
+            const selectEst = document.getElementById('fin-rep-estudiante-sel');
+            const mesCorte = document.getElementById('fin-rep-mes-sel').value;
+            const contenedor = document.getElementById('contenedor-vista-reporte-fin');
+
+            if (!selectEst.value || !mesCorte) {
+                contenedor.innerHTML = '<p style="color: #64748b; text-align: center;">Seleccione nivel, estudiante y mes de corte para generar el estado de cuenta.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '<p>Generando estado de cuenta...</p>';
+            const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
+            const anio = anioLectivoActivo;
+
+            const { data: pagos } = await supabaseClient.from('control_financiero').select('periodo_mes, mensualidad_pagada').eq('cedula_estudiante', estData.cedula).eq('anio_lectivo', parseInt(anio, 10));
+
+            // Meses a evaluar: desde Febrero hasta el mes de corte elegido (inclusive)
+            const indiceCorte = MESES_FINANCIERO.findIndex(m => m.num === mesCorte);
+            const mesesAEvaluar = MESES_FINANCIERO.slice(0, indiceCorte + 1);
+
+            const pendientes = [];
+            let filasMensualidad = '';
+            mesesAEvaluar.forEach(m => {
+                const periodoMes = `${anio}-${m.num}`;
+                const registro = pagos ? pagos.find(p => p.periodo_mes === periodoMes) : null;
+                const pagada = registro ? registro.mensualidad_pagada : false;
+                if (!pagada) pendientes.push(`Mensualidad de ${m.nombre}`);
+                filasMensualidad += `<tr><td style="text-align: left;">Mensualidad — ${m.nombre} ${anio}</td><td>${pagada ? '<span style="color: #166534; font-weight: bold;">Pagado ✔</span>' : '<span style="color: #991b1b; font-weight: bold;">Pendiente ✘</span>'}</td></tr>`;
+            });
+
+            // Materiales I Sem. se exige a partir de Marzo, II Sem. a partir de Agosto
+            const requiereSem1 = mesCorte >= '03';
+            const requiereSem2 = mesCorte >= '08';
+
+            if (!estData.matricula_pagada) pendientes.push('Matrícula');
+            if (requiereSem1 && !estData.materiales_sem1_pagado) pendientes.push('Materiales I Semestre');
+            if (requiereSem2 && !estData.materiales_sem2_pagado) pendientes.push('Materiales II Semestre');
+
+            const estaAlDia = pendientes.length === 0;
+            const nombreMesCorte = (MESES_FINANCIERO.find(m => m.num === mesCorte) || {}).nombre || mesCorte;
+
+            const filasConceptosAnuales = `
+                <tr><td style="text-align: left;">Matrícula ${anio}</td><td>${estData.matricula_pagada ? '<span style="color: #166534; font-weight: bold;">Pagado ✔</span>' : '<span style="color: #991b1b; font-weight: bold;">Pendiente ✘</span>'}</td></tr>
+                ${requiereSem1 ? `<tr><td style="text-align: left;">Materiales I Semestre</td><td>${estData.materiales_sem1_pagado ? '<span style="color: #166534; font-weight: bold;">Pagado ✔</span>' : '<span style="color: #991b1b; font-weight: bold;">Pendiente ✘</span>'}</td></tr>` : ''}
+                ${requiereSem2 ? `<tr><td style="text-align: left;">Materiales II Semestre</td><td>${estData.materiales_sem2_pagado ? '<span style="color: #166534; font-weight: bold;">Pagado ✔</span>' : '<span style="color: #991b1b; font-weight: bold;">Pendiente ✘</span>'}</td></tr>` : ''}
+            `;
+
+            const bloqueAlDia = `
+                <div style="border: 2px solid #166534; background: #f0fdf4; padding: 18px 20px; border-radius: 10px; margin-top: 22px; text-align: center;">
+                    <h4 style="color: #166534; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Al Día con sus Obligaciones</h4>
+                    <p style="margin: 0; font-size: 13px; color: #14532d; line-height: 1.6;">
+                        Es un gusto informarle que el estudiante <b>${estData.nombre}</b> se encuentra completamente al día con todos sus compromisos financieros
+                        ante el Centro Educativo Shkénuk / CES Montessori con corte al mes de <b>${nombreMesCorte} de ${anio}</b>. Agradecemos profundamente
+                        su puntualidad y compromiso, elementos fundamentales que nos permiten seguir ofreciendo una educación de calidad y con los recursos
+                        necesarios para el desarrollo integral de su hijo(a). ¡Gracias por ser parte activa de nuestra comunidad educativa!
+                    </p>
+                </div>
+            `;
+
+            const bloqueMoroso = `
+                <div style="border: 2px solid #9a3412; background: #fff7ed; padding: 18px 20px; border-radius: 10px; margin-top: 22px;">
+                    <h4 style="color: #9a3412; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Aviso Importante — Estado de Cuenta Pendiente</h4>
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #7c2d12; line-height: 1.7; text-align: justify;">
+                        Estimada familia, reciban un cordial saludo de parte del Centro Educativo Shkénuk / CES Montessori. Por medio de la presente
+                        deseamos recordarles, con el mayor respeto, la importancia de mantener al día las obligaciones financieras adquiridas al momento
+                        de la matrícula del estudiante <b>${estData.nombre}</b>, ya que estas nos permiten sostener la calidad académica, los materiales
+                        y el bienestar de toda nuestra comunidad educativa. Al corte del mes de <b>${nombreMesCorte} de ${anio}</b>, identificamos los
+                        siguientes rubros pendientes de regularizar:
+                    </p>
+                    <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 13px; color: #7c2d12;">
+                        ${pendientes.map(p => `<li>${p}</li>`).join('')}
+                    </ul>
+                    <p style="margin: 0; font-size: 13px; color: #7c2d12; line-height: 1.7; text-align: justify;">
+                        Les agradecemos de antemano gestionar la regularización de este saldo a la mayor brevedad posible. Si existiera alguna
+                        situación particular que dificulte el pago, les invitamos con toda confianza a coordinar directamente con la administración
+                        para buscar juntos la mejor solución. Contamos con su comprensión y con su valioso compromiso en la formación de su hijo(a).
+                    </p>
+                </div>
+            `;
+
+            contenedor.innerHTML = `
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
+                    <button type="button" class="action-btn" onclick="descargarReporteFinancieroPDF()">Descargar en PDF</button>
+                    <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-reporte-financiero', 'Estado_Cuenta_${estData.nombre.replace(/\s+/g, '_')}')">Guardar en Word (Editable)</button>
+                </div>
+
+                <div class="report-preview" id="plantilla-reporte-financiero">
+                    <div class="encabezado-informe-full">
+                        <img src="encabezado%20del%20informe%20final.png" alt="Encabezado del Informe">
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 6px;">
+                        <p style="margin: 0; font-size: 15px; color: #000000; font-weight: bold; text-transform: uppercase;">Estado de Cuenta ${anio}</p>
+                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; text-transform: uppercase;">Dirección Regional de Heredia - Circuito Escolar 04</p>
+                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; text-transform: uppercase;">Centro Educativo Shkénuk</p>
+                    </div>
+
+                    <div style="margin-bottom: 8px; font-size: 12px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <b>Estudiante:</b> ${estData.nombre} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${estData.cedula} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${estData.nivel} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Corte:</b> ${nombreMesCorte} ${anio}
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Detalle de Rubros Anuales / Semestrales</h4>
+                        <table class="data-table">
+                            <thead><tr><th>Concepto</th><th>Estado</th></tr></thead>
+                            <tbody>${filasConceptosAnuales}</tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Detalle de Mensualidades (Febrero a ${nombreMesCorte})</h4>
+                        <table class="data-table">
+                            <thead><tr><th>Concepto</th><th>Estado</th></tr></thead>
+                            <tbody>${filasMensualidad}</tbody>
+                        </table>
+                    </div>
+
+                    ${estaAlDia ? bloqueAlDia : bloqueMoroso}
+
+                    <div class="cita-montessori cita-pie-pagina">
+                        <p class="texto-cita">"La primera tarea de la educación es agitar la vida, pero dejarla libre para que se desarrolle"</p>
+                        <p class="autor-cita">María Montessori</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function descargarReporteFinancieroPDF() {
+            const elementoReporte = document.getElementById('plantilla-reporte-financiero');
+            const selectEst = document.getElementById('fin-rep-estudiante-sel');
+            const msg = document.getElementById('fin-rep-msg');
+
+            if (!elementoReporte || !selectEst.value) {
+                alert('Por favor genere y visualice primero el estado de cuenta de un estudiante antes de descargarlo.');
+                return;
+            }
+
+            const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
+            const nombreArchivo = `Estado_Cuenta_${estData.nombre.replace(/\s+/g, '_')}_${anioLectivoActivo}.pdf`;
+
+            msg.className = 'notification success';
+            msg.innerText = 'Generando archivo PDF en formato A4, por favor espere...';
+            msg.style.display = 'block';
+
+            const opciones = {
+                margin:       [10, 10, 10, 10],
+                filename:     nombreArchivo,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(elementoReporte).set(opciones).save().then(() => {
+                msg.innerText = `¡El estado de cuenta se ha descargado exitosamente como "${nombreArchivo}"!`;
+                setTimeout(() => { msg.style.display = 'none'; }, 5000);
+            }).catch(err => {
+                msg.className = 'notification error';
+                msg.innerText = 'Error al generar el PDF: ' + err;
+            });
         }
     </script>
 </body>
