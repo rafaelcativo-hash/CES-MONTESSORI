@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro CES Montessori</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="icono-docentes-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icono-docentes-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icono-docentes-180.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -4173,12 +4178,16 @@
             `;
 
             const bloqueAlDia = `
-                <div style="border: 2px solid #166534; background: #f0fdf4; padding: 8px 12px; border-radius: 8px; margin-top: 10px; text-align: center;">
-                    <h4 style="color: #166534; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Al Día con sus Obligaciones</h4>
-                    <p style="margin: 0; font-size: 10.5px; color: #14532d; line-height: 1.35;">
-                        Es un gusto informarle que el estudiante <b>${estData.nombre}</b> se encuentra completamente al día con todos sus compromisos financieros
-                        ante el Centro Educativo Shkénuk / CES Montessori con corte al mes de <b>${nombreMesCorte} de ${anio}</b>. Agradecemos su puntualidad y
-                        compromiso, elementos fundamentales para seguir ofreciendo una educación de calidad. ¡Gracias por ser parte activa de nuestra comunidad educativa!
+                <div style="border: 2px solid #166534; background: #f0fdf4; padding: 8px 12px; border-radius: 8px; margin-top: 10px;">
+                    <h4 style="color: #166534; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Al Día con sus Obligaciones</h4>
+                    <p style="margin: 0 0 5px 0; font-size: 10.5px; color: #14532d; line-height: 1.35; text-align: justify;">
+                        Estimada familia, reciban un cordial saludo de parte del Centro Educativo Shkénuk / CES Montessori. Nos complace informarles que el
+                        estudiante <b>${estData.nombre}</b> se encuentra al día con sus obligaciones financieras al corte de <b>${nombreMesCorte} de ${anio}</b>,
+                        sin ningún rubro pendiente de regularizar.
+                    </p>
+                    <p style="margin: 0; font-size: 10.5px; color: #14532d; line-height: 1.35; text-align: justify;">
+                        Agradecemos su puntualidad y compromiso, fundamentales para sostener la calidad educativa que ofrecemos. Contamos con su continuo
+                        apoyo en la formación de su hijo(a).
                     </p>
                 </div>
             `;
