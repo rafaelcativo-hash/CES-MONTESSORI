@@ -1,6 +1,25 @@
 // app-logic.js — Se carga SOLO después de un login exitoso.
 // Contiene toda la lógica de matrícula, calificaciones, informes y control financiero.
 
+// ============================================================
+// SEGURIDAD: limpieza de texto libre antes de insertarlo en
+// pantalla. Campos como Observaciones, datos de Encargados o
+// Reflexiones Docentes los puede escribir un docente y luego
+// los ve un administrador — sin esto, alguien podría escribir
+// código malicioso en vez de texto normal y robar la sesión de
+// quien lo visualice. SIEMPRE usar esta función al insertar
+// texto libre de la base de datos dentro de innerHTML.
+// ============================================================
+function escapeHTML(texto) {
+    if (texto === null || texto === undefined) return '';
+    return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 
         // ============================================================
         // ENVÍO REAL DE INFORMES POR CORREO (EmailJS conectado a
@@ -1037,21 +1056,21 @@
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">2. Dirección y Ubicación</h4>
-                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${prov || 'Pendiente'}, ${canton || ''}, ${distrito || ''}</p>
-                        <p style="margin: 4px 0;"><b>Otras Señas:</b> ${detalles || 'N/A'}</p>
+                        <p style="margin: 4px 0;"><b>Provincia / Cantón / Distrito:</b> ${escapeHTML(prov) || 'Pendiente'}, ${escapeHTML(canton) || ''}, ${escapeHTML(distrito) || ''}</p>
+                        <p style="margin: 4px 0;"><b>Otras Señas:</b> ${escapeHTML(detalles) || 'N/A'}</p>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">3. Información de Encargados</h4>
-                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${enc1Nom || 'Pendiente'} - Correo: ${enc1Correo || 'N/A'} - Tel: ${enc1Cel || 'N/A'}</p>
-                        <p style="margin: 4px 0 4px 15px;">Profesión u Oficio: ${enc1Profesion || 'N/A'} — Lugar de Trabajo: ${enc1Trabajo || 'N/A'}</p>
-                        <p style="margin: 8px 0 4px 0;"><b>Segundo Encargado:</b> ${enc2Nom || 'N/A'} - Correo: ${enc2Correo || 'N/A'} - Tel: ${enc2Cel || 'N/A'}</p>
-                        <p style="margin: 4px 0 4px 15px;">Profesión u Oficio: ${enc2Profesion || 'N/A'} — Lugar de Trabajo: ${enc2Trabajo || 'N/A'}</p>
+                        <p style="margin: 4px 0;"><b>Primer Encargado:</b> ${escapeHTML(enc1Nom) || 'Pendiente'} - Correo: ${escapeHTML(enc1Correo) || 'N/A'} - Tel: ${escapeHTML(enc1Cel) || 'N/A'}</p>
+                        <p style="margin: 4px 0 4px 15px;">Profesión u Oficio: ${escapeHTML(enc1Profesion) || 'N/A'} — Lugar de Trabajo: ${escapeHTML(enc1Trabajo) || 'N/A'}</p>
+                        <p style="margin: 8px 0 4px 0;"><b>Segundo Encargado:</b> ${escapeHTML(enc2Nom) || 'N/A'} - Correo: ${escapeHTML(enc2Correo) || 'N/A'} - Tel: ${escapeHTML(enc2Cel) || 'N/A'}</p>
+                        <p style="margin: 4px 0 4px 15px;">Profesión u Oficio: ${escapeHTML(enc2Profesion) || 'N/A'} — Lugar de Trabajo: ${escapeHTML(enc2Trabajo) || 'N/A'}</p>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; min-height: 60px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">4. Observaciones</h4>
-                        <p style="margin: 4px 0; white-space: pre-wrap;">${observaciones || '—'}</p>
+                        <p style="margin: 4px 0; white-space: pre-wrap;">${escapeHTML(observaciones) || '—'}</p>
                     </div>
 
                     <div style="margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;">
@@ -1678,7 +1697,7 @@
                 `;
 
                 if (llevaComentario) {
-                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${comentarioGuardado}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
+                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${escapeHTML(comentarioGuardado)}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -2240,9 +2259,9 @@
                         <div class="reflexion-item" style="padding: 12px 15px; border-radius: 6px; border-left: 4px solid ${estiloColor.border}; border: 1px solid ${estiloColor.border}; background-color: ${estiloColor.bg}; margin-bottom: 10px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px;">
                                 <span style="font-weight: bold; color: ${estiloColor.textHeader}; text-transform: uppercase;">Materia / Área: ${nombreMostrado}</span>
-                                <span style="font-style: italic; color: #475569;">Docente: <b>${docenteCargo}</b></span>
+                                <span style="font-style: italic; color: #475569;">Docente: <b>${escapeHTML(docenteCargo)}</b></span>
                             </div>
-                            <p style="margin: 0; font-size: 13px; color: #1e293b;">${notaMatPeriodo.comentario}</p>
+                            <p style="margin: 0; font-size: 13px; color: #1e293b;">${escapeHTML(notaMatPeriodo.comentario)}</p>
                         </div>
                     `;
                 }
@@ -2687,14 +2706,14 @@
             data.forEach(est => {
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${est.nombre}</b></td>
-                        <td>${est.cedula}</td>
-                        <td style="text-align: left;">${est.encargado1_nombre || 'N/A'}</td>
-                        <td>${est.encargado1_cel || 'N/A'}</td>
-                        <td style="text-align: left;">${est.encargado1_correo || 'N/A'}</td>
-                        <td style="text-align: left;">${est.encargado2_nombre || 'N/A'}</td>
-                        <td>${est.encargado2_cel || 'N/A'}</td>
-                        <td style="text-align: left;">${est.encargado2_correo || 'N/A'}</td>
+                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b></td>
+                        <td>${escapeHTML(est.cedula)}</td>
+                        <td style="text-align: left;">${escapeHTML(est.encargado1_nombre) || 'N/A'}</td>
+                        <td>${escapeHTML(est.encargado1_cel) || 'N/A'}</td>
+                        <td style="text-align: left;">${escapeHTML(est.encargado1_correo) || 'N/A'}</td>
+                        <td style="text-align: left;">${escapeHTML(est.encargado2_nombre) || 'N/A'}</td>
+                        <td>${escapeHTML(est.encargado2_cel) || 'N/A'}</td>
+                        <td style="text-align: left;">${escapeHTML(est.encargado2_correo) || 'N/A'}</td>
                     </tr>
                 `;
             });
