@@ -23,6 +23,7 @@
             <button class="tab-btn" data-tab="docentes" data-role-req="admin" onclick="cambiarPestana('docentes', event)">Directorio y Carga</button>
             <button class="tab-btn" data-tab="contactos" data-role-req="admin" onclick="cambiarPestana('contactos', event)">Contactos y Listas por Nivel</button>
             <button class="tab-btn" data-tab="financiero" data-role-req="admin" onclick="cambiarPestana('financiero', event)">Control Financiero</button>
+            <button class="tab-btn" data-tab="seguridad" data-role-req="admin" onclick="cambiarPestana('seguridad', event)">Seguridad</button>
         </nav>
 
         <main>
@@ -869,6 +870,42 @@
                     </div>
                     <div id="fin-rep-msg" class="notification" style="width: 100%; text-align: right;"></div>
                 </div>
+            </section>
+
+            <!-- 10. SEGURIDAD (MFA) -->
+            <section id="seguridad" class="tab-content">
+                <h2>Seguridad de la Cuenta</h2>
+                <p style="font-size: 12px; color: #64748b; margin-top: 0;">La verificación en dos pasos agrega un código de 6 dígitos (de una app como Google Authenticator) además de la contraseña, para que aunque alguien la robe o la adivine, no pueda entrar sin tu celular.</p>
+
+                <fieldset id="mfa-fieldset-estado" style="background: #f8fafc; border-color: var(--accent);">
+                    <legend style="color: var(--accent);">Estado Actual</legend>
+                    <div id="mfa-estado-texto">Consultando...</div>
+                </fieldset>
+
+                <fieldset id="mfa-fieldset-activar" style="display: none;">
+                    <legend>Activar Verificación en Dos Pasos</legend>
+                    <div id="mfa-paso-inicial">
+                        <button type="button" class="action-btn" onclick="iniciarActivacionMFA()">Generar Código QR</button>
+                    </div>
+                    <div id="mfa-paso-qr" style="display: none; margin-top: 15px;">
+                        <p style="font-size: 13px;">1. Abrí Google Authenticator (o similar) en tu celular y escaneá este código:</p>
+                        <div id="mfa-qr-contenedor" style="text-align: center; margin: 15px 0;"></div>
+                        <p style="font-size: 12px; color: #64748b;">¿No podés escanear? Ingresá este código manualmente: <code id="mfa-secreto-texto"></code></p>
+                        <div class="form-group" style="max-width: 250px; margin-top: 15px;">
+                            <label>2. Ingresá el código que te muestra la app para confirmar</label>
+                            <input type="text" id="mfa-codigo-confirmacion" placeholder="000000" maxlength="6" inputmode="numeric" style="text-align: center; font-size: 18px; letter-spacing: 3px;">
+                        </div>
+                        <button type="button" class="success-btn" style="margin-top: 10px;" onclick="confirmarActivacionMFA()">Confirmar y Activar</button>
+                        <div id="mfa-activar-msg" class="notification"></div>
+                    </div>
+                </fieldset>
+
+                <fieldset id="mfa-fieldset-desactivar" style="display: none;">
+                    <legend style="color: #991b1b;">Desactivar Verificación en Dos Pasos</legend>
+                    <p style="font-size: 12px; color: #64748b;">Si perdiste acceso a tu app autenticadora o ya no la querés usar, podés desactivarla.</p>
+                    <button type="button" class="danger-btn" onclick="desactivarMFA()">Desactivar</button>
+                    <div id="mfa-desactivar-msg" class="notification"></div>
+                </fieldset>
             </section>
         </main>
     </div>

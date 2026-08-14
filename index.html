@@ -133,6 +133,17 @@
             <button class="action-btn" style="width: 100%;" onclick="realizarLogin()">Ingresar al Sistema</button>
             <div id="login-msg" class="notification"></div>
         </div>
+
+        <div class="login-card" id="mfa-card" style="display: none; margin-top: 20px;">
+            <h2>Verificación en Dos Pasos</h2>
+            <p style="color: #64748b; font-size: 13px; margin-top: -10px;">Ingresá el código de 6 dígitos de tu app autenticadora.</p>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>Código</label>
+                <input type="text" id="mfa-codigo" placeholder="000000" maxlength="6" inputmode="numeric" style="text-align: center; font-size: 20px; letter-spacing: 4px;">
+            </div>
+            <button class="action-btn" style="width: 100%;" onclick="verificarCodigoMFA()">Verificar</button>
+            <div id="mfa-msg" class="notification"></div>
+        </div>
     </div>
 
     <div id="app-mount"></div>
@@ -152,6 +163,9 @@
         // login no muestra nada del resto del sistema.
         // ============================================================
         let aplicacionYaCargada = false;
+        let emailPendienteMFA = '';
+        let factorIdPendienteMFA = '';
+        let challengeIdPendienteMFA = '';
 
         async function cargarYMostrarApp(email) {
             const msg = document.getElementById('login-msg');
@@ -187,6 +201,14 @@
             iniciarSesionUI(email);
         }
 
+        // ============================================================
+        // VERIFICACIÓN EN DOS PASOS (MFA con app autenticadora)
+        // Después de la contraseña, revisa si esta cuenta tiene MFA
+        // activado. Si lo tiene, pide el código de 6 dígitos antes
+        // de dejar entrar. Si no lo tiene activado, entra normal
+        // (activarlo es opcional, desde la pestaña "Seguridad" ya
+        // adentro del sistema).
+        // ============================================================
         async function realizarLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -197,13 +219,79 @@
                 msg.className = 'notification error';
                 msg.innerText = 'Error de acceso: ' + error.message;
                 msg.style.display = 'block';
-            } else {
-                await cargarYMostrarApp(data.user.email);
+                return;
             }
+
+            const { data: nivelData } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+
+            if (nivelData && nivelData.nextLevel === 'aal2' && nivelData.currentLevel !== 'aal2') {
+                const { data: factoresData } = await supabaseClient.auth.mfa.listFactors();
+                const factorTotp = factoresData && factoresData.totp && factoresData.totp[0];
+                if (!factorTotp) {
+                    msg.className = 'notification error';
+                    msg.innerText = 'Error al verificar el segundo factor. Contacte al administrador.';
+                    msg.style.display = 'block';
+                    return;
+                }
+
+                const { data: challengeData, error: challengeError } = await supabaseClient.auth.mfa.challenge({ factorId: factorTotp.id });
+                if (challengeError) {
+                    msg.className = 'notification error';
+                    msg.innerText = 'Error al iniciar la verificación: ' + challengeError.message;
+                    msg.style.display = 'block';
+                    return;
+                }
+
+                emailPendienteMFA = data.user.email;
+                factorIdPendienteMFA = factorTotp.id;
+                challengeIdPendienteMFA = challengeData.id;
+
+                document.querySelector('.login-card').style.display = 'none';
+                document.getElementById('mfa-card').style.display = 'block';
+                document.getElementById('mfa-codigo').focus();
+                return;
+            }
+
+            await cargarYMostrarApp(data.user.email);
+        }
+
+        async function verificarCodigoMFA() {
+            const codigo = document.getElementById('mfa-codigo').value.trim();
+            const msg = document.getElementById('mfa-msg');
+
+            if (!codigo || codigo.length !== 6) {
+                msg.className = 'notification error';
+                msg.innerText = 'Ingrese el código de 6 dígitos.';
+                msg.style.display = 'block';
+                return;
+            }
+
+            const { error } = await supabaseClient.auth.mfa.verify({
+                factorId: factorIdPendienteMFA,
+                challengeId: challengeIdPendienteMFA,
+                code: codigo
+            });
+
+            if (error) {
+                msg.className = 'notification error';
+                msg.innerText = 'Código incorrecto. Intente de nuevo.';
+                msg.style.display = 'block';
+                document.getElementById('mfa-codigo').value = '';
+                return;
+            }
+
+            await cargarYMostrarApp(emailPendienteMFA);
         }
 
         supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
             if (session) {
+                const { data: nivelData } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+                if (nivelData && nivelData.nextLevel === 'aal2' && nivelData.currentLevel !== 'aal2') {
+                    // Hay una sesión guardada pero todavía falta el segundo
+                    // factor de esta vez: no la damos por válida, hay que
+                    // volver a iniciar sesión y verificar el código.
+                    return;
+                }
                 await cargarYMostrarApp(session.user.email);
             }
         });

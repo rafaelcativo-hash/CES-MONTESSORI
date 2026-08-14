@@ -224,6 +224,9 @@ function escapeHTML(texto) {
                 inicializarSelectMesesFinanciero('fin-rep-mes-sel');
                 cargarTablaMatriculaMateriales();
             }
+            if (idSeccion === 'seguridad') {
+                cargarEstadoMFA();
+            }
         }
 
         function cambiarSubPestanaFinanciero(subId, evt) {
@@ -3273,4 +3276,112 @@ function escapeHTML(texto) {
                 msg.className = 'notification error';
                 msg.innerText = 'Error al generar el PDF: ' + err;
             });
+        }
+
+        // =====================================================================
+        // SEGURIDAD — Verificación en Dos Pasos (MFA con app autenticadora)
+        // =====================================================================
+        let factorIdEnProcesoMFA = '';
+
+        async function cargarEstadoMFA() {
+            const textoEstado = document.getElementById('mfa-estado-texto');
+            const fieldsetActivar = document.getElementById('mfa-fieldset-activar');
+            const fieldsetDesactivar = document.getElementById('mfa-fieldset-desactivar');
+
+            document.getElementById('mfa-paso-inicial').style.display = 'block';
+            document.getElementById('mfa-paso-qr').style.display = 'none';
+
+            const { data, error } = await supabaseClient.auth.mfa.listFactors();
+            if (error) {
+                textoEstado.innerHTML = '<span style="color: red;">Error al consultar el estado: ' + error.message + '</span>';
+                return;
+            }
+
+            const factorVerificado = (data.totp || []).find(f => f.status === 'verified');
+
+            if (factorVerificado) {
+                textoEstado.innerHTML = '<span style="color: #166534; font-weight: bold;">✔ Verificación en dos pasos ACTIVADA</span>';
+                fieldsetActivar.style.display = 'none';
+                fieldsetDesactivar.style.display = 'block';
+                factorIdEnProcesoMFA = factorVerificado.id;
+            } else {
+                textoEstado.innerHTML = '<span style="color: #92400e; font-weight: bold;">✘ Verificación en dos pasos DESACTIVADA</span>';
+                fieldsetActivar.style.display = 'block';
+                fieldsetDesactivar.style.display = 'none';
+            }
+        }
+
+        async function iniciarActivacionMFA() {
+            const msg = document.getElementById('mfa-activar-msg');
+            msg.style.display = 'none';
+
+            const { data, error } = await supabaseClient.auth.mfa.enroll({ factorType: 'totp' });
+            if (error) {
+                msg.className = 'notification error';
+                msg.innerText = 'Error al generar el código QR: ' + error.message;
+                msg.style.display = 'block';
+                return;
+            }
+
+            factorIdEnProcesoMFA = data.id;
+            document.getElementById('mfa-qr-contenedor').innerHTML = `<img src="${data.totp.qr_code}" alt="Código QR MFA" style="width: 180px; height: 180px;">`;
+            document.getElementById('mfa-secreto-texto').innerText = data.totp.secret;
+            document.getElementById('mfa-paso-inicial').style.display = 'none';
+            document.getElementById('mfa-paso-qr').style.display = 'block';
+        }
+
+        async function confirmarActivacionMFA() {
+            const codigo = document.getElementById('mfa-codigo-confirmacion').value.trim();
+            const msg = document.getElementById('mfa-activar-msg');
+
+            if (!codigo || codigo.length !== 6) {
+                msg.className = 'notification error';
+                msg.innerText = 'Ingrese el código de 6 dígitos que muestra su app.';
+                msg.style.display = 'block';
+                return;
+            }
+
+            const { data: challengeData, error: challengeError } = await supabaseClient.auth.mfa.challenge({ factorId: factorIdEnProcesoMFA });
+            if (challengeError) {
+                msg.className = 'notification error';
+                msg.innerText = 'Error: ' + challengeError.message;
+                msg.style.display = 'block';
+                return;
+            }
+
+            const { error: verifyError } = await supabaseClient.auth.mfa.verify({
+                factorId: factorIdEnProcesoMFA,
+                challengeId: challengeData.id,
+                code: codigo
+            });
+
+            if (verifyError) {
+                msg.className = 'notification error';
+                msg.innerText = 'Código incorrecto. Verifique la hora de su celular y vuelva a intentar.';
+                msg.style.display = 'block';
+                return;
+            }
+
+            msg.className = 'notification success';
+            msg.innerText = '¡Verificación en dos pasos activada con éxito!';
+            msg.style.display = 'block';
+            setTimeout(() => cargarEstadoMFA(), 1500);
+        }
+
+        async function desactivarMFA() {
+            const msg = document.getElementById('mfa-desactivar-msg');
+            if (!confirm('¿Está seguro de desactivar la verificación en dos pasos? Su cuenta quedará protegida solo con la contraseña.')) return;
+
+            const { error } = await supabaseClient.auth.mfa.unenroll({ factorId: factorIdEnProcesoMFA });
+            if (error) {
+                msg.className = 'notification error';
+                msg.innerText = 'Error al desactivar: ' + error.message;
+                msg.style.display = 'block';
+                return;
+            }
+
+            msg.className = 'notification success';
+            msg.innerText = 'Verificación en dos pasos desactivada.';
+            msg.style.display = 'block';
+            setTimeout(() => cargarEstadoMFA(), 1500);
         }
