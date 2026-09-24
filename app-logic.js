@@ -841,8 +841,6 @@ function escapeHTML(texto) {
                 document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De La O Jimenez' : (data.docente_percursion || 'Luis De La O Jimenez');
             }
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
-            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro';
-            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises';
             if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
 
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
