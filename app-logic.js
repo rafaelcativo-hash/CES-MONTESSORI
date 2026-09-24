@@ -519,13 +519,10 @@ function escapeHTML(texto) {
                 if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
                 if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
                 if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
-                // Ejemplo de cómo se ve esa sección en tu código:
-let valorDefecto = '';
-
-if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
-if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro';
-if (materia === 'Inglés') valorDefecto = 'Ulises';
-
+                if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro';
+                if (materia === 'Inglés') valorDefecto = 'Ulises';
+                }
+                                        
                 select.innerHTML = '';
                 if (valorDefecto && !listaNombresDocentes.has(valorDefecto)) {
                     const optDef = document.createElement('option');
