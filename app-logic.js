@@ -326,14 +326,11 @@ function escapeHTML(texto) {
                 }
             }
 
-            // El interruptor solo aparece para un administrador real que
-            // ADEMÁS tiene su propio registro de docente académico (correo
-            // coincide en la tabla "docentes"). Así puede alternar entre
-            // gestionar todo el sistema y ver/editar únicamente su propia
-            // carga académica, sin cerrar sesión.
+            // El interruptor aparece para cualquier administrador, permitiéndole
+            // alternar entre gestionar todo el sistema y revisar su carga docente.
             const btnAlternar = document.getElementById('btn-alternar-vista');
             if (btnAlternar) {
-                if (usuarioRolActual === 'admin' && docenteTipoActual === 'academico') {
+                if (usuarioRolActual === 'admin') {
                     btnAlternar.style.display = 'inline-block';
                     btnAlternar.innerText = modoVistaDocente ? '⇄ Volver a Administrador' : '⇄ Ver como Docente';
                 } else {
@@ -843,7 +840,7 @@ function escapeHTML(texto) {
                 document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De La O Jimenez' : (data.docente_percursion || 'Luis De La O Jimenez');
             }
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanessa De La O Jimenez';
-            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro Garcia';
+            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro García';
             if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises Barajas García';
             if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
 
@@ -1640,8 +1637,8 @@ function escapeHTML(texto) {
                 estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico || est.instrumento_segundo === instrumentoEspecifico);
             }
 
-            // Excluye estudiantes marcados como "No lleva" esta materia (ej. Taller
-            // de Percusión), para que no aparezcan en la planilla ni se les genere
+            // Excluye estudiantes marcados como "No lleva" esta materia (ej.
+            // Taller de Percusión), para que no aparezcan en la planilla ni se les genere
             // nota, y así tampoco aparezcan en su Informe al Hogar.
             const campoMateriaActual = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpio(materia)];
             if (campoMateriaActual) {
