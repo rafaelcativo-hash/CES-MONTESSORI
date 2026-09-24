@@ -519,7 +519,7 @@ function escapeHTML(texto) {
                 if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
                 if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
                 if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro Garcia';
-                if (materia === 'Inglés') valorDefecto = 'Ulises Barajas García';
+                if (materia === 'Inglés') valorDefecto = 'Ulises Barajas Garcia';
                 if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
 
                 select.innerHTML = '';
@@ -844,7 +844,7 @@ function escapeHTML(texto) {
             }
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
             if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro Garcia';
-            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises Barajas García';
+            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises Barajas Garcia';
             if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
 
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
