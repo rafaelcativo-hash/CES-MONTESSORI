@@ -1,4 +1,4 @@
-// app-logic.js — Se carga SOLO después de un login exitoso.
+ogic.js — Se carga SOLO después de un login exitoso.
 // Contiene toda la lógica de matrícula, calificaciones, informes y control financiero.
 
 // ============================================================
@@ -518,11 +518,10 @@ function escapeHTML(texto) {
                 if (materia === 'Solfeo') valorDefecto = 'Rafael Cativo Romero';
                 if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
                 if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
-                if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
                 if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro';
                 if (materia === 'Inglés') valorDefecto = 'Ulises';
-                }
-                                        
+                if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
+
                 select.innerHTML = '';
                 if (valorDefecto && !listaNombresDocentes.has(valorDefecto)) {
                     const optDef = document.createElement('option');
@@ -844,6 +843,8 @@ function escapeHTML(texto) {
                 document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De La O Jimenez' : (data.docente_percursion || 'Luis De La O Jimenez');
             }
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
+            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro';
+            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises';
             if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
 
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
