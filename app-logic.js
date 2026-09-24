@@ -518,8 +518,6 @@ function escapeHTML(texto) {
                 if (materia === 'Solfeo') valorDefecto = 'Rafael Cativo Romero';
                 if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
                 if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
-                if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro';
-                if (materia === 'Inglés') valorDefecto = 'Ulises';
                 if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
 
                 select.innerHTML = '';
