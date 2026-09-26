@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Institucional - Centro Educativo Shkénuk / CES Montessori</title>
+    <title>Registro CES Montessori</title>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- SheetJS (XLSX) para importación/exportación de Excel -->
@@ -29,9 +29,9 @@
 
         body {
             font-family: 'Century Gothic', 'CenturyGothic', 'Segoe UI', sans-serif;
-            font-size: 14px; /* Tamaño estándar limpio para todo el sistema */
+            font-size: 14px;
             color: var(--text);
-            background-color: #f1f5f9;
+            background-color: #1e293b;
             margin: 0;
             padding: 0;
         }
@@ -74,7 +74,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
         }
 
@@ -88,18 +88,19 @@
         .login-card h2 {
             margin-top: 0;
             color: var(--primary);
-            font-size: 22px;
+            font-size: 26px;
         }
 
         #app-container {
             display: none;
             flex-direction: column;
             min-height: 100vh;
+            background-color: #f1f5f9;
         }
 
         /* Barra de navegación de pestañas */
         nav {
-            background-color: #ffffff;
+            background-color: var(--primary);
             border-bottom: 1px solid var(--border);
             display: flex;
             flex-wrap: wrap;
@@ -114,19 +115,19 @@
             font-family: inherit;
             font-size: 13px;
             font-weight: 600;
-            color: var(--text);
+            color: #ffffff;
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.2s ease;
         }
 
         .tab-btn:hover {
-            background-color: #e2e8f0;
-            color: var(--accent);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
         }
 
         .tab-btn.active {
-            background-color: var(--accent);
+            background-color: #0f172a;
             color: white;
         }
 
@@ -141,6 +142,7 @@
             width: 100%;
             margin: 0 auto;
             box-sizing: border-box;
+            background: #f1f5f9;
         }
 
         .tab-content {
@@ -162,7 +164,7 @@
             width: 100%;
             margin-top: 15px;
             background: white;
-            font-size: 13px; /* Tamaño equilibrado para listas de estudiantes */
+            font-size: 13px;
         }
 
         table.data-table th, 
@@ -306,47 +308,11 @@
             border: 1px solid #fecaca;
         }
 
-        /* Estilos de impresión y reportes */
-        .report-preview {
-            background: white;
-            padding: 20px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .report-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 12px;
-            margin-bottom: 15px;
-        }
-
-        .cita-montessori {
-            margin-top: 25px;
-            text-align: center;
-            font-style: italic;
-            color: #475569;
-            font-size: 11.5px;
-        }
-
-        .texto-cita {
-            margin: 0;
-        }
-
-        .autor-cita {
-            margin: 3px 0 0 0;
-            font-weight: bold;
-        }
-
         @media print {
             body { background: white; }
             header, nav, .no-print { display: none !important; }
-            main { padding: 0; max-width: 100%; }
+            main { padding: 0; max-width: 100%; background: white; }
             .tab-content { border: none; box-shadow: none; padding: 0; }
-            .report-preview { border: none; padding: 0; margin: 0; }
         }
     </style>
 </head>
@@ -358,13 +324,15 @@
     <div id="login-container">
         <div class="login-card">
             <img src="Logo%20%20CES%202--_n.jpg" alt="Logo CES Montessori">
-            <h2>CES Montessori</h2>
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Sistema de Gestión Académica y Administrativa</p>
-            
-            <form id="form-login" onsubmit="manejarLoginSupabase(event)">
-                <input type="email" id="login-correo" placeholder="Correo institucional" required>
-                <input type="password" id="login-password" placeholder="Contraseña de acceso" required>
-                <button type="submit" class="action-btn" style="width: 100%; margin-top: 10px; padding: 10px;">Ingresar al Sistema</button>
+            <h2>Registro CES Montessori</h2>
+            <form id="form-login" onsubmit="manejarLoginSupabase(event)" style="text-align: left; margin-top: 20px;">
+                <label style="font-size: 13px; font-weight: bold; color: var(--primary);">Correo Electrónico</label>
+                <input type="email" id="login-correo" placeholder="usuario@correo.com" required>
+                
+                <label style="font-size: 13px; font-weight: bold; color: var(--primary);">Contraseña</label>
+                <input type="password" id="login-password" placeholder="********" required>
+                
+                <button type="submit" class="action-btn" style="width: 100%; margin-top: 10px; padding: 12px; font-size: 14px;">Ingresar al Sistema</button>
             </form>
             <div id="login-msg" class="notification error" style="margin-top: 15px;"></div>
         </div>
@@ -376,13 +344,13 @@
     <div id="app-container">
         <header>
             <div style="display: flex; align-items: center; gap: 12px;">
-                <h1 style="font-size: 16px;">Centro Educativo Shkénuk / CES Montessori</h1>
+                <img src="Logo%20%20CES%202--_n.jpg" alt="Logo" style="width: 32px; height: 32px; object-fit: contain;">
+                <h1 style="font-size: 16px;">Registro CES Montessori</h1>
             </div>
             <div class="user-info">
-                <!-- Indicador visual del autoguardado inteligente -->
-                <span id="status-guardado" style="font-size: 12px; color: #facc15; font-weight: normal; margin-right: 10px;" title="Estado del autoguardado inteligente">Guardado</span>
-                <span id="user-role-badge" style="background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; font-size: 11px;">Rol: Cargando...</span>
+                <span id="status-guardado" style="font-size: 12px; color: #facc15; font-weight: normal; margin-right: 10px;">Guardado</span>
                 <span id="user-email-display">Usuario: ...</span>
+                <span id="user-role-badge" style="background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; font-size: 11px;">Rol: Cargando...</span>
                 <button type="button" id="btn-alternar-vista" class="warning-btn" style="padding: 4px 8px; font-size: 11px; display: none;" onclick="alternarVistaDocente()">⇄ Ver como Docente</button>
                 <button type="button" class="danger-btn" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
@@ -391,7 +359,7 @@
         <!-- BARRA DE NAVEGACIÓN -->
         <nav id="app-nav">
             <button type="button" class="tab-btn active" data-tab="calificar" data-role-req="docente" onclick="cambiarPestana('calificar', event)">Calificar</button>
-            <button type="button" class="tab-btn" data-tab="mimatricula" data-role-req="docente" onclick="cambiarPestana('mimatricula', event)">Mi Matrícula</button>
+            <button type="button" class="tab-btn" data-tab="mimatricula" data-role-req="docente" onclick="cambiarPestana('mimatricula', event)">Información del Estudiante</button>
             <button type="button" class="tab-btn" data-tab="matricula" data-role-req="admin" onclick="cambiarPestana('matricula', event)">Matrícula y Estudiantes</button>
             <button type="button" class="tab-btn" data-tab="registro" data-role-req="admin" onclick="cambiarPestana('registro', event)">Registro Histórico</button>
             <button type="button" class="tab-btn" data-tab="informes" data-role-req="docente" onclick="cambiarPestana('informes', event)">Informes al Hogar</button>
@@ -405,12 +373,70 @@
         <main>
             <!-- 1. PESTAÑA CALIFICAR -->
             <section id="calificar" class="tab-content active">
-                <h2 style="color: var(--primary); margin-top: 0;">Planilla de Calificación y Seguimiento</h2>
-                <div class="form-grid" style="margin-bottom: 20px;">
-                    <div>
-                        <label>Nivel Educativo:</label>
-                        <select id="cal-nivel" onchange="cargarGrupoParaCalificar()">
-                            <option value="">Seleccione nivel</option>
+                <h2 style="color: var(--primary); margin-top: 0;">Calificación por Componentes y Reflexiones Docentes</h2>
+                <fieldset style="margin-bottom: 20px;">
+                    <legend>Parámetros de Calificación</legend>
+                    <div class="form-grid">
+                        <div>
+                            <label>Periodo Activo</label>
+                            <select id="cal-periodo" onchange="cargarGrupoParaCalificar()">
+                                <option value="Primer Periodo">Primer Periodo</option>
+                                <option value="Segundo Periodo">Segundo Periodo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Nivel / Grupo</label>
+                            <select id="cal-nivel" onchange="cargarGrupoParaCalificar()">
+                                <option value="">Seleccione el nivel</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Asignatura / Taller / Instrumento</label>
+                            <select id="cal-materia" onchange="cargarGrupoParaCalificar()">
+                                <option value="">Seleccione asignatura</option>
+                                <option value="[Académica] Español">[Académica] Español</option>
+                                <option value="[Académica] Matemáticas">[Académica] Matemáticas</option>
+                                <option value="[Académica] Ciencias">[Académica] Ciencias</option>
+                                <option value="[Académica] Estudios Sociales">[Académica] Estudios Sociales</option>
+                                <option value="[Académica] Inglés">[Académica] Inglés</option>
+                                <option value="[Académica] Conducta">[Académica] Conducta</option>
+                                <option value="[Artística] Solfeo">[Artística] Solfeo</option>
+                                <option value="[Artística] Taller de Percusión">[Artística] Taller de Percusión</option>
+                                <option value="[Artística] Danza">[Artística] Danza</option>
+                                <option value="[Artística] Artes Plásticas">[Artística] Artes Plásticas</option>
+                                <option value="[Artística] Piano">[Artística] Piano</option>
+                                <option value="[Artística] Guitarra">[Artística] Guitarra</option>
+                                <option value="[Artística] Ukulele">[Artística] Ukulele</option>
+                                <option value="[Artística] Canto">[Artística] Canto</option>
+                                <option value="[Artística] Bajo">[Artística] Bajo</option>
+                                <option value="[Artística] Batería">[Artística] Batería</option>
+                                <option value="[Artística] Edufi">[Artística] Edufi</option>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+                <div id="contenedor-grupo-calificar">
+                    <p style="color: #64748b; text-align: center;">Seleccione el Nivel y la Asignatura para desplegar la planilla.</p>
+                </div>
+            </section>
+
+            <!-- 2. PESTAÑA MI MATRÍCULA / INFORMACIÓN DEL ESTUDIANTE -->
+            <section id="mimatricula" class="tab-content">
+                <h2 style="color: var(--primary); margin-top: 0;">Información del Estudiante</h2>
+                <p style="color: #64748b; font-size: 13px;">Como docente académico, puede actualizar la <b>Ubicación/Dirección</b>, los datos de los <b>Encargados</b> y las <b>Observaciones</b> de los estudiantes de su(s) nivel(es) asignado(s). El resto de la información está restringida por seguridad y solo lo puede modificar un administrador.</p>
+                
+                <fieldset style="margin-bottom: 20px;">
+                    <legend>Seleccionar Nivel</legend>
+                    <div style="max-width: 300px;">
+                        <label>Nivel</label>
+                        <select id="mimat-nivel-sel" onchange="cargarMiMatriculaDocente()">
+                            <option value="">-- Seleccione un nivel --</option>
                             <option value="Primero">Primero</option>
                             <option value="Segundo">Segundo</option>
                             <option value="Tercero">Tercero</option>
@@ -419,61 +445,11 @@
                             <option value="Sexto">Sexto</option>
                         </select>
                     </div>
-                    <div>
-                        <label>Asignatura / Curso:</label>
-                        <select id="cal-materia" onchange="cargarGrupoParaCalificar()">
-                            <option value="">Seleccione asignatura</option>
-                            <option value="[Académica] Español">[Académica] Español</option>
-                            <option value="[Académica] Matemáticas">[Académica] Matemáticas</option>
-                            <option value="[Académica] Ciencias">[Académica] Ciencias</option>
-                            <option value="[Académica] Estudios Sociales">[Académica] Estudios Sociales</option>
-                            <option value="[Académica] Inglés">[Académica] Inglés</option>
-                            <option value="[Académica] Conducta">[Académica] Conducta</option>
-                            <option value="[Artística] Solfeo">[Artística] Solfeo</option>
-                            <option value="[Artística] Taller de Percusión">[Artística] Taller de Percusión</option>
-                            <option value="[Artística] Danza">[Artística] Danza</option>
-                            <option value="[Artística] Artes Plásticas">[Artística] Artes Plásticas</option>
-                            <option value="[Artística] Piano">[Artística] Piano</option>
-                            <option value="[Artística] Guitarra">[Artística] Guitarra</option>
-                            <option value="[Artística] Ukulele">[Artística] Ukulele</option>
-                            <option value="[Artística] Canto">[Artística] Canto</option>
-                            <option value="[Artística] Bajo">[Artística] Bajo</option>
-                            <option value="[Artística] Batería">[Artística] Batería</option>
-                            <option value="[Artística] Edufi">[Artística] Edufi</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Periodo Académico:</label>
-                        <select id="cal-periodo" onchange="cargarGrupoParaCalificar()">
-                            <option value="Primer Periodo">Primer Periodo</option>
-                            <option value="Segundo Periodo">Segundo Periodo</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="contenedor-grupo-calificar">
-                    <p style="color: #64748b; text-align: center;">Seleccione el Nivel y la Asignatura para desplegar la planilla.</p>
-                </div>
-            </section>
+                </fieldset>
 
-            <!-- 2. PESTAÑA MI MATRÍCULA (DOCENTES ACADÉMICOS) -->
-            <section id="mimatricula" class="tab-content">
-                <h2 style="color: var(--primary); margin-top: 0;">Gestión de Matrícula (Docente Académico)</h2>
-                <p style="color: #64748b; font-size: 13px;">Como docente académico asignado a este nivel, puede actualizar los datos de ubicación, encargados y observaciones de sus estudiantes.</p>
-                
-                <div style="margin-bottom: 20px;">
-                    <label>Seleccione su Nivel a Cargo:</label>
-                    <select id="mimat-nivel-sel" onchange="cargarMiMatriculaDocente()" style="max-width: 300px;">
-                        <option value="">Seleccione nivel</option>
-                        <option value="Primero">Primero</option>
-                        <option value="Segundo">Segundo</option>
-                        <option value="Tercero">Tercero</option>
-                        <option value="Cuarto">Cuarto</option>
-                        <option value="Quinto">Quinto</option>
-                        <option value="Sexto">Sexto</option>
-                    </select>
+                <div id="contenedor-mimatricula-tabla">
+                    <p style="color: #64748b;">Seleccione un nivel para ver sus estudiantes.</p>
                 </div>
-
-                <div id="contenedor-mimatricula-tabla"></div>
 
                 <div id="contenedor-mimatricula-form" style="display: none; margin-top: 30px; border-top: 2px solid var(--border); padding-top: 20px;">
                     <h3 style="color: var(--accent);" id="mimat-nombre-editando">Editando Estudiante</h3>
@@ -549,7 +525,7 @@
                 </div>
                 
                 <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
-                    <p style="margin: 0; font-size: 13px;"><b>Año Lectivo Activo del Sistema:</b> <span id="span-anio-activo-matricula" style="color: var(--accent); font-weight: bold;">2026</span>. La matrícula que registre quedará asociada a este periodo general.</p>
+                    <p style="margin: 0; font-size: 13px;"><b>Año Lectivo Activo del Sistema:</b> <span id="span-anio-activo-matricula" style="color: var(--accent); font-weight: bold;">2026</span></p>
                 </div>
 
                 <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
@@ -605,19 +581,6 @@
                                 </select>
                             </div>
                         </div>
-
-                        <!-- Carga de Fotografía -->
-                        <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px; display: flex; align-items: center; gap: 20px;">
-                            <div style="width: 80px; height: 100px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; position: relative;">
-                                <img id="img-preview-foto" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                                <span id="txt-sin-foto" style="font-size: 10px; color: #94a3b8; text-align: center;">Sin Foto</span>
-                            </div>
-                            <div style="flex: 1;">
-                                <label>Fotografía del Estudiante (Subir imagen o pegar enlace):</label>
-                                <input type="file" accept="image/*" onchange="procesarArchivoFoto(event)" style="margin-bottom: 6px;">
-                                <input type="hidden" id="mat-foto-url" oninput="generarVistaPreviaMatricula()">
-                            </div>
-                        </div>
                     </fieldset>
 
                     <fieldset>
@@ -653,10 +616,6 @@
                                 <input type="email" id="enc1-correo" oninput="generarVistaPreviaMatricula()">
                                 <label>Número Celular:</label>
                                 <input type="text" id="enc1-cel" oninput="generarVistaPreviaMatricula()">
-                                <label>Profesión u Oficio:</label>
-                                <input type="text" id="enc1-profesion" oninput="generarVistaPreviaMatricula()">
-                                <label>Lugar de Trabajo:</label>
-                                <input type="text" id="enc1-trabajo" oninput="generarVistaPreviaMatricula()">
                             </div>
                             <div>
                                 <h4 style="margin: 0 0 10px 0; color: var(--primary);">Segundo Encargado</h4>
@@ -666,131 +625,18 @@
                                 <input type="email" id="enc2-correo" oninput="generarVistaPreviaMatricula()">
                                 <label>Número Celular:</label>
                                 <input type="text" id="enc2-cel" oninput="generarVistaPreviaMatricula()">
-                                <label>Profesión u Oficio:</label>
-                                <input type="text" id="enc2-profesion" oninput="generarVistaPreviaMatricula()">
-                                <label>Lugar de Trabajo:</label>
-                                <input type="text" id="enc2-trabajo" oninput="generarVistaPreviaMatricula()">
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>4. Observaciones y Antecedentes</legend>
-                        <div>
-                            <label>Observaciones médicas, conductuales o académicas:</label>
-                            <textarea id="mat-observaciones" rows="3" oninput="generarVistaPreviaMatricula()"></textarea>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>5. Asignación Académica, Talleres y Cursos</legend>
-                        <div class="form-grid">
-                            <div>
-                                <label>Profesor(a) Académico(a) Asignado(a):</label>
-                                <select id="mat-docente-acad" onchange="generarVistaPreviaMatricula()">
-                                    <option value="">Cargando docentes...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Solfeo:</label>
-                                <select id="mat-doc-solfeo" class="select-docente-predefinido" data-materia="Solfeo" onchange="generarVistaPreviaMatricula()"></select>
-                            </div>
-                            <div>
-                                <label>Taller de Percusión:</label>
-                                <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; margin-bottom: 12px;">
-                                    <select id="mat-doc-percursion" class="select-docente-predefinido" data-materia="Taller de Percusión" onchange="generarVistaPreviaMatricula()" style="margin-bottom: 0; flex: 1;"></select>
-                                    <label style="font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; margin-bottom: 0;">
-                                        <input type="checkbox" id="mat-no-percusion" onchange="document.getElementById('mat-doc-percursion').disabled = this.checked; generarVistaPreviaMatricula();"> No lleva
-                                    </label>
-                                </div>
-                            </div>
-                            <div>
-                                <label>Danza:</label>
-                                <select id="mat-doc-danza" class="select-docente-predefinido" data-materia="Danza" onchange="generarVistaPreviaMatricula()"></select>
-                            </div>
-                            <div>
-                                <label>Artes Plásticas:</label>
-                                <select id="mat-doc-plasticas" class="select-docente-predefinido" data-materia="Artes Plásticas" onchange="generarVistaPreviaMatricula()"></select>
-                            </div>
-                            <div>
-                                <label>Inglés:</label>
-                                <select id="mat-doc-ingles" class="select-docente-predefinido" data-materia="Inglés" onchange="generarVistaPreviaMatricula()"></select>
-                            </div>
-                            <div>
-                                <label>Educación Física:</label>
-                                <select id="mat-doc-edufi" class="select-docente-predefinido" data-materia="Edufi" onchange="generarVistaPreviaMatricula()"></select>
-                            </div>
-                            <div>
-                                <label>Instrumento Principal:</label>
-                                <select id="mat-instr-principal" onchange="generarVistaPreviaMatricula()">
-                                    <option value="">Ninguno / No asignado</option>
-                                    <option value="Piano">Piano</option>
-                                    <option value="Guitarra">Guitarra</option>
-                                    <option value="Ukulele">Ukulele</option>
-                                    <option value="Canto">Canto</option>
-                                    <option value="Bajo">Bajo</option>
-                                    <option value="Batería">Batería</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Instructor (Instrumento Principal):</label>
-                                <select id="mat-docente-asig" onchange="generarVistaPreviaMatricula()">
-                                    <option value="">Cargando instructores...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Segundo Instrumento (Opcional - Pago):</label>
-                                <select id="mat-instr-segundo" onchange="generarVistaPreviaMatricula()">
-                                    <option value="Ninguno">Ninguno / No aplica</option>
-                                    <option value="Piano">Piano</option>
-                                    <option value="Guitarra">Guitarra</option>
-                                    <option value="Ukulele">Ukulele</option>
-                                    <option value="Canto">Canto</option>
-                                    <option value="Bajo">Bajo</option>
-                                    <option value="Batería">Batería</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Profesor (Segundo Instrumento):</label>
-                                <select id="mat-docente-segundo" onchange="generarVistaPreviaMatricula()">
-                                    <option value="Ninguno">Ninguno / No aplica</option>
-                                </select>
                             </div>
                         </div>
                     </fieldset>
 
                     <div style="margin-top: 20px; display: flex; gap: 15px; align-items: center;">
                         <button type="submit" id="btn-submit-matricula" class="action-btn" style="padding: 12px 24px; font-size: 14px;">Guardar Matrícula Rápida</button>
-                        <button type="button" class="warning-btn" onclick="generarVistaPreviaMatricula()" style="padding: 12px 24px; font-size: 14px;">Generar Vista Previa Ficha Oficial</button>
                         <span id="mat-msg" style="font-weight: bold; font-size: 13px;"></span>
                     </div>
                 </form>
 
-                <!-- Vista previa interactiva de la matrícula -->
-                <div id="contenedor-vista-previa-matricula" style="display: none; margin-top: 30px; border-top: 2px dashed var(--border); padding-top: 20px;"></div>
-
-                <!-- Listado general de estudiantes administrables -->
                 <div style="margin-top: 40px; border-top: 2px solid var(--border); padding-top: 20px;">
                     <h3 style="color: var(--primary);">Listado General de Estudiantes Registrados</h3>
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-                        <div>
-                            <label>Filtrar por Nivel:</label>
-                            <select id="filtro-ciclo-general" onchange="filtrarEstudiantesPorCiclo()" style="width: 200px; margin-bottom: 0;">
-                                <option value="">Todos los niveles</option>
-                                <option value="Primero">Primero</option>
-                                <option value="Segundo">Segundo</option>
-                                <option value="Tercero">Tercero</option>
-                                <option value="Cuarto">Cuarto</option>
-                                <option value="Quinto">Quinto</option>
-                                <option value="Sexto">Sexto</option>
-                                <option value="Graduado">Graduado</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 18px;">
-                            <input type="checkbox" id="chk-mostrar-ocultos" onchange="cargarTablaEstudiantesNivel()" style="width: 16px; height: 16px;">
-                            <label for="chk-mostrar-ocultos" style="cursor: pointer; font-size: 13px; margin-bottom: 0;">Mostrar estudiantes ocultos o dados de baja</label>
-                        </div>
-                    </div>
                     <div id="contenedor-tabla-estudiantes-nivel"></div>
                 </div>
             </section>
@@ -798,393 +644,39 @@
             <!-- 4. PESTAÑA REGISTRO HISTÓRICO -->
             <section id="registro" class="tab-content">
                 <h2 style="color: var(--primary); margin-top: 0;">Registro Histórico de Calificaciones</h2>
-                <div class="form-grid" style="margin-bottom: 20px;">
-                    <div>
-                        <label>Año Lectivo a Consultar:</label>
-                        <select id="reg-anio-sel" onchange="cargarCuadrosRegistro()">
-                            <option value="2026">Año Lectivo 2026</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Nivel Educativo:</label>
-                        <select id="reg-nivel-sel" onchange="cargarCuadrosRegistro()">
-                            <option value="">Seleccione nivel</option>
-                            <option value="Primero">Primero</option>
-                            <option value="Segundo">Segundo</option>
-                            <option value="Tercero">Tercero</option>
-                            <option value="Cuarto">Cuarto</option>
-                            <option value="Quinto">Quinto</option>
-                            <option value="Sexto">Sexto</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="contenedor-cuadros-registro">
-                    <p style="color: #64748b; text-align: center;">Seleccione el año y el nivel educativo para desplegar el registro histórico.</p>
-                </div>
+                <div id="contenedor-cuadros-registro"></div>
             </section>
 
             <!-- 5. PESTAÑA INFORMES AL HOGAR -->
             <section id="informes" class="tab-content">
                 <h2 style="color: var(--primary); margin-top: 0;">Generación de Informes al Hogar</h2>
-                <div class="form-grid" style="margin-bottom: 20px;">
-                    <div>
-                        <label>Nivel Educativo:</label>
-                        <select id="inf-nivel-sel" onchange="cargarEstudiantesInforme()">
-                            <option value="">Seleccione nivel</option>
-                            <option value="Primero">Primero</option>
-                            <option value="Segundo">Segundo</option>
-                            <option value="Tercero">Tercero</option>
-                            <option value="Cuarto">Cuarto</option>
-                            <option value="Quinto">Quinto</option>
-                            <option value="Sexto">Sexto</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Estudiante:</label>
-                        <select id="inf-estudiante-sel">
-                            <option value="">Primero seleccione un nivel</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Periodo del Informe:</label>
-                        <select id="inf-periodo-sel">
-                            <option value="Primer Periodo">Primer Periodo</option>
-                            <option value="Segundo Periodo">Segundo Periodo y Anual</option>
-                        </select>
-                    </div>
-                </div>
-                <button type="button" class="action-btn" onclick="generarInformeHogarVisual()">Generar Vista Previa del Informe</button>
-                <div id="inf-msg" class="notification" style="margin-top: 15px;"></div>
                 <div id="contenedor-vista-informe"></div>
             </section>
 
             <!-- 6. PESTAÑA LISTAS OFICIALES -->
             <section id="listas" class="tab-content">
                 <h2 style="color: var(--primary); margin-top: 0;">Listas Oficiales y Matriz Institucional</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <button type="button" class="sub-tab-btn tab-btn active" onclick="cargarListasCiclo('Primer Ciclo', event)">Primer Ciclo (1°, 2°, 3°)</button>
-                    <button type="button" class="sub-tab-btn tab-btn" onclick="cargarListasCiclo('Segundo Ciclo', event)">Segundo Ciclo (4°, 5°, 6°)</button>
-                </div>
-                <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
-                    <label style="font-weight: bold;">Generar Lista Oficial por Nivel o Ciclo:</label>
-                    <select id="generar-lista-nivel-sel" onchange="generarListaOficialVisual()" style="max-width: 300px; margin-bottom: 0;">
-                        <option value="">Seleccione opción</option>
-                        <option value="Primer Ciclo">Primer Ciclo (Completo)</option>
-                        <option value="Segundo Ciclo">Segundo Ciclo (Completo)</option>
-                        <option value="Primero">Primero</option>
-                        <option value="Segundo">Segundo</option>
-                        <option value="Tercero">Tercero</option>
-                        <option value="Cuarto">Cuarto</option>
-                        <option value="Quinto">Quinto</option>
-                        <option value="Sexto">Sexto</option>
-                    </select>
-                </div>
                 <div id="contenedor-listas-tabla"></div>
-                <div id="contenedor-vista-lista-nivel" style="margin-top: 20px;"></div>
             </section>
 
             <!-- 7. PESTAÑA CONTROL FINANCIERO -->
             <section id="financiero" class="tab-content">
                 <h2 style="color: var(--primary); margin-top: 0;">Módulo de Control Financiero y Cobros</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;" class="no-print">
-                    <button type="button" class="sub-tab-btn tab-btn active" onclick="cambiarSubPestanaFinanciero('matmat', event)">Matrícula y Materiales</button>
-                    <button type="button" class="sub-tab-btn tab-btn" onclick="cambiarSubPestanaFinanciero('mensual', event)">Grilla de Mensualidades</button>
-                    <button type="button" class="sub-tab-btn tab-btn" onclick="cambiarSubPestanaFinanciero('stats', event)">Estadísticas y Morosidad</button>
-                    <button type="button" class="sub-tab-btn tab-btn" onclick="cambiarSubPestanaFinanciero('estado', event)">Estado de Cuenta por Estudiante</button>
-                </div>
-
-                <!-- Sub-pestaña 1: Matrícula y Materiales -->
-                <div id="sub-financiero-matmat" class="sub-doc-panel">
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center;">
-                        <label>Filtrar por Nivel:</label>
-                        <select id="fin-matmat-nivel-sel" onchange="cargarTablaMatriculaMateriales()" style="width: 200px; margin-bottom: 0;">
-                            <option value="">Todos los niveles</option>
-                            <option value="Primero">Primero</option>
-                            <option value="Segundo">Segundo</option>
-                            <option value="Tercero">Tercero</option>
-                            <option value="Cuarto">Cuarto</option>
-                            <option value="Quinto">Quinto</option>
-                            <option value="Sexto">Sexto</option>
-                        </select>
-                    </div>
-                    <div id="contenedor-fin-matmat"></div>
-                </div>
-
-                <!-- Sub-pestaña 2: Grilla de Mensualidades -->
-                <div id="sub-financiero-mensual" class="sub-doc-panel" style="display: none;">
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-                        <div>
-                            <label>Año Lectivo:</label>
-                            <select id="fin-mensual-anio-sel" onchange="cargarGrillaMensualidades()" style="width: 160px; margin-bottom: 0;">
-                                <option value="2026">2026</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Filtrar por Nivel:</label>
-                            <select id="fin-mensual-nivel-sel" onchange="cargarGrillaMensualidades()" style="width: 180px; margin-bottom: 0;">
-                                <option value="">Todos los niveles</option>
-                                <option value="Primero">Primero</option>
-                                <option value="Segundo">Segundo</option>
-                                <option value="Tercero">Tercero</option>
-                                <option value="Cuarto">Cuarto</option>
-                                <option value="Quinto">Quinto</option>
-                                <option value="Sexto">Sexto</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="contenedor-fin-mensual" style="overflow-x: auto;"></div>
-                </div>
-
-                <!-- Sub-pestaña 3: Estadísticas y Morosidad -->
-                <div id="sub-financiero-stats" class="sub-doc-panel" style="display: none;">
-                    <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
-                        <div>
-                            <label>Año Lectivo:</label>
-                            <select id="fin-stats-anio-sel" onchange="cargarEstadisticasFinancieras()" style="width: 160px; margin-bottom: 0;">
-                                <option value="2026">2026</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Mes de Corte:</label>
-                            <select id="fin-stats-mes-sel" onchange="cargarEstadisticasFinancieras()" style="width: 160px; margin-bottom: 0;"></select>
-                        </div>
-                    </div>
-                    <div id="contenedor-fin-stats"></div>
-                </div>
-
-                <!-- Sub-pestaña 4: Estado de Cuenta por Estudiante -->
-                <div id="sub-financiero-estado" class="sub-doc-panel" style="display: none;">
-                    <div class="form-grid" style="margin-bottom: 20px;">
-                        <div>
-                            <label>Nivel Educativo:</label>
-                            <select id="fin-rep-nivel-sel" onchange="cargarEstudiantesReporteFinanciero()">
-                                <option value="">Seleccione nivel</option>
-                                <option value="Primero">Primero</option>
-                                <option value="Segundo">Segundo</option>
-                                <option value="Tercero">Tercero</option>
-                                <option value="Cuarto">Cuarto</option>
-                                <option value="Quinto">Quinto</option>
-                                <option value="Sexto">Sexto</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Estudiante:</label>
-                            <select id="fin-rep-estudiante-sel">
-                                <option value="">Primero seleccione un nivel</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Mes de Corte:</label>
-                            <select id="fin-rep-mes-sel">
-                                <option value="02">Febrero</option>
-                                <option value="03">Marzo</option>
-                                <option value="04">Abril</option>
-                                <option value="05">Mayo</option>
-                                <option value="06">Junio</option>
-                                <option value="07">Julio</option>
-                                <option value="08">Agosto</option>
-                                <option value="09">Septiembre</option>
-                                <option value="10">Octubre</option>
-                                <option value="11">Noviembre</option>
-                                <option value="12">Diciembre</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="button" class="action-btn" onclick="generarReporteFinancieroVisual()">Generar Estado de Cuenta</button>
-                    <div id="fin-rep-msg" class="notification" style="margin-top: 15px;"></div>
-                    <div id="contenedor-vista-reporte-fin" style="margin-top: 20px;"></div>
-                </div>
             </section>
 
             <!-- 8. PESTAÑA DIRECTORIO Y CARGA -->
             <section id="docentes" class="tab-content">
                 <h2 style="color: var(--primary); margin-top: 0;">Directorio, Carga Académica y Roles</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <button type="button" class="sub-tab-btn tab-btn active" onclick="cambiarSubPestanaDocente('directorio', event)">Directorio de Docentes</button>
-                    <button type="button" class="sub-tab-btn tab-btn" onclick="cambiarSubPestanaDocente('carga', event)">Carga Académica Real</button>
-                    <button type="button" class="sub-tab-btn tab-btn" onclick="cambiarSubPestanaDocente('roles', event)">Roles de Usuario (Permisos)</button>
-                </div>
-
-                <!-- Sub-pestaña 1: Directorio -->
-                <div id="sub-docentes-directorio" class="sub-doc-panel">
-                    <form id="form-docente-general" onsubmit="confirmarYGuardarDocente(event)" style="margin-bottom: 30px;">
-                        <input type="hidden" id="doc-id">
-                        <fieldset>
-                            <legend id="docente-legend-title">Registrar Nuevo Docente</legend>
-                            <div class="form-grid">
-                                <div>
-                                    <label>Nombre Completo:</label>
-                                    <input type="text" id="doc-nombre" required>
-                                </div>
-                                <div>
-                                    <label>Correo Electrónico:</label>
-                                    <input type="email" id="doc-correo" required>
-                                </div>
-                                <div>
-                                    <label>Teléfono:</label>
-                                    <input type="text" id="doc-tel">
-                                </div>
-                                <div>
-                                    <label>Especialidad / Materia:</label>
-                                    <input type="text" id="doc-esp" required>
-                                </div>
-                                <div>
-                                    <label>Tipo de Docente:</label>
-                                    <select id="doc-tipo">
-                                        <option value="artistico">Artístico / Especialidad</option>
-                                        <option value="academico">Académico (Grado)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label>Ciclo Asignado:</label>
-                                    <select id="doc-ciclo">
-                                        <option value="Ambos Ciclos">Ambos Ciclos (1° y 2°)</option>
-                                        <option value="Primer Ciclo">Primer Ciclo (1°, 2°, 3°)</option>
-                                        <option value="Segundo Ciclo">Segundo Ciclo (4°, 5°, 6°)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div style="margin-top: 15px; display: flex; gap: 15px; align-items: center;">
-                                <button type="submit" id="btn-submit-docente" class="action-btn">Registrar Docente</button>
-                                <button type="button" class="warning-btn" onclick="limpiarFormularioDocente()">Nuevo / Limpiar</button>
-                                <span id="doc-msg" style="font-weight: bold; font-size: 13px;"></span>
-                            </div>
-                        </fieldset>
-                    </form>
-                    <div id="contenedor-tabla-docentes"></div>
-                </div>
-
-                <!-- Sub-pestaña 2: Carga Académica -->
-                <div id="sub-docentes-carga" class="sub-doc-panel" style="display: none;">
-                    <div id="contenedor-carga-academica"></div>
-                </div>
-
-                <!-- Sub-pestaña 3: Roles de Usuario -->
-                <div id="sub-docentes-roles" class="sub-doc-panel" style="display: none;">
-                    <form id="form-asignar-rol" onsubmit="guardarRolUsuario(event)" style="margin-bottom: 30px;">
-                        <fieldset>
-                            <legend>Asignar Rol de Administrador o Docente</legend>
-                            <div class="form-grid">
-                                <div>
-                                    <label>Correo Electrónico (Supabase Auth):</label>
-                                    <input type="email" id="rol-email-input" placeholder="usuario@correo.com" required>
-                                </div>
-                                <div>
-                                    <label>Rol en el Sistema:</label>
-                                    <select id="rol-select-input">
-                                        <option value="docente">Docente (Estándar)</option>
-                                        <option value="admin">Administrador (Acceso total)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div style="margin-top: 15px; display: flex; gap: 15px; align-items: center;">
-                                <button type="submit" class="action-btn">Guardar Rol de Usuario</button>
-                                <span id="rol-msg" style="font-weight: bold; font-size: 13px;"></span>
-                            </div>
-                        </fieldset>
-                    </form>
-                    <div id="contenedor-tabla-roles"></div>
-                </div>
             </section>
 
             <!-- 9. PESTAÑA CONFIGURACIÓN -->
             <section id="configuracion" class="tab-content">
-                <h2 style="color: var(--primary); margin-top: 0;">Configuración de Periodos y Eventos Institucionales</h2>
-                <form id="form-configuracion" onsubmit="confirmarYGuardarConfiguracion(event)">
-                    <fieldset>
-                        <legend>Año Lectivo y Periodos</legend>
-                        <div class="form-grid">
-                            <div>
-                                <label>Año Lectivo Activo:</label>
-                                <input type="number" id="cfg-anio-activo" value="2026" required>
-                            </div>
-                            <div>
-                                <label>Inicio Primer Periodo:</label>
-                                <input type="date" id="cfg-p1-inicio">
-                            </div>
-                            <div>
-                                <label>Cierre Primer Periodo:</label>
-                                <input type="date" id="cfg-p1-fin">
-                            </div>
-                            <div>
-                                <label>Vacaciones / Receso Inicio:</label>
-                                <input type="date" id="cfg-vac-inicio">
-                            </div>
-                            <div>
-                                <label>Vacaciones / Receso Fin:</label>
-                                <input type="date" id="cfg-vac-fin">
-                            </div>
-                            <div>
-                                <label>Inicio Segundo Periodo:</label>
-                                <input type="date" id="cfg-p2-inicio">
-                            </div>
-                            <div>
-                                <label>Cierre Segundo Periodo:</label>
-                                <input type="date" id="cfg-p2-fin">
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Eventos Institucionales</legend>
-                        <div class="form-grid">
-                            <div>
-                                <label>Fecha Festival de las Artes:</label>
-                                <input type="date" id="cfg-festival-fecha">
-                            </div>
-                            <div>
-                                <label>Lugar Festival de las Artes:</label>
-                                <input type="text" id="cfg-festival-lugar">
-                            </div>
-                            <div>
-                                <label>Fecha Graduación / Cierre:</label>
-                                <input type="date" id="cfg-graduacion-fecha">
-                            </div>
-                            <div>
-                                <label>Lugar Graduación / Cierre:</label>
-                                <input type="text" id="cfg-graduacion-lugar">
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <div style="margin-top: 20px; display: flex; gap: 15px; align-items: center;">
-                        <button type="submit" class="action-btn">Guardar Configuración Institucional</button>
-                        <span id="cfg-msg" style="font-weight: bold; font-size: 13px;"></span>
-                    </div>
-                </form>
+                <h2 style="color: var(--primary); margin-top: 0;">Configuración de Periodos</h2>
             </section>
 
             <!-- 10. PESTAÑA SEGURIDAD (MFA) -->
             <section id="seguridad" class="tab-content">
-                <h2 style="color: var(--primary); margin-top: 0;">Seguridad y Verificación en Dos Pasos (MFA - TOTP)</h2>
-                <p style="color: #64748b; font-size: 13px;">Proteja su cuenta institucional vinculando una aplicación de autenticación (como Google Authenticator, Authy o Microsoft Authenticator).</p>
-                
-                <div style="background: #f8fafc; border: 1px solid var(--border); padding: 20px; border-radius: 8px; margin-top: 20px;">
-                    <h3 style="margin-top: 0; color: var(--primary);">Estado Actual de la Cuenta</h3>
-                    <p id="mfa-estado-texto">Consultando estado...</p>
-                    
-                    <div id="mfa-fieldset-activar" style="display: none; margin-top: 20px;">
-                        <div id="mfa-paso-inicial">
-                            <button type="button" class="action-btn" onclick="iniciarActivacionMFA()">Configurar Verificación en Dos Pasos</button>
-                        </div>
-                        <div id="mfa-paso-qr" style="display: none; margin-top: 15px;">
-                            <p style="font-size: 13px;">1. Escanee el siguiente código QR con su aplicación de autenticación:</p>
-                            <div id="mfa-qr-contenedor" style="margin: 10px 0;"></div>
-                            <p style="font-size: 12px; color: #64748b;">O ingrese la clave secreta manualmente: <code id="mfa-secreto-texto" style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;"></code></p>
-                            <p style="font-size: 13px; margin-top: 15px;">2. Ingrese el código de 6 dígitos que genera su aplicación para confirmar:</p>
-                            <input type="text" id="mfa-codigo-confirmacion" placeholder="123456" maxlength="6" style="max-width: 200px;">
-                            <div>
-                                <button type="button" class="success-btn" onclick="confirmarActivacionMFA()">Verificar y Activar</button>
-                            </div>
-                        </div>
-                        <div id="mfa-activar-msg" class="notification" style="margin-top: 15px;"></div>
-                    </div>
-
-                    <div id="mfa-fieldset-desactivar" style="display: none; margin-top: 20px;">
-                        <button type="button" class="danger-btn" onclick="desactivarMFA()">Desactivar Verificación en Dos Pasos</button>
-                        <div id="mfa-desactivar-msg" class="notification" style="margin-top: 15px;"></div>
-                    </div>
-                </div>
+                <h2 style="color: var(--primary); margin-top: 0;">Seguridad y Verificación en Dos Pasos (MFA)</h2>
             </section>
         </main>
     </div>
