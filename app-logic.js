@@ -20,6 +20,7 @@ function escapeHTML(texto) {
         .replace(/'/g, '&#39;');
 }
 
+
         // ============================================================
         // ENVÍO REAL DE INFORMES POR CORREO (EmailJS conectado a
         // slmontessori@gmail.com). Sustituya estos 3 valores por los
@@ -117,37 +118,23 @@ function escapeHTML(texto) {
             URL.revokeObjectURL(url);
         }
 
-        // Compara nombres de forma flexible: ignora tildes, mayúsculas
-        // y espacios de más/dobles, para que una diferencia mínima entre
-        // el Directorio de Docentes y lo escrito en la Matrícula no rompa
-        // la coincidencia (esto era la causa de que algunos docentes
-        // vieran materias que no les correspondían).
-        function normalizarNombre(nombre) {
-            return (nombre || '')
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
-                .toLowerCase()
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
-
         // Calcula, consultando la matrícula real (solo estudiantes activos),
         // el conjunto de materias que un docente específico imparte de verdad.
         async function obtenerCargaRealDocente(nombreDocente) {
             const materiasPermitidas = new Set();
             if (!nombreDocente) return materiasPermitidas;
-            const nombreDocenteNorm = normalizarNombre(nombreDocente);
 
             const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
             if (!estudiantes) return materiasPermitidas;
 
             estudiantes.forEach(est => {
                 Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([materia, campo]) => {
-                    if (est[campo] && normalizarNombre(est[campo]) === nombreDocenteNorm) materiasPermitidas.add(materia);
+                    if (est[campo] && est[campo] === nombreDocente) materiasPermitidas.add(materia);
                 });
-                if (est.instrumento_principal && normalizarNombre(est.docente_asignado) === nombreDocenteNorm) {
+                if (est.instrumento_principal && est.docente_asignado === nombreDocente) {
                     materiasPermitidas.add(est.instrumento_principal);
                 }
-                if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && normalizarNombre(est.docente_segundo) === nombreDocenteNorm) {
+                if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && est.docente_segundo === nombreDocente) {
                     materiasPermitidas.add(est.instrumento_segundo);
                 }
             });
@@ -286,16 +273,7 @@ function escapeHTML(texto) {
                 docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase().trim();
                 docenteNombreGlobal = (docData.nombre || '').trim();
                 docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
-                
-                // Asignación de ciclos y unificaciones específicas solicitadas
-                const normNombre = normalizarNombre(docenteNombreGlobal);
-                if (normNombre.includes('mariangel')) {
-                    docenteCicloGlobal = 'Primer Ciclo';
-                } else if (normNombre.includes('rafael cativo')) {
-                    docenteCicloGlobal = 'Segundo Ciclo';
-                } else {
-                    docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
-                }
+                docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
             } else {
                 docenteEspecialidadGlobal = '';
                 docenteNombreGlobal = '';
@@ -348,11 +326,8 @@ function escapeHTML(texto) {
                 }
             }
 
-            // El interruptor solo aparece para un administrador real que
-            // ADEMÁS tiene su propio registro de docente académico (correo
-            // coincide en la tabla "docentes"). Así puede alternar entre
-            // gestionar todo el sistema y ver/editar únicamente su propia
-            // carga académica, sin cerrar sesión.
+            // El interruptor aparece para cualquier administrador, permitiéndole
+            // alternar entre gestionar todo el sistema y revisar su carga docente.
             const btnAlternar = document.getElementById('btn-alternar-vista');
             if (btnAlternar) {
                 if (usuarioRolActual === 'admin') {
@@ -430,26 +405,20 @@ function escapeHTML(texto) {
             const categoria = (docenteTipoActual || '').toLowerCase().includes('acad') ? 'academico' : 'artistico';
             mostrarSoloCategoria(categoria);
 
-            // 2) Dentro de su categoría, se afina para mostrar SOLO sus
-            //    materias realmente asignadas (misma fuente que "Directorio
-            //    y Carga"). Si no se encuentra ninguna coincidencia, no se
-            //    muestra NINGUNA materia — antes se mostraba toda la
-            //    categoría como resguardo, y eso era precisamente lo que
-            //    hacía que un docente viera materias que no le correspondían.
+            // 2) Dentro de su categoría, si la carga real (misma fuente que
+            //    "Directorio y Carga") coincide por nombre exacto, se afina
+            //    aún más para mostrar solo sus materias asignadas. Si no hay
+            //    coincidencia, se deja ver toda su categoría (para que
+            //    siempre pueda evaluar, aunque el nombre no calce exacto).
             const materiasReales = docenteNombreGlobal ? await obtenerCargaRealDocente(docenteNombreGlobal) : new Set();
 
-            for (let opt of selectMateria.options) {
-                if (!opt.value || opt.disabled) continue;
-                const nombreMateria = nombreMateriaLimpio(opt.value);
-                const permitirMateria = materiasReales.has(nombreMateria);
-                opt.disabled = !permitirMateria;
-                opt.style.display = permitirMateria ? '' : 'none';
-            }
-
-            if (materiasReales.size === 0) {
-                const contenedor = document.getElementById('contenedor-grupo-calificar');
-                if (contenedor) {
-                    contenedor.innerHTML = '<p style="text-align: center; color: #991b1b;">No se encontró ninguna materia asignada a su nombre en la Matrícula. Contacte al administrador para verificar que su nombre en el Directorio de Docentes coincida exactamente con el de la Matrícula.</p>';
+            if (materiasReales.size > 0) {
+                for (let opt of selectMateria.options) {
+                    if (!opt.value || opt.disabled) continue;
+                    const nombreMateria = nombreMateriaLimpio(opt.value);
+                    const permitirMateria = materiasReales.has(nombreMateria);
+                    opt.disabled = !permitirMateria;
+                    opt.style.display = permitirMateria ? '' : 'none';
                 }
             }
 
@@ -463,6 +432,8 @@ function escapeHTML(texto) {
             selectMateria.value = primeraValida;
             cargarGrupoParaCalificar();
         }
+
+        
 
         async function cerrarSesion() {
             await supabaseClient.auth.signOut();
@@ -486,6 +457,8 @@ function escapeHTML(texto) {
             cargarTablaCargaAcademica();
             cargarTablaRolesUsuarios();
         }
+
+        
 
         function procesarArchivoFoto(event) {
             const file = event.target.files[0];
@@ -541,9 +514,9 @@ function escapeHTML(texto) {
                 let valorDefecto = '';
                 if (materia === 'Solfeo') valorDefecto = 'Rafael Cativo Romero';
                 if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
-                if (materia === 'Danza') valorDefecto = 'Vanesa De La O Jimenez';
-                if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro Garcia';
-                if (materia === 'Inglés') valorDefecto = 'Ulises Barajas Garcia';
+                if (materia === 'Danza') valorDefecto = 'Vanessa De La O Jimenez';
+                if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro García';
+                if (materia === 'Inglés') valorDefecto = 'Ulises Barajas García';
                 if (materia === 'Edufi') valorDefecto = 'Santiago Jimenez';
 
                 select.innerHTML = '';
@@ -866,9 +839,9 @@ function escapeHTML(texto) {
                 document.getElementById('mat-doc-percursion').disabled = noLlevaPercusion;
                 document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De La O Jimenez' : (data.docente_percursion || 'Luis De La O Jimenez');
             }
-            if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanesa De La O Jimenez';
-            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro Garcia';
-            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises Barajas Garcia';
+            if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanessa De La O Jimenez';
+            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro García';
+            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises Barajas García';
             if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
 
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
@@ -1664,35 +1637,16 @@ function escapeHTML(texto) {
                 estudiantes = estudiantes.filter(est => est.instrumento_principal === instrumentoEspecifico || est.instrumento_segundo === instrumentoEspecifico);
             }
 
-            // Excluye estudiantes marcados como "No lleva" esta materia (ej. Taller
-            // de Percusión), para que no aparezcan en la planilla ni se les genere
+            // Excluye estudiantes marcados como "No lleva" esta materia (ej.
+            // Taller de Percusión), para que no aparezcan en la planilla ni se les genere
             // nota, y así tampoco aparezcan en su Informe al Hogar.
             const campoMateriaActual = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpio(materia)];
             if (campoMateriaActual) {
                 estudiantes = estudiantes.filter(est => est[campoMateriaActual] !== 'No lleva');
             }
 
-            // Si NO es admin, se filtra además a que el estudiante esté
-            // asignado justo a ESTE docente (no solo que lleve la materia/
-            // instrumento). Esto es lo que evita que, por ejemplo, un
-            // profesor de Piano vea también a los alumnos de Piano de OTRO
-            // profesor de Piano — cada docente solo ve su propia matrícula
-            // grupal e individual, nunca la de un compañero con la misma
-            // especialidad.
-            if (!esAdminActivo() && docenteNombreGlobal) {
-                const nombreDocenteActualNorm = normalizarNombre(docenteNombreGlobal);
-                if (instrumentoEspecifico) {
-                    estudiantes = estudiantes.filter(est =>
-                        (est.instrumento_principal === instrumentoEspecifico && normalizarNombre(est.docente_asignado) === nombreDocenteActualNorm) ||
-                        (est.instrumento_segundo === instrumentoEspecifico && normalizarNombre(est.docente_segundo) === nombreDocenteActualNorm)
-                    );
-                } else if (campoMateriaActual) {
-                    estudiantes = estudiantes.filter(est => normalizarNombre(est[campoMateriaActual]) === nombreDocenteActualNorm);
-                }
-            }
-
             if (estudiantes.length === 0) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel} asignados a su nombre.</p>`;
+                contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
             }
 
