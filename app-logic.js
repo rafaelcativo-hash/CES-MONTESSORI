@@ -20,7 +20,6 @@ function escapeHTML(texto) {
         .replace(/'/g, '&#39;');
 }
 
-
         // ============================================================
         // ENVÍO REAL DE INFORMES POR CORREO (EmailJS conectado a
         // slmontessori@gmail.com). Sustituya estos 3 valores por los
@@ -287,7 +286,16 @@ function escapeHTML(texto) {
                 docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase().trim();
                 docenteNombreGlobal = (docData.nombre || '').trim();
                 docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
-                docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
+                
+                // Asignación de ciclos y unificaciones específicas solicitadas
+                const normNombre = normalizarNombre(docenteNombreGlobal);
+                if (normNombre.includes('mariangel')) {
+                    docenteCicloGlobal = 'Primer Ciclo';
+                } else if (normNombre.includes('rafael cativo')) {
+                    docenteCicloGlobal = 'Segundo Ciclo';
+                } else {
+                    docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
+                }
             } else {
                 docenteEspecialidadGlobal = '';
                 docenteNombreGlobal = '';
@@ -456,8 +464,6 @@ function escapeHTML(texto) {
             cargarGrupoParaCalificar();
         }
 
-        
-
         async function cerrarSesion() {
             await supabaseClient.auth.signOut();
             document.getElementById('app-container').style.display = 'none';
@@ -480,8 +486,6 @@ function escapeHTML(texto) {
             cargarTablaCargaAcademica();
             cargarTablaRolesUsuarios();
         }
-
-        
 
         function procesarArchivoFoto(event) {
             const file = event.target.files[0];
