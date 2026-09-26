@@ -20,6 +20,55 @@ function escapeHTML(texto) {
         .replace(/'/g, '&#39;');
 }
 
+// ============================================================
+// NORMALIZACIÓN ESTRICTA para comparar nombres de docentes y
+// nombres de materias entre módulos (Matrícula, Directorio/Carga
+// y Calificar). Ignora tildes, mayúsculas/minúsculas y espacios
+// sobrantes (incl. espacios dobles), para que una diferencia de
+// captura (ej. "María José " vs "Maria Jose") no provoque que un
+// estudiante desaparezca de la planilla de un docente.
+// SIEMPRE usar esta función (nunca "===" directo) al comparar
+// nombres de docentes o nombres de materias entre módulos.
+// ============================================================
+function normalizarTexto(texto) {
+    if (texto === null || texto === undefined) return '';
+    return String(texto)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+}
+
+// ============================================================
+// FUENTE ÚNICA DE VERDAD (de verdad): dado un docente y la lista
+// de estudiantes activos ya consultada, calcula el set de
+// materias que imparte en la realidad. Es una función PURA (no
+// hace consultas a Supabase), para poder reutilizarla tanto en
+// "Directorio y Carga" como en la restricción de "Calificar" sin
+// duplicar la lógica de comparación en dos sitios distintos
+// (la duplicación anterior era la causa real de inconsistencias:
+// un ajuste en un sitio no se reflejaba en el otro).
+// ============================================================
+function calcularMateriasDeDocente(nombreDocente, estudiantes) {
+    const materiasPermitidas = new Set();
+    const nombreNorm = normalizarTexto(nombreDocente);
+    if (!nombreNorm || !estudiantes) return materiasPermitidas;
+
+    estudiantes.forEach(est => {
+        Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([materia, campo]) => {
+            if (est[campo] && normalizarTexto(est[campo]) === nombreNorm) materiasPermitidas.add(materia);
+        });
+        if (est.instrumento_principal && normalizarTexto(est.docente_asignado) === nombreNorm) {
+            materiasPermitidas.add(est.instrumento_principal);
+        }
+        if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && normalizarTexto(est.docente_segundo) === nombreNorm) {
+            materiasPermitidas.add(est.instrumento_segundo);
+        }
+    });
+
+    return materiasPermitidas;
+}
+
 
         // ============================================================
         // ENVÍO REAL DE INFORMES POR CORREO (EmailJS conectado a
@@ -121,25 +170,15 @@ function escapeHTML(texto) {
         // Calcula, consultando la matrícula real (solo estudiantes activos),
         // el conjunto de materias que un docente específico imparte de verdad.
         async function obtenerCargaRealDocente(nombreDocente) {
-            const materiasPermitidas = new Set();
-            if (!nombreDocente) return materiasPermitidas;
-
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
-            if (!estudiantes) return materiasPermitidas;
-
-            estudiantes.forEach(est => {
-                Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([materia, campo]) => {
-                    if (est[campo] && est[campo] === nombreDocente) materiasPermitidas.add(materia);
-                });
-                if (est.instrumento_principal && est.docente_asignado === nombreDocente) {
-                    materiasPermitidas.add(est.instrumento_principal);
-                }
-                if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && est.docente_segundo === nombreDocente) {
-                    materiasPermitidas.add(est.instrumento_segundo);
-                }
-            });
-
-            return materiasPermitidas;
+            if (!nombreDocente) return new Set();
+            try {
+                const { data: estudiantes, error } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
+                if (error || !estudiantes) return new Set();
+                return calcularMateriasDeDocente(nombreDocente, estudiantes);
+            } catch (e) {
+                console.error('obtenerCargaRealDocente:', e);
+                return new Set();
+            }
         }
 
         function inicializarSelectAnios(idSelect, anioPreseleccionado) {
@@ -250,35 +289,56 @@ function escapeHTML(texto) {
 
         async function verificarRolUsuario(email) {
             modoVistaDocente = false; // cada login inicia siempre en la vista real de su rol
+            // El correo de la sesión de Supabase Auth siempre llega en
+            // minúsculas; se normaliza aquí también por seguridad para que
+            // SIEMPRE calce con lo guardado en user_roles/docentes (ver
+            // guardarRolUsuario y guardarOActualizarDocente).
+            const emailNorm = (email || '').trim().toLowerCase();
 
-            const { data: roleData } = await supabaseClient
-                .from('user_roles')
-                .select('role')
-                .eq('email', email)
-                .maybeSingle();
+            try {
+                const { data: roleData, error: errRole } = await supabaseClient
+                    .from('user_roles')
+                    .select('role')
+                    .eq('email', emailNorm)
+                    .maybeSingle();
+                if (errRole) throw errRole;
 
-            if (roleData && roleData.role) {
-                usuarioRolActual = roleData.role.toLowerCase();
-            } else {
+                if (roleData && roleData.role) {
+                    usuarioRolActual = roleData.role.toLowerCase();
+                } else {
+                    usuarioRolActual = 'docente';
+                }
+
+                const { data: docData, error: errDoc } = await supabaseClient
+                    .from('docentes')
+                    .select('especialidad, nombre, tipo_docente, ciclo_asignado')
+                    .eq('correo', emailNorm)
+                    .maybeSingle();
+                if (errDoc) throw errDoc;
+
+                if (docData) {
+                    docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase().trim();
+                    docenteNombreGlobal = (docData.nombre || '').trim();
+                    docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
+                    docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
+                } else {
+                    docenteEspecialidadGlobal = '';
+                    docenteNombreGlobal = '';
+                    docenteTipoActual = 'artistico';
+                    docenteCicloGlobal = 'Ambos Ciclos';
+                }
+            } catch (e) {
+                // Fail-safe DE SEGURIDAD: si Supabase no responde (red caída,
+                // RLS, etc.) nunca se asume 'admin' por accidente — se cae
+                // siempre al rol con menos permisos y se avisa con claridad,
+                // en vez de dejar la pantalla de "Cargando el sistema..."
+                // congelada sin explicación.
                 usuarioRolActual = 'docente';
-            }
-
-            const { data: docData } = await supabaseClient
-                .from('docentes')
-                .select('especialidad, nombre, tipo_docente, ciclo_asignado')
-                .eq('correo', email)
-                .maybeSingle();
-
-            if (docData) {
-                docenteEspecialidadGlobal = (docData.especialidad || '').toLowerCase().trim();
-                docenteNombreGlobal = (docData.nombre || '').trim();
-                docenteTipoActual = (docData.tipo_docente || 'artistico').toLowerCase();
-                docenteCicloGlobal = docData.ciclo_asignado || 'Ambos Ciclos';
-            } else {
                 docenteEspecialidadGlobal = '';
                 docenteNombreGlobal = '';
                 docenteTipoActual = 'artistico';
                 docenteCicloGlobal = 'Ambos Ciclos';
+                alert('No se pudo verificar el rol de este usuario (problema de red o de permisos). Se ingresó con permisos mínimos de Docente. Intente recargar la página.');
             }
 
             aplicarVisibilidadPorRol();
@@ -296,10 +356,12 @@ function escapeHTML(texto) {
             const admin = esAdminActivo();
 
             const badge = document.getElementById('user-role-badge');
-            if (usuarioRolActual === 'admin' && modoVistaDocente) {
-                badge.innerText = `Rol: ADMIN — Viendo como Docente${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
-            } else {
-                badge.innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
+            if (badge) {
+                if (usuarioRolActual === 'admin' && modoVistaDocente) {
+                    badge.innerText = `Rol: ADMIN — Viendo como Docente${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
+                } else {
+                    badge.innerText = `Rol: ${usuarioRolActual.toUpperCase()}${docenteEspecialidadGlobal ? ' ('+docenteEspecialidadGlobal+')' : ''}`;
+                }
             }
 
             const botonesNav = document.querySelectorAll('#app-nav .tab-btn');
@@ -413,10 +475,11 @@ function escapeHTML(texto) {
             const materiasReales = docenteNombreGlobal ? await obtenerCargaRealDocente(docenteNombreGlobal) : new Set();
 
             if (materiasReales.size > 0) {
+                const materiasRealesNorm = new Set(Array.from(materiasReales).map(normalizarTexto));
                 for (let opt of selectMateria.options) {
                     if (!opt.value || opt.disabled) continue;
                     const nombreMateria = nombreMateriaLimpio(opt.value);
-                    const permitirMateria = materiasReales.has(nombreMateria);
+                    const permitirMateria = materiasRealesNorm.has(normalizarTexto(nombreMateria));
                     opt.disabled = !permitirMateria;
                     opt.style.display = permitirMateria ? '' : 'none';
                 }
@@ -953,24 +1016,28 @@ function escapeHTML(texto) {
                 foto_url: document.getElementById('mat-foto-url').value.trim() || ''
             };
 
-            const { data: existing } = await supabaseClient.from('estudiantes').select('cedula').eq('cedula', cedulaVal).maybeSingle();
+            try {
+                const { data: existing } = await supabaseClient.from('estudiantes').select('cedula').eq('cedula', cedulaVal).maybeSingle();
 
-            let error = null;
-            if (existing) {
-                const res = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedulaVal);
-                error = res.error;
-            } else {
-                const res = await supabaseClient.from('estudiantes').insert([datos]);
-                error = res.error;
-            }
+                let error = null;
+                if (existing) {
+                    const res = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedulaVal);
+                    error = res.error;
+                } else {
+                    const res = await supabaseClient.from('estudiantes').insert([datos]);
+                    error = res.error;
+                }
 
-            if (error) {
-                mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
-            } else {
-                mostrarMensaje('mat-msg', '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
-                cargarSelectorEstudiantesEdicion();
-                cargarTablaEstudiantesNivel();
-                generarVistaPreviaMatricula();
+                if (error) {
+                    mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
+                } else {
+                    mostrarMensaje('mat-msg', '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
+                    cargarSelectorEstudiantesEdicion();
+                    cargarTablaEstudiantesNivel();
+                    generarVistaPreviaMatricula();
+                }
+            } catch (e) {
+                mostrarMensaje('mat-msg', 'Error de red o de permisos al guardar la matrícula: ' + e.message, false);
             }
         }
 
@@ -1192,9 +1259,24 @@ function escapeHTML(texto) {
                 graduacion_fecha: document.getElementById('cfg-graduacion-fecha').value,
                 graduacion_lugar: document.getElementById('cfg-graduacion-lugar').value
             };
-            const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
-            if (error) mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
-            else mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
+            try {
+                const { error } = await supabaseClient.from('configuracion_periodos').upsert([datos]);
+                if (error) {
+                    mostrarMensaje('cfg-msg', 'Error: ' + error.message, false);
+                    return;
+                }
+                // CRÍTICO: sin esta línea, la variable en memoria quedaba
+                // desactualizada tras guardar, y notas/matrícula/financiero
+                // seguían usando el Año Lectivo Activo viejo hasta recargar
+                // la página por completo.
+                anioLectivoActivo = datos.anio_lectivo_activo;
+                inicializarAniosLectivos();
+                const spanAnio = document.getElementById('span-anio-activo-matricula');
+                if (spanAnio) spanAnio.textContent = anioLectivoActivo;
+                mostrarMensaje('cfg-msg', '¡Configuración guardada con éxito!', true);
+            } catch (e) {
+                mostrarMensaje('cfg-msg', 'Error de red o de permisos al guardar: ' + e.message, false);
+            }
         }
 
         async function cargarTablaDocentesGeneral() {
@@ -1283,30 +1365,21 @@ function escapeHTML(texto) {
 
             docentes.forEach(doc => {
                 const nom = (doc.nombre || '').trim();
+                const nomNorm = normalizarTexto(nom);
                 let countEst = 0;
                 let detalleGrupos = [];
-                let materiasReales = new Set();
+                // Misma función pura que usa "Calificar" (calcularMateriasDeDocente),
+                // para que esta tabla y lo que el docente ve en Calificar coincidan
+                // siempre, incluso si hay pequeñas diferencias de captura.
+                const materiasReales = calcularMateriasDeDocente(nom, estudiantes || []);
 
                 if (estudiantes) {
                     estudiantes.forEach(est => {
-                        let match = false;
+                        const esDeEsteDocente = Object.entries(CAMPO_DOCENTE_POR_MATERIA).some(([, campo]) => est[campo] && normalizarTexto(est[campo]) === nomNorm)
+                            || (est.instrumento_principal && normalizarTexto(est.docente_asignado) === nomNorm)
+                            || (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && normalizarTexto(est.docente_segundo) === nomNorm);
 
-                        Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([materia, campo]) => {
-                            if (est[campo] && est[campo] === nom) {
-                                materiasReales.add(materia);
-                                match = true;
-                            }
-                        });
-                        if (est.instrumento_principal && est.docente_asignado === nom) {
-                            materiasReales.add(est.instrumento_principal);
-                            match = true;
-                        }
-                        if (est.instrumento_segundo && est.instrumento_segundo !== 'Ninguno' && est.docente_segundo === nom) {
-                            materiasReales.add(est.instrumento_segundo);
-                            match = true;
-                        }
-
-                        if (match) {
+                        if (esDeEsteDocente) {
                             countEst++;
                             if (!detalleGrupos.includes(est.nivel)) {
                                 detalleGrupos.push(est.nivel);
@@ -1315,15 +1388,16 @@ function escapeHTML(texto) {
                     });
                 }
 
-                const listaMateriasStr = materiasReales.size > 0 ? Array.from(materiasReales).join(', ') : '<span style="color:#991b1b;">Sin carga real asignada en Matrícula</span>';
+                const listaMateriasStr = materiasReales.size > 0 ? escapeHTML(Array.from(materiasReales).join(', ')) : '<span style="color:#991b1b;">Sin carga real asignada en Matrícula</span>';
+                const tipoDocenteTexto = (doc.tipo_docente || 'artístico').toString();
 
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${doc.nombre}</b><br><small>${doc.correo}</small></td>
-                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${doc.tipo_docente === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${doc.tipo_docente.toUpperCase()}</span></td>
-                        <td>${doc.especialidad}</td>
+                        <td style="text-align: left;"><b>${escapeHTML(doc.nombre)}</b><br><small>${escapeHTML(doc.correo)}</small></td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${tipoDocenteTexto === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${escapeHTML(tipoDocenteTexto.toUpperCase())}</span></td>
+                        <td>${escapeHTML(doc.especialidad)}</td>
                         <td style="text-align: left;">${listaMateriasStr}</td>
-                        <td><b>${countEst} estudiantes</b><br><small>Niveles: ${detalleGrupos.length > 0 ? detalleGrupos.join(', ') : 'Ninguno asignado'}</small></td>
+                        <td><b>${countEst} estudiantes</b><br><small>Niveles: ${detalleGrupos.length > 0 ? escapeHTML(detalleGrupos.join(', ')) : 'Ninguno asignado'}</small></td>
                     </tr>
                 `;
             });
@@ -1383,17 +1457,26 @@ function escapeHTML(texto) {
                 return;
             }
 
-            const email = document.getElementById('rol-email-input').value.trim();
+            // CRÍTICO: el correo se normaliza a minúsculas y sin espacios.
+            // Supabase Auth guarda/compara el email de sesión siempre en
+            // minúsculas; si aquí quedaba "Juan@Correo.com" o con un espacio
+            // de más, verificarRolUsuario() nunca encontraba coincidencia y
+            // ese docente caía silenciosamente al rol/tipo por defecto.
+            const email = document.getElementById('rol-email-input').value.trim().toLowerCase();
             const role = document.getElementById('rol-select-input').value;
 
-            const { error } = await supabaseClient.from('user_roles').upsert([{ email, role }], { onConflict: 'email' });
+            try {
+                const { error } = await supabaseClient.from('user_roles').upsert([{ email, role }], { onConflict: 'email' });
 
-            if (error) {
-                mostrarMensaje('rol-msg', 'Error al guardar el rol: ' + error.message, false);
-            } else {
-                mostrarMensaje('rol-msg', `¡Rol '${role}' asignado exitosamente a ${email}!`, true);
-                document.getElementById('form-asignar-rol').reset();
-                cargarTablaRolesUsuarios();
+                if (error) {
+                    mostrarMensaje('rol-msg', 'Error al guardar el rol: ' + error.message, false);
+                } else {
+                    mostrarMensaje('rol-msg', `¡Rol '${role}' asignado exitosamente a ${email}!`, true);
+                    document.getElementById('form-asignar-rol').reset();
+                    cargarTablaRolesUsuarios();
+                }
+            } catch (e) {
+                mostrarMensaje('rol-msg', 'Error de red al guardar el rol: ' + e.message, false);
             }
         }
 
@@ -1456,31 +1539,37 @@ function escapeHTML(texto) {
         async function guardarOActualizarDocente() {
             const id = document.getElementById('doc-id').value;
             const datos = {
-                nombre: document.getElementById('doc-nombre').value,
-                correo: document.getElementById('doc-correo').value,
-                telefono: document.getElementById('doc-tel').value,
+                nombre: document.getElementById('doc-nombre').value.trim(),
+                // Normalizado a minúsculas/sin espacios: debe calzar exacto
+                // con el correo de sesión que usa verificarRolUsuario().
+                correo: document.getElementById('doc-correo').value.trim().toLowerCase(),
+                telefono: document.getElementById('doc-tel').value.trim(),
                 especialidad: document.getElementById('doc-esp').value,
                 tipo_docente: document.getElementById('doc-tipo').value,
                 ciclo_asignado: document.getElementById('doc-ciclo').value
             };
 
-            let error = null;
-            if (id) {
-                const res = await supabaseClient.from('docentes').update(datos).eq('id', id);
-                error = res.error;
-            } else {
-                const res = await supabaseClient.from('docentes').insert([datos]);
-                error = res.error;
-            }
+            try {
+                let error = null;
+                if (id) {
+                    const res = await supabaseClient.from('docentes').update(datos).eq('id', id);
+                    error = res.error;
+                } else {
+                    const res = await supabaseClient.from('docentes').insert([datos]);
+                    error = res.error;
+                }
 
-            if (error) {
-                mostrarMensaje('doc-msg', 'Error: ' + error.message, false);
-            } else {
-                mostrarMensaje('doc-msg', id ? '¡Docente actualizado exitosamente!' : '¡Docente registrado exitosamente!', true);
-                limpiarFormularioDocente();
-                cargarTablaDocentesGeneral();
-                cargarTablaCargaAcademica();
-                cargarDocentesEnMatricula();
+                if (error) {
+                    mostrarMensaje('doc-msg', 'Error: ' + error.message, false);
+                } else {
+                    mostrarMensaje('doc-msg', id ? '¡Docente actualizado exitosamente!' : '¡Docente registrado exitosamente!', true);
+                    limpiarFormularioDocente();
+                    cargarTablaDocentesGeneral();
+                    cargarTablaCargaAcademica();
+                    cargarDocentesEnMatricula();
+                }
+            } catch (e) {
+                mostrarMensaje('doc-msg', 'Error de red al guardar el docente: ' + e.message, false);
             }
         }
 
@@ -1684,11 +1773,11 @@ function escapeHTML(texto) {
 
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${est.nombre}</b><br><small>Inst. Princ: ${est.instrumento_principal || 'N/A'} | Inst. 2do: ${est.instrumento_segundo || 'Ninguno'}</small></td>
+                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b><br><small>Inst. Princ: ${escapeHTML(est.instrumento_principal) || 'N/A'} | Inst. 2do: ${escapeHTML(est.instrumento_segundo) || 'Ninguno'}</small></td>
                 `;
 
                 rubros.forEach(r => {
-                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-peso="${r.peso}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}')"></td>`;
+                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-peso="${r.peso}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
                 });
 
                 html += `
@@ -1697,7 +1786,7 @@ function escapeHTML(texto) {
                 `;
 
                 if (llevaComentario) {
-                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${escapeHTML(comentarioGuardado)}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
+                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${escapeHTML(comentarioGuardado)}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''} oninput="programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -1706,6 +1795,7 @@ function escapeHTML(texto) {
                         </td>
                         <td>
                             <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">Guardar</button>
+                            <div id="save-status-${est.cedula}" style="font-size: 11px; margin-top: 4px; color: #64748b;"></div>
                         </td>
                     </tr>
                 `;
@@ -1733,20 +1823,51 @@ function escapeHTML(texto) {
             }
         }
 
-        async function guardarNotaComponentes(cedula, materia, periodo, esConducta) {
+        // ============================================================
+        // GUARDADO AUTOMÁTICO de la planilla de Calificar.
+        // Se dispara solo (con "debounce" de 1.2s tras dejar de escribir)
+        // cada vez que el docente cambia un rubro o la reflexión, así no
+        // depende de acordarse de pulsar "Guardar". El botón "Guardar"
+        // sigue funcionando igual, por si alguien quiere forzar el guardado
+        // al instante. En modo automático NUNCA se usa alert() (interrumpiría
+        // al docente mientras escribe): el estado se muestra en un textito
+        // discreto bajo el botón de cada estudiante.
+        // ============================================================
+        const timersGuardadoAutomatico = {};
+
+        function programarGuardadoAutomatico(cedula, materia, periodo, esConducta) {
+            const status = document.getElementById(`save-status-${cedula}`);
+            if (status) { status.style.color = '#d97706'; status.innerText = 'Escribiendo…'; }
+
+            if (timersGuardadoAutomatico[cedula]) clearTimeout(timersGuardadoAutomatico[cedula]);
+            timersGuardadoAutomatico[cedula] = setTimeout(() => {
+                guardarNotaComponentes(cedula, materia, periodo, esConducta, true);
+            }, 1200);
+        }
+
+        async function guardarNotaComponentes(cedula, materia, periodo, esConducta, silencioso) {
+            const status = document.getElementById(`save-status-${cedula}`);
+            const marcarEstado = (texto, color) => {
+                if (silencioso && status) { status.style.color = color; status.innerText = texto; }
+                else if (!silencioso) alert(texto);
+            };
+
             const lblFinal = document.getElementById(`lbl-final-${cedula}`);
-            const promedioFinal = parseFloat(lblFinal.innerText);
+            const promedioFinal = lblFinal ? parseFloat(lblFinal.innerText) : NaN;
             const comentarioInput = document.getElementById(`comentario-est-${cedula}`);
             const comentario = comentarioInput ? comentarioInput.value.trim() : '';
 
             if (isNaN(promedioFinal)) {
-                alert('Por favor ingrese las notas en los componentes antes de guardar.');
+                // En modo automático simplemente esperamos (el docente sigue
+                // llenando componentes); en modo manual sí avisamos.
+                if (!silencioso) alert('Por favor ingrese las notas en los componentes antes de guardar.');
+                else if (status) { status.style.color = '#94a3b8'; status.innerText = ''; }
                 return;
             }
 
             if (esConducta && !comentario) {
-                alert('La reflexión docente en Conducta es obligatoria para el informe al hogar.');
-                comentarioInput.focus();
+                marcarEstado('⚠ Falta la reflexión docente (obligatoria en Conducta).', '#b45309');
+                if (!silencioso && comentarioInput) comentarioInput.focus();
                 return;
             }
 
@@ -1759,11 +1880,20 @@ function escapeHTML(texto) {
                 comentario: String(comentario) 
             };
 
-            const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo,anio_lectivo' });
-            if (error) {
-                alert('Error al guardar: ' + error.message);
-            } else {
-                alert(`¡Calificación guardada con éxito para la cédula ${cedula} (Año lectivo ${anioLectivoActivo})!`);
+            try {
+                const { error } = await supabaseClient.from('notas').upsert([datos], { onConflict: 'cedula_estudiante,materia,periodo,anio_lectivo' });
+                if (error) {
+                    marcarEstado('Error al guardar: ' + error.message, '#dc2626');
+                } else {
+                    const cuando = new Date().toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                    marcarEstado(silencioso ? `✓ Guardado automáticamente (${cuando})` : `¡Calificación guardada con éxito para la cédula ${cedula} (Año lectivo ${anioLectivoActivo})!`, '#166534');
+                }
+            } catch (e) {
+                // Captura fallos de RED (sin internet, CORS, etc.), que NO
+                // llegan como "error" de Supabase sino como excepción — sin
+                // este try/catch, un corte de internet a mitad de la
+                // calificación rompía la ejecución silenciosamente.
+                marcarEstado('Sin conexión: no se pudo guardar. Se reintentará al escribir de nuevo.', '#dc2626');
             }
         }
 
@@ -2098,7 +2228,7 @@ function escapeHTML(texto) {
 
             estudiantes.forEach(est => {
                 const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                html += `<tr><td><b>${est.nombre}</b></td><td>${est.cedula}</td><td><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Percusión: ${est.docente_percursion || 'N/A'}<br>Inst: ${est.instrumento_principal || 'N/A'}</small></td>`;
+                html += `<tr><td><b>${escapeHTML(est.nombre)}</b></td><td>${escapeHTML(est.cedula)}</td><td><small>Acad: ${escapeHTML(est.docente_academico) || 'N/A'}<br>Solfeo: ${escapeHTML(est.docente_solfeo) || 'N/A'}<br>Percusión: ${escapeHTML(est.docente_percursion) || 'N/A'}<br>Inst: ${escapeHTML(est.instrumento_principal) || 'N/A'}</small></td>`;
                 
                 if (listaMaterias.length > 0) {
                     listaMaterias.forEach(mat => {
@@ -2528,7 +2658,7 @@ function escapeHTML(texto) {
 
                         html += `
                             <tr>
-                                ${idx === 0 ? `<td rowspan="${materias.length}">${est.cedula}</td><td rowspan="${materias.length}"><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || 'N/A'}<br>Solfeo: ${est.docente_solfeo || 'N/A'}<br>Percusión: ${est.docente_percursion || 'N/A'}<br>Inst. Princ: ${est.instrumento_principal || 'N/A'}</small></td><td rowspan="${materias.length}">${est.nivel}</td>` : ''}
+                                ${idx === 0 ? `<td rowspan="${materias.length}">${escapeHTML(est.cedula)}</td><td rowspan="${materias.length}"><b>${escapeHTML(est.nombre)}</b><br><small>Acad: ${escapeHTML(est.docente_academico) || 'N/A'}<br>Solfeo: ${escapeHTML(est.docente_solfeo) || 'N/A'}<br>Percusión: ${escapeHTML(est.docente_percursion) || 'N/A'}<br>Inst. Princ: ${escapeHTML(est.instrumento_principal) || 'N/A'}</small></td><td rowspan="${materias.length}">${escapeHTML(est.nivel)}</td>` : ''}
                                 <td>${mat}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
@@ -2656,7 +2786,7 @@ function escapeHTML(texto) {
                     <tbody>
             `;
             data.forEach(r => {
-                html += `<tr><td>${r.cedula_estudiante}</td><td style="text-align:left;">${r.nombre_estudiante}</td><td>${r.nivel_origen}</td><td>${r.nivel_destino}</td><td>${r.estado}</td></tr>`;
+                html += `<tr><td>${escapeHTML(r.cedula_estudiante)}</td><td style="text-align:left;">${escapeHTML(r.nombre_estudiante)}</td><td>${escapeHTML(r.nivel_origen)}</td><td>${escapeHTML(r.nivel_destino)}</td><td>${escapeHTML(r.estado)}</td></tr>`;
             });
             html += '</tbody></table><button type="button" class="action-btn" style="margin-top:10px;" onclick="window.print()">Imprimir esta lista</button>';
             contenedor.innerHTML = html;
@@ -2932,11 +3062,20 @@ function escapeHTML(texto) {
 
         async function guardarEstadoPagoAnual(checkbox, cedula, campo) {
             checkbox.disabled = true;
-            const { error } = await supabaseClient.from('estudiantes').update({ [campo]: checkbox.checked }).eq('cedula', cedula);
-            checkbox.disabled = false;
-            if (error) {
+            try {
+                const { error } = await supabaseClient.from('estudiantes').update({ [campo]: checkbox.checked }).eq('cedula', cedula);
+                if (error) {
+                    checkbox.checked = !checkbox.checked;
+                    alert('Error al guardar: ' + error.message);
+                }
+            } catch (e) {
+                // Sin este try/catch, un corte de red dejaba la casilla
+                // deshabilitada para siempre (checkbox.disabled nunca volvía
+                // a false), rompiendo el control financiero a mitad de uso.
                 checkbox.checked = !checkbox.checked;
-                alert('Error al guardar: ' + error.message);
+                alert('Sin conexión: no se pudo guardar el pago. Intente de nuevo.');
+            } finally {
+                checkbox.disabled = false;
             }
         }
 
@@ -3003,11 +3142,17 @@ function escapeHTML(texto) {
                 anio_lectivo: parseInt(anio, 10),
                 mensualidad_pagada: checkbox.checked
             };
-            const { error } = await supabaseClient.from('control_financiero').upsert([datos], { onConflict: 'cedula_estudiante,periodo_mes' });
-            checkbox.disabled = false;
-            if (error) {
+            try {
+                const { error } = await supabaseClient.from('control_financiero').upsert([datos], { onConflict: 'cedula_estudiante,periodo_mes' });
+                if (error) {
+                    checkbox.checked = !checkbox.checked;
+                    alert('Error al guardar: ' + error.message);
+                }
+            } catch (e) {
                 checkbox.checked = !checkbox.checked;
-                alert('Error al guardar: ' + error.message);
+                alert('Sin conexión: no se pudo guardar la mensualidad. Intente de nuevo.');
+            } finally {
+                checkbox.disabled = false;
             }
         }
 
