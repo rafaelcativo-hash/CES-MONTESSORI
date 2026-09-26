@@ -1688,7 +1688,8 @@ function escapeHTML(texto) {
                 `;
 
                 rubros.forEach(r => {
-                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-peso="${r.peso}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}')"></td>`;
+                    // Integrado con clase 'input-editable input-calificacion' y dataset para autoguardado inteligente
+                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-editable input-calificacion input-rubro-${est.cedula}" data-peso="${r.peso}" data-estudiante-id="${est.cedula}" data-campo="componente_${r.id}" data-tabla="notas" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}')"></td>`;
                 });
 
                 html += `
@@ -1697,7 +1698,7 @@ function escapeHTML(texto) {
                 `;
 
                 if (llevaComentario) {
-                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${escapeHTML(comentarioGuardado)}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
+                    html += `<input type="text" id="comentario-est-${est.cedula}" class="input-editable input-calificacion" data-estudiante-id="${est.cedula}" data-campo="comentario" data-tabla="notas" value="${escapeHTML(comentarioGuardado)}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''}>`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -3381,4 +3382,107 @@ function escapeHTML(texto) {
             msg.innerText = 'Verificación en dos pasos desactivada.';
             msg.style.display = 'block';
             setTimeout(() => cargarEstadoMFA(), 1500);
+        }
+
+        // ============================================================================
+        // MÓDULO DE AUTOGUARDADO INTELIGENTE (DEBOUNCE - 3 SEGUNDOS)
+        // ============================================================================
+        let temporizadorAutoguardado = null;
+        const TIEMPO_ESPERA_DEBOUNCE = 3000; // 3 segundos de inactividad
+
+        function actualizarEstadoVisual(mensaje, tipo = 'normal') {
+            const indicador = document.getElementById('status-guardado');
+            if (!indicador) return;
+            
+            indicador.innerText = mensaje;
+            
+            if (tipo === 'guardando') {
+                indicador.style.color = '#60a5fa'; // Azul claro
+                indicador.style.fontWeight = 'bold';
+            } else if (tipo === 'guardado') {
+                indicador.style.color = '#4ade80'; // Verde claro
+                indicador.style.fontWeight = 'normal';
+            } else if (tipo === 'error') {
+                indicador.style.color = '#f87171'; // Rojo claro
+                indicador.style.fontWeight = 'bold';
+            } else {
+                indicador.style.color = '#facc15'; // Amarillo/Ámbar (Cambios sin guardar)
+                indicador.style.fontWeight = 'normal';
+            }
+        }
+
+        document.addEventListener('input', (evento) => {
+            const elemento = evento.target;
+            
+            if (elemento.classList.contains('input-editable') || elemento.classList.contains('input-calificacion')) {
+                actualizarEstadoVisual("Cambios sin guardar...", "pendiente");
+                
+                clearTimeout(temporizadorAutoguardado);
+                
+                temporizadorAutoguardado = setTimeout(async () => {
+                    await ejecutarAutoguardadoSupabase(elemento);
+                }, TIEMPO_ESPERA_DEBOUNCE);
+            }
+        });
+
+        async function ejecutarAutoguardadoSupabase(elemento) {
+            actualizarEstadoVisual("Guardando...", "guardando");
+            
+            try {
+                const estudianteId = elemento.dataset.estudianteId;
+                const campoAModificar = elemento.dataset.campo;
+                const nuevoValor = elemento.value;
+                const tablaDestino = elemento.dataset.tabla || 'notas';
+
+                if (!estudianteId || !campoAModificar) {
+                    console.warn("El input no contiene los atributos data-estudiante-id o data-campo necesarios para autoguardar.");
+                    actualizarEstadoVisual("Error: Faltan datos", "error");
+                    return;
+                }
+
+                if (tablaDestino === 'notas') {
+                    // Para notas, manejamos upsert compuesto asegurando periodo, materia y anio_lectivo
+                    const periodoActivo = document.getElementById('cal-periodo')?.value || 'Primer Periodo';
+                    const materiaActiva = document.getElementById('cal-materia')?.value || '';
+
+                    if (campoAModificar.startsWith('componente_')) {
+                        // Si cambia un componente de nota, recalculamos el total de la celda visualmente
+                        calcularNotaFinalEstudiante(estudianteId);
+                    }
+
+                    const lblFinal = document.getElementById(`lbl-final-${estudianteId}`);
+                    const promedioFinal = lblFinal ? parseFloat(lblFinal.innerText) : 0;
+                    const comentarioInput = document.getElementById(`comentario-est-${estudianteId}`);
+                    const comentario = comentarioInput ? comentarioInput.value.trim() : '';
+
+                    const datosUpsert = {
+                        cedula_estudiante: String(estudianteId),
+                        materia: String(materiaActiva),
+                        periodo: String(periodoActivo),
+                        anio_lectivo: parseInt(anioLectivoActivo, 10),
+                        promedio: isNaN(promedioFinal) ? 0 : Number(promedioFinal),
+                        comentario: String(comentario)
+                    };
+
+                    const { error } = await supabaseClient
+                        .from('notas')
+                        .upsert([datosUpsert], { onConflict: 'cedula_estudiante,materia,periodo,anio_lectivo' });
+
+                    if (error) throw error;
+                } else {
+                    // Actualización genérica para otras tablas (ej. estudiantes)
+                    const { error } = await supabaseClient
+                        .from(tablaDestino)
+                        .update({ [campoAModificar]: nuevoValor })
+                        .eq('cedula', estudianteId);
+
+                    if (error) throw error;
+                }
+
+                actualizarEstadoVisual("Guardado", "guardado");
+
+            } catch (error) {
+                console.error("Error crítico en autoguardado de Supabase:", error);
+                actualizarEstadoVisual("Error al guardar", "error");
+            }
         }
