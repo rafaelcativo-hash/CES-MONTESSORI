@@ -151,7 +151,14 @@
     <script>
         const SUPABASE_URL = 'https://sfiutfanfkerrpyejgga.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmaXV0ZmFuZmtlcnJweWVqZ2dhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NTI1MDgsImV4cCI6MjEwMDIyODUwOH0.L3n61_5okk0n8HLyE9ohd0CQI5NGOwnCm3yEYPJIQbQ';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
 
         let aplicacionYaCargada = false;
         let emailPendienteMFA = '';
@@ -188,12 +195,16 @@
                 }
             }
 
-            await verificarRolUsuario(email);
-            iniciarSesionUI(email);
+            if (typeof verificarRolUsuario === 'function') {
+                await verificarRolUsuario(email);
+            }
+            if (typeof iniciarSesionUI === 'function') {
+                iniciarSesionUI(email);
+            }
         }
 
         async function realizarLogin() {
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-pass').value;
             const msg = document.getElementById('login-msg');
 
@@ -267,7 +278,7 @@
         }
 
         supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-            if (session) {
+            if (session && session.user) {
                 const { data: nivelData } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
                 if (nivelData && nivelData.nextLevel === 'aal2' && nivelData.currentLevel !== 'aal2') {
                     return;
