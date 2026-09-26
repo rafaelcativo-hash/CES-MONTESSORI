@@ -4,15 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro CES Montessori</title>
+    
+    <!-- Iconos y Manifiesto PWA -->
     <link rel="icon" type="image/png" sizes="512x512" href="icono-docentes-512.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icono-docentes-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icono-docentes-180.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e293b">
+
+    <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
     <style>
         :root {
             --primary: #1e293b;
@@ -23,106 +28,253 @@
             --border: #cbd5e1;
             --text: #334155;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--bg-light); color: var(--text); }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            color: var(--text);
+        }
         
-        #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px; box-sizing: border-box; text-align: center; }
-        .login-card img.login-logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 15px; background: var(--bg-light); border-radius: 50%; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .login-card h2 { color: var(--primary); margin-top: 0; margin-bottom: 5px; }
+        /* Contenedor de Autenticación */
+        #login-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
 
-        #app-container { display: none; height: 100vh; flex-direction: column; }
-        header { background-color: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .login-card img.login-logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            background: var(--bg-light);
+            border-radius: 50%;
+            padding: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .login-card h2 {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        /* Estructura Principal del Sistema */
+        #app-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
         
-        .brand-container { display: flex; align-items: center; gap: 12px; }
-        .school-logo { width: 40px; height: 40px; object-fit: contain; background: white; border-radius: 50%; padding: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        header h1 { margin: 0; font-size: 18px; }
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .school-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            background: white;
+            border-radius: 50%;
+            padding: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        /* Contenedor Superior Derecho (Incluye Estado de Autoguardado) */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Estilo profesional para el indicador de Autoguardado */
+        #status-guardado {
+            font-size: 12px;
+            font-style: italic;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        nav {
+            background-color: var(--secondary);
+            display: flex;
+            justify-content: space-between;
+            overflow-x: auto;
+            padding: 0 10px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 12px 10px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            font-size: 13px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .tab-btn:hover {
+            color: white;
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .tab-btn.active {
+            color: white;
+            border-bottom: 3px solid var(--accent);
+            background-color: rgba(255,255,255,0.08);
+        }
+
+        .tab-btn.hidden-by-role {
+            display: none !important;
+        }
+
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-width: 1500px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Formularios y Botones */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+            text-align: left;
+        }
+
+        input, select, textarea {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
         
-        nav { background-color: var(--secondary); display: flex; justify-content: space-between; overflow-x: auto; padding: 0 10px; border-bottom: 1px solid #334155; }
-        .tab-btn { background: none; border: none; color: #94a3b8; padding: 12px 10px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-size: 13px; flex: 1; text-align: center; }
-        .tab-btn:hover { color: white; background-color: rgba(255,255,255,0.05); }
-        .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); background-color: rgba(255,255,255,0.08); }
-        .tab-btn.hidden-by-role { display: none !important; }
+        button.action-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
 
-        .sub-panel-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; }
-        .sub-tab-btn { background: #e2e8f0; border: none; color: var(--primary); padding: 8px 16px; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-        .sub-tab-btn:hover { background: #cbd5e1; }
-        .sub-tab-btn.active { background: var(--accent); color: white; }
+        button.action-btn:hover {
+            background-color: var(--accent-hover);
+        }
 
-        main { flex: 1; padding: 30px; overflow-y: auto; max-width: 1500px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-        .tab-content { display: none; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .tab-content.active { display: block; }
+        .notification {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            display: none;
+            font-size: 14px;
+        }
 
-        fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 25px; background: #fff; }
-        legend { font-weight: bold; color: var(--primary); padding: 0 10px; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 15px; }
-        .form-group { display: flex; flex-direction: column; }
-        label { margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #475569; text-align: left; }
-        input, select, textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box; background-color: #fff; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        
-        button.action-btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
-        button.action-btn:hover { background-color: var(--accent-hover); }
-
-        button.warning-btn { background-color: #d97706; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
-        button.warning-btn:hover { background-color: #b45309; }
-
-        button.success-btn { background-color: #166534; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 14px; }
-        button.success-btn:hover { background-color: #14532d; }
-
-        button.danger-btn { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
-        button.danger-btn:hover { background-color: #dc2626; }
-
-        table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; overflow-x: auto; display: block; }
-        table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
-        table.data-table th { background-color: var(--primary); color: white; }
-        table.data-table tr:nth-child(even) { background-color: #f8fafc; }
-
-        .report-preview { border: 2px solid var(--primary); border-radius: 8px; padding: 25px; background: #fff; margin-top: 20px; position: relative; width: 100%; max-width: 190mm; box-sizing: border-box; margin-left: auto; margin-right: auto; font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'URW Gothic', 'Segoe UI', sans-serif; font-size: 11px; line-height: 1.35; }
-        .seccion-pagina-1 { display: flex; flex-direction: column; }
-        .cita-pie-pagina { margin-top: auto; }
-        .encabezado-informe-full { width: calc(100% + 50px); margin: -25px -25px 0 -25px; text-align: center; }
-        .encabezado-informe-full img { width: auto; max-width: 100%; max-height: 86px; height: auto; display: block; margin: 0 auto; }
-        .cita-montessori { margin-top: 30px; padding: 18px 22px; background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; page-break-inside: avoid; break-inside: avoid; }
-        .cita-montessori p.texto-cita { margin: 0; font-size: 13px; font-style: italic; color: #334155; line-height: 1.5; }
-        .cita-montessori p.autor-cita { margin: 8px 0 0 0; font-size: 12px; font-weight: bold; color: var(--primary); text-align: right; }
-        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 2; page-break-inside: avoid; break-inside: avoid; gap: 15px; box-sizing: border-box; }
-        .report-header img { width: 90px; height: 90px; object-fit: contain; flex-shrink: 0; }
-
-        .age-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; margin-top: 5px; text-align: left; }
-        .notification { margin-top: 15px; padding: 12px; border-radius: 6px; font-weight: 600; display: none; font-size: 14px; }
         .success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-        
-        .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
-        .logout-btn:hover { background: #dc2626; }
 
-        @media print {
-            @page { margin: 6mm 10mm; }
-            body * { visibility: hidden; }
-            #preview-matricula-impresion, #preview-matricula-impresion *, #plantilla-informe-oficial, #plantilla-informe-oficial *, #plantilla-lista-nivel-impresion, #plantilla-lista-nivel-impresion *, #plantilla-reporte-financiero, #plantilla-reporte-financiero * { visibility: visible; }
-            #preview-matricula-impresion, #plantilla-lista-nivel-impresion, #plantilla-reporte-financiero { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 10mm; box-sizing: border-box; }
-            #plantilla-informe-oficial { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: none; margin: 0; padding: 6mm 10mm 8mm 10mm; box-sizing: border-box; }
-            .encabezado-informe-full { width: calc(100% + 20mm); margin: -6mm -10mm 0 -10mm; }
-            .encabezado-informe-full img { width: auto; max-width: 100%; max-height: 24mm; height: auto; }
-            .seccion-pagina-1 { min-height: 255mm; }
-            .salto-pagina-forzado { page-break-before: always; break-before: page; }
-            .report-preview table.data-table { display: table; width: 100%; }
-            .report-preview table.data-table thead { display: table-header-group; }
-            .report-preview table.data-table tbody { display: table-row-group; }
-            .report-preview table.data-table tr { display: table-row; page-break-inside: avoid; break-inside: avoid; }
-            .report-preview table.data-table th, .report-preview table.data-table td { display: table-cell; white-space: normal; }
-            .no-print { display: none !important; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: background 0.2s;
         }
+
+        .logout-btn:hover { background: #dc2626; }
     </style>
 </head>
 <body>
 
+    <!-- ============================================================ -->
+    <!-- PANTALLA DE ACCESO (LOGIN & MFA)                             -->
+    <!-- ============================================================ -->
     <div id="login-container">
         <div class="login-card">
             <img src="Logo%20%20CES%202--_n.jpg" alt="Logo Escuela" class="login-logo">
             <h2>Registro CES Montessori</h2>
             
-            <div class="form-group" style="margin-bottom: 15px;">
+            <div class="form-group">
                 <label>Correo Electrónico</label>
                 <input type="email" id="login-email" placeholder="usuario@correo.com">
             </div>
@@ -146,22 +298,17 @@
         </div>
     </div>
 
+    <!-- Contenedor donde se inyectará app-shell.html tras el login exitoso -->
     <div id="app-mount"></div>
 
+    <!-- ============================================================ -->
+    <!-- LÓGICA DE INICIALIZACIÓN Y CARGA DIFERIDA                     -->
+    <!-- ============================================================ -->
     <script>
         const SUPABASE_URL = 'https://sfiutfanfkerrpyejgga.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_FiRbKdzdDwhuLYhHJWYYyg_4OZE8h8P';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ============================================================
-        // CARGA DIFERIDA DEL SISTEMA
-        // Antes de iniciar sesión, el navegador SOLO descarga esta
-        // pantalla de login. El resto del sistema (matrícula, notas,
-        // control financiero, etc.) vive en "app-shell.html" (HTML) y
-        // "app-logic.js" (lógica), y se piden recién después de un
-        // login exitoso — así "Ver código fuente" en la pantalla de
-        // login no muestra nada del resto del sistema.
-        // ============================================================
         let aplicacionYaCargada = false;
         let emailPendienteMFA = '';
         let factorIdPendienteMFA = '';
@@ -197,20 +344,13 @@
                 }
             }
 
-            await verificarRolUsuario(email);
-            iniciarSesionUI(email);
+            // Funciones que deben existir en app-logic.js
+            if (typeof verificarRolUsuario === 'function') await verificarRolUsuario(email);
+            if (typeof iniciarSesionUI === 'function') iniciarSesionUI(email);
         }
 
-        // ============================================================
-        // VERIFICACIÓN EN DOS PASOS (MFA con app autenticadora)
-        // Después de la contraseña, revisa si esta cuenta tiene MFA
-        // activado. Si lo tiene, pide el código de 6 dígitos antes
-        // de dejar entrar. Si no lo tiene activado, entra normal
-        // (activarlo es opcional, desde la pestaña "Seguridad" ya
-        // adentro del sistema).
-        // ============================================================
         async function realizarLogin() {
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-pass').value;
             const msg = document.getElementById('login-msg');
 
@@ -287,9 +427,6 @@
             if (session) {
                 const { data: nivelData } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
                 if (nivelData && nivelData.nextLevel === 'aal2' && nivelData.currentLevel !== 'aal2') {
-                    // Hay una sesión guardada pero todavía falta el segundo
-                    // factor de esta vez: no la damos por válida, hay que
-                    // volver a iniciar sesión y verificar el código.
                     return;
                 }
                 await cargarYMostrarApp(session.user.email);
