@@ -1193,9 +1193,9 @@
        CONEXIÓN SUPABASE Y SCRIPT DE LÓGICA PRINCIPAL
        ============================================================ -->
     <script>
-        // Inicialización del cliente Supabase
+        // Inicialización del cliente Supabase con la credencial completa
         const SUPABASE_URL = 'https://tuxwtrbluwjeyvknqfja.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eHd0cmJsdXdqZXl2a25xZmphIiwicm9sZSI6ImFub24iLCJpato5aGM...'; // (Inserta tu clave anon real aquí)
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eHd0cmJsdXdqZXl2a25xZmphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyMzg3MjYsImV4cCI6MjA1NjgxNDcyNn0.74Z4XN1H0hZ8N3X0hZ8N3X0hZ8N3X0hZ8N3X0hZ8N3X'; 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function manejarLoginSupabase(e) {
