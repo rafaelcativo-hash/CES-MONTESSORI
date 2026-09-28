@@ -1821,10 +1821,26 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         function calcularNotaFinalEstudiante(cedula) {
             const inputs = document.querySelectorAll(`.input-rubro-${cedula}`);
             let total = 0;
+            let hayFueraDeRango = false;
 
             inputs.forEach(input => {
                 const val = parseFloat(input.value);
                 const peso = parseFloat(input.getAttribute('data-peso'));
+
+                // Bloquea notas por componente fuera de 0-100 (ej. escribir
+                // "1000" en vez de "100" por error). El min/max del HTML es
+                // solo visual y no impide escribir el valor, así que aquí se
+                // valida de verdad: se resalta en rojo y NO se deja calcular
+                // ni guardar la nota final hasta corregirlo.
+                if (!isNaN(val) && (val < 0 || val > 100)) {
+                    hayFueraDeRango = true;
+                    input.style.border = '2px solid #dc2626';
+                    input.title = 'La nota debe estar entre 0 y 100';
+                } else {
+                    input.style.border = '';
+                    input.title = '';
+                }
+
                 if (!isNaN(val)) {
                     total += val * peso;
                 }
@@ -1832,8 +1848,16 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             const lblFinal = document.getElementById(`lbl-final-${cedula}`);
             if (lblFinal) {
-                lblFinal.innerText = Number(total.toFixed(2));
+                if (hayFueraDeRango) {
+                    lblFinal.innerText = '⚠ Fuera de rango';
+                    lblFinal.style.color = '#dc2626';
+                } else {
+                    lblFinal.innerText = Number(total.toFixed(2));
+                    lblFinal.style.color = 'var(--accent)';
+                }
             }
+
+            return !hayFueraDeRango;
         }
 
         // ============================================================
@@ -1864,6 +1888,16 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 if (silencioso && status) { status.style.color = color; status.innerText = texto; }
                 else if (!silencioso) alert(texto);
             };
+
+            // Revalida (y vuelve a marcar en rojo si hace falta) justo antes
+            // de guardar, sin depender de que el último "oninput" se haya
+            // disparado a tiempo — así nunca se guarda una nota con un
+            // componente fuera de 0-100.
+            const rangoValido = calcularNotaFinalEstudiante(cedula);
+            if (!rangoValido) {
+                marcarEstado('⚠ Hay una nota fuera de 0-100. Corríjala antes de guardar.', '#dc2626');
+                return;
+            }
 
             const lblFinal = document.getElementById(`lbl-final-${cedula}`);
             const promedioFinal = lblFinal ? parseFloat(lblFinal.innerText) : NaN;
