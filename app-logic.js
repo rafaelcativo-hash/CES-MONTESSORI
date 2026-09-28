@@ -90,6 +90,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         let docenteEspecialidadGlobal = '';
         let docenteNombreGlobal = '';
         let docenteCicloGlobal = 'Ambos Ciclos';
+        let usuarioEmailGlobal = ''; // correo de quien tiene la sesión abierta, para dejar rastro de auditoría en cada guardado
         let modoVistaDocente = false; // true = un admin está viendo el sistema "como docente" (ver mi carga académica)
         let anioLectivoActivo = 2026;
 
@@ -294,6 +295,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             // SIEMPRE calce con lo guardado en user_roles/docentes (ver
             // guardarRolUsuario y guardarOActualizarDocente).
             const emailNorm = (email || '').trim().toLowerCase();
+            usuarioEmailGlobal = emailNorm; // queda disponible para el registro de auditoría al guardar notas
 
             try {
                 const { data: roleData, error: errRole } = await supabaseClient
@@ -1804,11 +1806,23 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
 
+                // Etiqueta de auditoría precargada con lo último guardado en
+                // Supabase (si existe), para que se vea "de entrada" quién
+                // hizo el último cambio sin tener que volver a guardar.
+                let auditStr = '';
+                if (notaReg && notaReg.modificado_por && notaReg.modificado_en) {
+                    const fecha = new Date(notaReg.modificado_en);
+                    const fechaStr = fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const horaStr = fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                    auditStr = `Últ. cambio: ${escapeHTML(notaReg.modificado_por)} — ${fechaStr} ${horaStr}`;
+                }
+
                 html += `
                         </td>
                         <td>
                             <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">Guardar</button>
                             <div id="save-status-${est.cedula}" style="font-size: 11px; margin-top: 4px; color: #64748b;"></div>
+                            <div id="audit-${est.cedula}" style="font-size: 10px; margin-top: 2px; color: #94a3b8; font-style: italic;">${auditStr}</div>
                         </td>
                     </tr>
                 `;
@@ -1943,7 +1957,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 anio_lectivo: anioLectivoActivo,
                 promedio: Number(promedioFinal),
                 comentario: String(comentario),
-                detalle_componentes: detalleComponentes
+                detalle_componentes: detalleComponentes,
+                // Rastro de auditoría: quién hizo el último cambio y cuándo.
+                // Se sobrescribe en cada guardado con el usuario/fecha/hora
+                // ACTUAL, por diseño: siempre refleja la última mano que tocó
+                // ese registro (no un historial completo de cada cambio).
+                modificado_por: usuarioEmailGlobal || 'desconocido',
+                modificado_en: new Date().toISOString()
             };
 
             try {
@@ -1953,6 +1973,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 } else {
                     const cuando = new Date().toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
                     marcarEstado(silencioso ? `✓ Guardado automáticamente (${cuando})` : `¡Calificación guardada con éxito para la cédula ${cedula} (Año lectivo ${anioLectivoActivo})!`, '#166534');
+                    actualizarEtiquetaAuditoria(cedula, datos.modificado_por, datos.modificado_en);
                 }
             } catch (e) {
                 // Captura fallos de RED (sin internet, CORS, etc.), que NO
@@ -1961,6 +1982,18 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // calificación rompía la ejecución silenciosamente.
                 marcarEstado('Sin conexión: no se pudo guardar. Se reintentará al escribir de nuevo.', '#dc2626');
             }
+        }
+
+        // Muestra "quién / qué día / a qué hora" quedó el último guardado,
+        // justo debajo del botón Guardar de cada estudiante — la evidencia
+        // de auditoría que pidió la institución para legalizar el registro.
+        function actualizarEtiquetaAuditoria(cedula, correo, fechaISO) {
+            const el = document.getElementById(`audit-${cedula}`);
+            if (!el) return;
+            const fecha = new Date(fechaISO);
+            const fechaStr = fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const horaStr = fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+            el.innerText = `Últ. cambio: ${correo} — ${fechaStr} ${horaStr}`;
         }
 
         // =====================================================================
