@@ -1783,7 +1783,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     // data-rubro-id identifica el componente, y "value" recupera
                     // la nota de ese componente guardada la última vez, para que
                     // el docente vea SIEMPRE lo que ya calificó, no una casilla vacía.
-                    const valorPrevio = (detalleGuardado[r.id] !== undefined && detalleGuardado[r.id] !== null) ? detalleGuardado[r.id] : '';
+                    // detalleGuardado[r.id] es un objeto { label, peso, valor } —
+                    // hay que sacar solo el número (.valor) para meterlo en el
+                    // input; si se deja el objeto completo, el navegador lo
+                    // convierte en el texto "[object Object]" y lo rechaza
+                    // (ese era el error "cannot be parsed" de la consola).
+                    const rubroPrevio = detalleGuardado[r.id];
+                    const valorPrevio = (rubroPrevio && rubroPrevio.valor !== undefined && rubroPrevio.valor !== null) ? rubroPrevio.valor : '';
                     html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
                 });
 
