@@ -1770,6 +1770,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const notaReg = notas ? notas.find(n => n.cedula_estudiante === est.cedula) : null;
                 const promedioGuardado = notaReg ? notaReg.promedio : '-';
                 const comentarioGuardado = notaReg && notaReg.comentario ? notaReg.comentario : '';
+                // Evidencia de cómo se calificó cada componente la última vez
+                // (queda guardada en notas.detalle_componentes como JSON).
+                const detalleGuardado = (notaReg && notaReg.detalle_componentes) ? notaReg.detalle_componentes : {};
 
                 html += `
                     <tr>
@@ -1777,7 +1780,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 `;
 
                 rubros.forEach(r => {
-                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-peso="${r.peso}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
+                    // data-rubro-id identifica el componente, y "value" recupera
+                    // la nota de ese componente guardada la última vez, para que
+                    // el docente vea SIEMPRE lo que ya calificó, no una casilla vacía.
+                    const valorPrevio = (detalleGuardado[r.id] !== undefined && detalleGuardado[r.id] !== null) ? detalleGuardado[r.id] : '';
+                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
                 });
 
                 html += `
@@ -1857,6 +1864,24 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const comentarioInput = document.getElementById(`comentario-est-${cedula}`);
             const comentario = comentarioInput ? comentarioInput.value.trim() : '';
 
+            // Evidencia de cómo calificó el docente: se guarda la nota de
+            // CADA componente (no solo el promedio final), con su etiqueta
+            // y peso tal como se usaron en ese momento, para que quede
+            // registro permanente del detalle aunque después cambien los
+            // componentes de esa materia.
+            const detalleComponentes = {};
+            document.querySelectorAll(`.input-rubro-${cedula}`).forEach(input => {
+                const idRubro = input.getAttribute('data-rubro-id');
+                const valor = parseFloat(input.value);
+                if (idRubro && !isNaN(valor)) {
+                    detalleComponentes[idRubro] = {
+                        label: input.getAttribute('data-rubro-label') || idRubro,
+                        peso: parseFloat(input.getAttribute('data-peso')),
+                        valor: valor
+                    };
+                }
+            });
+
             if (isNaN(promedioFinal)) {
                 // En modo automático simplemente esperamos (el docente sigue
                 // llenando componentes); en modo manual sí avisamos.
@@ -1877,7 +1902,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 periodo: String(periodo), 
                 anio_lectivo: anioLectivoActivo,
                 promedio: Number(promedioFinal),
-                comentario: String(comentario) 
+                comentario: String(comentario),
+                detalle_componentes: detalleComponentes
             };
 
             try {
