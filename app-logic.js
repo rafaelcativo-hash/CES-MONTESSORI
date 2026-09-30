@@ -610,6 +610,52 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     select.appendChild(opt);
                 });
             });
+
+            // Solfeo, Instrumento principal y Académico se reparten por
+            // ciclo (a diferencia de Danza/Percusión/Plásticas/Inglés/Edufi,
+            // que son el mismo docente en ambos ciclos). Se aplica solo en
+            // matrícula NUEVA — nunca pisa el docente ya guardado de un
+            // estudiante que se está editando.
+            aplicarDocentePorCicloDefault();
+        }
+
+        function nivelACiclo(nivel) {
+            return ['Cuarto', 'Quinto', 'Sexto'].includes(nivel) ? 'Segundo Ciclo' : 'Primer Ciclo';
+        }
+
+        // OJO al editar esto: el nombre debe coincidir EXACTO (tildes
+        // incluidas) con el nombre registrado en Directorio y Carga, o el
+        // desplegable simplemente no preselecciona a nadie (no rompe nada,
+        // solo no aplica el valor por defecto y hay que asignarlo a mano
+        // esa vez).
+        const DOCENTE_POR_CICLO = {
+            'Primer Ciclo': {
+                solfeo: 'Mariangel Matamoroz',
+                instrumento: 'Mariangel Matamoroz',
+                academico: 'Jessica Sánchez Azofeifa'
+            },
+            'Segundo Ciclo': {
+                solfeo: 'Rafael Cativo Romero',
+                instrumento: 'Rafael Cativo Romero',
+                academico: 'Verónica Fernández Mora'
+            }
+        };
+
+        function aplicarDocentePorCicloDefault() {
+            const selectorEdicion = document.getElementById('select-estudiante-editar');
+            const enEdicion = selectorEdicion && selectorEdicion.value !== '';
+            if (enEdicion) return; // nunca pisa el docente ya asignado a un estudiante existente
+
+            const nivel = document.getElementById('mat-nivel') ? document.getElementById('mat-nivel').value : '';
+            const defaults = DOCENTE_POR_CICLO[nivelACiclo(nivel)];
+            if (!defaults) return;
+
+            const selSolfeo = document.getElementById('mat-doc-solfeo');
+            const selInstr = document.getElementById('mat-docente-asig');
+            const selAcad = document.getElementById('mat-docente-acad');
+            if (selSolfeo && defaults.solfeo) selSolfeo.value = defaults.solfeo;
+            if (selInstr && defaults.instrumento) selInstr.value = defaults.instrumento;
+            if (selAcad && defaults.academico) selAcad.value = defaults.academico;
         }
 
         async function cargarSelectorEstudiantesEdicion() {
@@ -954,6 +1000,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             btnSubmit.innerText = 'Actualizar Datos de Matrícula';
             btnSubmit.className = 'action-btn warning-btn';
 
+            sincronizarNoLlevaPercusionUI();
             generarVistaPreviaMatricula();
         }
 
@@ -969,8 +1016,10 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             btnSubmit.className = 'action-btn';
             document.getElementById('edad-resultado').innerText = 'Seleccione una fecha de nacimiento';
             document.getElementById('mat-doc-percursion').disabled = false;
+            document.getElementById('mat-no-percusion').disabled = false;
             document.getElementById('contenedor-vista-previa-matricula').style.display = 'none';
             cargarDocentesEnMatricula();
+            sincronizarNoLlevaPercusionUI();
         }
 
         function confirmarYGuardarMatricula(e) {
@@ -999,7 +1048,17 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 nivel: document.getElementById('mat-nivel').value || 'Primero',
                 docente_academico: document.getElementById('mat-docente-acad').value || '',
                 docente_solfeo: document.getElementById('mat-doc-solfeo').value || '',
-                docente_percursion: document.getElementById('mat-no-percusion').checked ? 'No lleva' : (document.getElementById('mat-doc-percursion').value || ''),
+                // Automático: si el instrumento principal o el segundo es
+                // Batería, el estudiante NO lleva Taller de Percusión (sería
+                // redundante) — sin depender de que alguien recuerde marcar
+                // la casilla "No lleva" a mano. La casilla manual sigue
+                // funcionando para cualquier otro caso puntual que se
+                // necesite marcar así.
+                docente_percursion: (
+                    document.getElementById('mat-no-percusion').checked ||
+                    document.getElementById('mat-instr-principal').value === 'Batería' ||
+                    document.getElementById('mat-instr-segundo').value === 'Batería'
+                ) ? 'No lleva' : (document.getElementById('mat-doc-percursion').value || ''),
                 docente_danza: document.getElementById('mat-doc-danza').value || '',
                 docente_plasticas: document.getElementById('mat-doc-plasticas').value || '',
                 docente_ingles: document.getElementById('mat-doc-ingles').value || '',
@@ -3648,3 +3707,48 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             msg.style.display = 'block';
             setTimeout(() => cargarEstadoMFA(), 1500);
         }
+
+        // ============================================================
+        // Auto-exclusión de Taller de Percusión para estudiantes de
+        // Batería: al elegir "Batería" como instrumento (principal o
+        // segundo) en el formulario de Matrícula, marca sola la casilla
+        // "No lleva Taller de Percusión" y desactiva ese select — para que
+        // nadie tenga que acordarse de marcarlo a mano. El guardado real
+        // (guardarOActualizarMatricula) ya queda protegido igual aunque
+        // esta parte visual fallara por cualquier motivo.
+        function sincronizarNoLlevaPercusionUI() {
+            const selPrincipal = document.getElementById('mat-instr-principal');
+            const selSegundo = document.getElementById('mat-instr-segundo');
+            const chkNoLleva = document.getElementById('mat-no-percusion');
+            const selDocentePercursion = document.getElementById('mat-doc-percursion');
+            if (!selPrincipal || !selSegundo || !chkNoLleva || !selDocentePercursion) return;
+
+            const esBateria = selPrincipal.value === 'Batería' || selSegundo.value === 'Batería';
+            if (esBateria) {
+                chkNoLleva.checked = true;
+                chkNoLleva.disabled = true; // es automático por Batería, no manual
+                chkNoLleva.title = 'Automático: los estudiantes de Batería no llevan Taller de Percusión';
+                selDocentePercursion.disabled = true;
+            } else {
+                chkNoLleva.disabled = false;
+                chkNoLleva.title = '';
+                // Solo reactiva el select si el docente no lo había marcado
+                // manualmente aparte (para no pisar una marca manual real).
+                if (!chkNoLleva.checked) selDocentePercursion.disabled = false;
+            }
+        }
+
+        (function inicializarSincroniaPercusion() {
+            const selPrincipal = document.getElementById('mat-instr-principal');
+            const selSegundo = document.getElementById('mat-instr-segundo');
+            if (selPrincipal) selPrincipal.addEventListener('change', sincronizarNoLlevaPercusionUI);
+            if (selSegundo) selSegundo.addEventListener('change', sincronizarNoLlevaPercusionUI);
+            // Estado inicial al cargar el formulario (por si ya trae un
+            // estudiante con Batería seleccionado al editar).
+            sincronizarNoLlevaPercusionUI();
+
+            // Docente por defecto según ciclo (Solfeo/Instrumento/Académico):
+            // se recalcula cada vez que cambia el Nivel en matrícula nueva.
+            const selNivel = document.getElementById('mat-nivel');
+            if (selNivel) selNivel.addEventListener('change', aplicarDocentePorCicloDefault);
+        })();
