@@ -630,8 +630,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         // esa vez).
         const DOCENTE_POR_CICLO = {
             'Primer Ciclo': {
-                solfeo: 'Mariangel Matamoroz',
-                instrumento: 'Mariangel Matamoroz',
+                solfeo: 'Mariangel Matamoros',
+                instrumento: 'Mariangel Matamoros',
                 academico: 'Jessica Sánchez Azofeifa'
             },
             'Segundo Ciclo': {
