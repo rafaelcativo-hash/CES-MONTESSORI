@@ -214,12 +214,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         function cambiarPestana(idSeccion, evt) {
             if (!esAdminActivo()) {
                 // Un docente estándar (o un admin en modo "Ver como Docente")
-                // solo puede entrar a "Calificar" siempre.
+                // solo puede entrar a "Calificar" y a "Seguridad" (para
+                // activar su propio doble factor) siempre.
                 // A "mimatricula" (Editar Matrícula limitada) solo puede
                 // entrar si además es docente académico (mismo criterio que
                 // se usa para mostrar/ocultar el botón en verificarRolUsuario).
                 const esAcademico = docenteTipoActual === 'academico';
-                const tabsPermitidos = esAcademico ? ['calificar', 'mimatricula'] : ['calificar'];
+                const tabsPermitidos = esAcademico ? ['calificar', 'mimatricula', 'seguridad'] : ['calificar', 'seguridad'];
                 if (!tabsPermitidos.includes(idSeccion)) {
                     idSeccion = 'calificar';
                 }
@@ -375,6 +376,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     btn.classList.remove('hidden-by-role');
                 }
             });
+
+            // "Seguridad" (activar/desactivar el propio doble factor) debe
+            // verse SIEMPRE, para cualquier rol — cada quien protege su
+            // propia cuenta, sin importar si el botón trae marcado
+            // data-role-req="admin" en app-shell.html.
+            const botonSeguridad = document.querySelector('.tab-btn[data-tab="seguridad"]');
+            if (botonSeguridad) botonSeguridad.classList.remove('hidden-by-role');
 
             // Un docente académico asignado a un solo ciclo (Primer o Segundo)
             // solo puede ver/editar su propio ciclo en "Mi Matrícula". Si es
