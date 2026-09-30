@@ -3565,7 +3565,21 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
 
             factorIdEnProcesoMFA = data.id;
-            document.getElementById('mfa-qr-contenedor').innerHTML = `<img src="${data.totp.qr_code}" alt="Código QR MFA" style="width: 180px; height: 180px;">`;
+            // OJO: data.totp.qr_code es un SVG en texto plano (con sus
+            // propias comillas dobles adentro). Si se mete directo en un
+            // string tipo `<img src="${...}">`, las comillas del SVG
+            // cortan el atributo a la mitad y el resto se escapa como
+            // texto suelto en la página (eso rompía visualmente el QR).
+            // Por eso aquí se crea la imagen con JS y se asigna el src
+            // como PROPIEDAD, nunca como texto insertado en HTML.
+            const contenedorQR = document.getElementById('mfa-qr-contenedor');
+            contenedorQR.innerHTML = '';
+            const imgQR = document.createElement('img');
+            imgQR.src = data.totp.qr_code;
+            imgQR.alt = 'Código QR MFA';
+            imgQR.style.width = '180px';
+            imgQR.style.height = '180px';
+            contenedorQR.appendChild(imgQR);
             document.getElementById('mfa-secreto-texto').innerText = data.totp.secret;
             document.getElementById('mfa-paso-inicial').style.display = 'none';
             document.getElementById('mfa-paso-qr').style.display = 'block';
