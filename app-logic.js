@@ -586,7 +586,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const materia = select.getAttribute('data-materia');
                 let valorDefecto = '';
                 if (materia === 'Solfeo') valorDefecto = 'Rafael Cativo Romero';
-                if (materia === 'Taller de Percusión') valorDefecto = 'Luis De La O Jimenez';
+                if (materia === 'Taller de Percusión') valorDefecto = 'Luis De la O Jimenez'; // nombre oficial exacto (Directorio, ID 30)
                 if (materia === 'Danza') valorDefecto = 'Vanessa De La O Jimenez';
                 if (materia === 'Artes Plásticas') valorDefecto = 'Mirta Castro García';
                 if (materia === 'Inglés') valorDefecto = 'Ulises Barajas García';
@@ -956,7 +956,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const noLlevaPercusion = data.docente_percursion === 'No lleva';
                 document.getElementById('mat-no-percusion').checked = noLlevaPercusion;
                 document.getElementById('mat-doc-percursion').disabled = noLlevaPercusion;
-                document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De La O Jimenez' : (data.docente_percursion || 'Luis De La O Jimenez');
+                document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De la O Jimenez' : (data.docente_percursion || 'Luis De la O Jimenez');
             }
             if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanessa De La O Jimenez';
             if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro García';
@@ -1029,12 +1029,15 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
         }
 
-        async function guardarOActualizarMatricula() {
+        async function guardarOActualizarMatricula(silencioso) {
             const cedulaVal = document.getElementById('mat-cedula').value.trim();
             const nombreVal = document.getElementById('mat-nombre').value.trim();
 
             if (!cedulaVal || !nombreVal) {
-                alert('El Nombre y la Cédula son obligatorios para la matrícula.');
+                // En automático simplemente espera a que se completen Nombre
+                // y Cédula (son obligatorios) — no interrumpe con un alert
+                // mientras la persona sigue llenando el formulario.
+                if (!silencioso) alert('El Nombre y la Cédula son obligatorios para la matrícula.');
                 return;
             }
 
@@ -1098,17 +1101,51 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 }
 
                 if (error) {
-                    mostrarMensaje('mat-msg', 'Error al guardar en Supabase: ' + error.message, false);
+                    mostrarMensaje('mat-msg', (silencioso ? 'Error al guardar automáticamente: ' : 'Error al guardar en Supabase: ') + error.message, false);
                 } else {
-                    mostrarMensaje('mat-msg', '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
-                    cargarSelectorEstudiantesEdicion();
-                    cargarTablaEstudiantesNivel();
-                    generarVistaPreviaMatricula();
+                    const cuando = new Date().toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                    mostrarMensaje('mat-msg', silencioso ? `✓ Guardado automático (${cuando})` : '¡Matrícula rápida guardada con éxito! Puede completar el resto de datos cuando guste.', true);
+                    if (!silencioso) {
+                        cargarSelectorEstudiantesEdicion();
+                        cargarTablaEstudiantesNivel();
+                        generarVistaPreviaMatricula();
+                    }
                 }
             } catch (e) {
                 mostrarMensaje('mat-msg', 'Error de red o de permisos al guardar la matrícula: ' + e.message, false);
             }
         }
+
+        // ============================================================
+        // GUARDADO AUTOMÁTICO de Matrícula: 2.5 segundos después de dejar
+        // de escribir/cambiar cualquier campo del formulario, se guarda
+        // solo — sin esperar a que alguien pulse "Guardar". El botón
+        // manual sigue funcionando igual (con su confirmación "¿Estás
+        // seguro?"); el automático nunca usa alert ni confirm, para no
+        // interrumpir mientras se llena el formulario. No actualiza las
+        // tablas/listas en cada guardado silencioso (eso sería muy
+        // seguido) — esas se refrescan solas al guardar manualmente o al
+        // cambiar de estudiante/nivel.
+        // ============================================================
+        let timerAutoguardadoMatricula = null;
+
+        function programarAutoguardadoMatricula() {
+            if (timerAutoguardadoMatricula) clearTimeout(timerAutoguardadoMatricula);
+            timerAutoguardadoMatricula = setTimeout(() => {
+                guardarOActualizarMatricula(true);
+            }, 2500);
+        }
+
+        (function inicializarAutoguardadoMatricula() {
+            const formMatricula = document.getElementById('form-matricula');
+            if (!formMatricula) return;
+            // Delegado sobre el formulario completo: cualquier campo que
+            // cambie (texto, select, fecha, checkbox, foto) reinicia el
+            // conteo de 2.5 segundos, sin tener que engancharse campo por
+            // campo.
+            formMatricula.addEventListener('input', programarAutoguardadoMatricula);
+            formMatricula.addEventListener('change', programarAutoguardadoMatricula);
+        })();
 
         function generarVistaPreviaMatricula() {
             const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
