@@ -1,12 +1,13 @@
 {
-  "name": "Registro Shkénuk - CES Montessori",
-  "short_name": "Shkénuk",
-  "start_url": "./index.html",
+  "name": "Registro CES Montessori",
+  "short_name": "CES Montessori",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "background_color": "#1e293b",
   "theme_color": "#1e293b",
   "icons": [
-    { "src": "icono-docentes-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icono-docentes-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
