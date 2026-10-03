@@ -1,4 +1,4 @@
-/// app-logic.js — Se carga SOLO después de un login exitoso.
+// app-logic.js — Se carga SOLO después de un login exitoso.
 // Contiene toda la lógica de matrícula, calificaciones, informes y control financiero.
 
 // ============================================================
@@ -3753,11 +3753,38 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         // nadie tenga que acordarse de marcarlo a mano. El guardado real
         // (guardarOActualizarMatricula) ya queda protegido igual aunque
         // esta parte visual fallara por cualquier motivo.
-        // Docente titular fijo de Batería (nombre oficial exacto, Directorio
-        // ID 30) — Batería es siempre con Luis, sin importar el ciclo, así
-        // que esta regla manda por encima del valor por defecto por ciclo
-        // (aplicarDocentePorCicloDefault) cuando el instrumento es Batería.
-        const DOCENTE_TITULAR_BATERIA = 'Luis De la O Jimenez';
+        // Docentes con profesor FIJO para un instrumento específico, sin
+        // importar el ciclo del estudiante (nombre oficial exacto, tal como
+        // está en el Directorio). Cualquier instrumento que NO esté en esta
+        // lista (Piano, Guitarra, Ukulele, Bajo, Otro) sigue la regla de
+        // ciclo normal (DOCENTE_POR_CICLO: Mariangel en Primer Ciclo,
+        // Cativo en Segundo Ciclo).
+        const DOCENTE_FIJO_POR_INSTRUMENTO = {
+            'Batería': 'Luis De la O Jimenez',
+            'Canto': 'Amanda Obregón Apéstegui'
+        };
+
+        // Sugiere el profesor correcto apenas se elige un instrumento
+        // (principal o segundo): primero revisa si ese instrumento tiene
+        // profesor fijo (Batería→Luis, Canto→Amanda); si no, usa el
+        // profesor de instrumentos del ciclo del estudiante (Mariangel o
+        // Cativo). No hace nada si el select de instrumento quedó vacío.
+        function sugerirDocentePorInstrumento(selInstrumento, selDocente) {
+            if (!selInstrumento || !selDocente) return;
+            const instrumento = selInstrumento.value;
+            if (!instrumento) return;
+
+            if (DOCENTE_FIJO_POR_INSTRUMENTO[instrumento]) {
+                selDocente.value = DOCENTE_FIJO_POR_INSTRUMENTO[instrumento];
+                return;
+            }
+
+            const nivel = document.getElementById('mat-nivel') ? document.getElementById('mat-nivel').value : '';
+            const defaults = DOCENTE_POR_CICLO[nivelACiclo(nivel)];
+            if (defaults && defaults.instrumento) {
+                selDocente.value = defaults.instrumento;
+            }
+        }
 
         function sincronizarNoLlevaPercusionUI() {
             const selPrincipal = document.getElementById('mat-instr-principal');
@@ -3782,18 +3809,14 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 if (!chkNoLleva.checked) selDocentePercursion.disabled = false;
             }
 
-            // Si el instrumento PRINCIPAL es Batería, su profesor es Luis
-            // siempre — sin esto, la casilla quedaba en blanco o con el
-            // docente de ciclo equivocado, y eso fue justo lo que bloqueó
-            // el guardado de notas de un estudiante (Octavio) por el
+            // Sugiere el profesor de instrumento correcto (fijo por
+            // instrumento, o por ciclo si no tiene profesor fijo) apenas
+            // se elige el instrumento principal o el segundo. Esto evita
+            // que quede en blanco (como pasó con Octavio) o con el docente
+            // equivocado, lo cual bloqueaba el guardado de notas por el
             // permiso de seguridad de Supabase.
-            if (selPrincipal.value === 'Batería' && selDocenteInstrPrincipal) {
-                selDocenteInstrPrincipal.value = DOCENTE_TITULAR_BATERIA;
-            }
-            // Mismo caso para el SEGUNDO instrumento.
-            if (selSegundo.value === 'Batería' && selDocenteInstrSegundo) {
-                selDocenteInstrSegundo.value = DOCENTE_TITULAR_BATERIA;
-            }
+            sugerirDocentePorInstrumento(selPrincipal, selDocenteInstrPrincipal);
+            sugerirDocentePorInstrumento(selSegundo, selDocenteInstrSegundo);
         }
 
         (function inicializarSincroniaPercusion() {
@@ -3808,5 +3831,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             // Docente por defecto según ciclo (Solfeo/Instrumento/Académico):
             // se recalcula cada vez que cambia el Nivel en matrícula nueva.
             const selNivel = document.getElementById('mat-nivel');
-            if (selNivel) selNivel.addEventListener('change', aplicarDocentePorCicloDefault);
+            if (selNivel) selNivel.addEventListener('change', () => {
+                aplicarDocentePorCicloDefault();
+                // Si el instrumento ya elegido tiene profesor FIJO (Batería,
+                // Canto), que ese mande sobre el valor por ciclo que
+                // acabamos de aplicar arriba (ej. no perder a Luis si ya
+                // habían elegido Batería y luego cambian el Nivel).
+                sincronizarNoLlevaPercusionUI();
+            });
         })();
