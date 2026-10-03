@@ -1,4 +1,4 @@
-// app-logic.js — Se carga SOLO después de un login exitoso.
+/// app-logic.js — Se carga SOLO después de un login exitoso.
 // Contiene toda la lógica de matrícula, calificaciones, informes y control financiero.
 
 // ============================================================
@@ -3753,11 +3753,19 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         // nadie tenga que acordarse de marcarlo a mano. El guardado real
         // (guardarOActualizarMatricula) ya queda protegido igual aunque
         // esta parte visual fallara por cualquier motivo.
+        // Docente titular fijo de Batería (nombre oficial exacto, Directorio
+        // ID 30) — Batería es siempre con Luis, sin importar el ciclo, así
+        // que esta regla manda por encima del valor por defecto por ciclo
+        // (aplicarDocentePorCicloDefault) cuando el instrumento es Batería.
+        const DOCENTE_TITULAR_BATERIA = 'Luis De la O Jimenez';
+
         function sincronizarNoLlevaPercusionUI() {
             const selPrincipal = document.getElementById('mat-instr-principal');
             const selSegundo = document.getElementById('mat-instr-segundo');
             const chkNoLleva = document.getElementById('mat-no-percusion');
             const selDocentePercursion = document.getElementById('mat-doc-percursion');
+            const selDocenteInstrPrincipal = document.getElementById('mat-docente-asig');
+            const selDocenteInstrSegundo = document.getElementById('mat-docente-segundo');
             if (!selPrincipal || !selSegundo || !chkNoLleva || !selDocentePercursion) return;
 
             const esBateria = selPrincipal.value === 'Batería' || selSegundo.value === 'Batería';
@@ -3772,6 +3780,19 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // Solo reactiva el select si el docente no lo había marcado
                 // manualmente aparte (para no pisar una marca manual real).
                 if (!chkNoLleva.checked) selDocentePercursion.disabled = false;
+            }
+
+            // Si el instrumento PRINCIPAL es Batería, su profesor es Luis
+            // siempre — sin esto, la casilla quedaba en blanco o con el
+            // docente de ciclo equivocado, y eso fue justo lo que bloqueó
+            // el guardado de notas de un estudiante (Octavio) por el
+            // permiso de seguridad de Supabase.
+            if (selPrincipal.value === 'Batería' && selDocenteInstrPrincipal) {
+                selDocenteInstrPrincipal.value = DOCENTE_TITULAR_BATERIA;
+            }
+            // Mismo caso para el SEGUNDO instrumento.
+            if (selSegundo.value === 'Batería' && selDocenteInstrSegundo) {
+                selDocenteInstrSegundo.value = DOCENTE_TITULAR_BATERIA;
             }
         }
 
