@@ -1865,7 +1865,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             html += `
                             <th>Nota Final</th>
-                            <th>Reflexiones Docentes</th>
+                            <th style="min-width: 250px;">Reflexiones Docentes</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -1886,14 +1886,6 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 `;
 
                 rubros.forEach(r => {
-                    // data-rubro-id identifica el componente, y "value" recupera
-                    // la nota de ese componente guardada la última vez, para que
-                    // el docente vea SIEMPRE lo que ya calificó, no una casilla vacía.
-                    // detalleGuardado[r.id] es un objeto { label, peso, valor } —
-                    // hay que sacar solo el número (.valor) para meterlo en el
-                    // input; si se deja el objeto completo, el navegador lo
-                    // convierte en el texto "[object Object]" y lo rechaza
-                    // (ese era el error "cannot be parsed" de la consola).
                     const rubroPrevio = detalleGuardado[r.id];
                     const valorPrevio = (rubroPrevio && rubroPrevio.valor !== undefined && rubroPrevio.valor !== null) ? rubroPrevio.valor : '';
                     html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
@@ -1901,11 +1893,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                 html += `
                         <td><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
-                        <td>
+                        <td style="text-align: left;">
                 `;
 
                 if (llevaComentario) {
-                    html += `<input type="text" id="comentario-est-${est.cedula}" value="${escapeHTML(comentarioGuardado)}" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 200px;" ${esConducta ? 'required' : ''} oninput="programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">`;
+                    html += `<textarea id="comentario-est-${est.cedula}" rows="2" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente...'}" style="width: 100%; resize: vertical; padding: 6px; box-sizing: border-box; font-family: inherit; font-size: 12px;" ${esConducta ? 'required' : ''} oninput="programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">${escapeHTML(comentarioGuardado)}</textarea>`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -1923,7 +1915,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                 html += `
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">Guardar</button>
                             <div id="save-status-${est.cedula}" style="font-size: 11px; margin-top: 4px; color: #64748b;"></div>
                             <div id="audit-${est.cedula}" style="font-size: 10px; margin-top: 2px; color: #94a3b8; font-style: italic;">${auditStr}</div>
@@ -3753,12 +3745,6 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         // nadie tenga que acordarse de marcarlo a mano. El guardado real
         // (guardarOActualizarMatricula) ya queda protegido igual aunque
         // esta parte visual fallara por cualquier motivo.
-        // Docentes con profesor FIJO para un instrumento específico, sin
-        // importar el ciclo del estudiante (nombre oficial exacto, tal como
-        // está en el Directorio). Cualquier instrumento que NO esté en esta
-        // lista (Piano, Guitarra, Ukulele, Bajo, Otro) sigue la regla de
-        // ciclo normal (DOCENTE_POR_CICLO: Mariangel en Primer Ciclo,
-        // Cativo en Segundo Ciclo).
         const DOCENTE_FIJO_POR_INSTRUMENTO = {
             'Batería': 'Luis De la O Jimenez',
             'Canto': 'Amanda Obregón Apéstegui'
