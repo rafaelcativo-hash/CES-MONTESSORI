@@ -121,17 +121,202 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             return valorOpcion.replace('[Artística] ', '').replace('[Académica] ', '').trim();
         }
 
+        // ============================================================
+        // EXPORTAR A WORD (.doc editable) CON LOS LOGOS INCRUSTADOS
+        //
+        // Por qué antes no salían los logos: el .doc se armaba como una página
+        // web cuyas imágenes eran RUTAS RELATIVAS ("ces%20montessori%20encabezado
+        // .jpeg"). Al guardar el archivo en la computadora (Descargas) Word busca
+        // esas imágenes junto al .doc, no las encuentra y deja el espacio vacío.
+        //
+        // Ahora cada imagen se descarga, se convierte a base64 y se guarda DENTRO
+        // del mismo archivo (formato MHTML: un solo archivo con el texto y las
+        // imágenes adentro, que Word abre como cualquier .doc). Así el documento
+        // se puede mover, enviar por correo o editar en cualquier computadora y
+        // los logos y firmas siempre van incluidos.
+        // ============================================================
+
+        // Interruptor de respaldo. true  = las imágenes viajan DENTRO del archivo (lo
+        // recomendado para Microsoft Word). false = formato anterior (página web
+        // simple), pero con la dirección completa de internet de cada imagen en
+        // vez de la ruta relativa: sirve para programas que no abren el formato de
+        // un solo archivo (LibreOffice, etc.), con la condición de abrir el
+        // documento con internet para que se vean los logos.
+        const WORD_INCRUSTAR_IMAGENES = true;
+
+        // Word no entiende las variables CSS (var(--border), etc.): se cambian
+        // por su color real para que bordes y títulos salgan igual que en pantalla.
+        const COLORES_WORD = {
+            '--primary': '#1e293b', '--secondary': '#0f172a', '--accent': '#2563eb',
+            '--accent-hover': '#1d4ed8', '--bg-light': '#f8fafc', '--border': '#cbd5e1', '--text': '#334155'
+        };
+
+        function bytesABase64(bytes) {
+            let binario = '';
+            const trozo = 0x8000; // por partes, para no desbordar con imágenes grandes
+            for (let i = 0; i < bytes.length; i += trozo) {
+                binario += String.fromCharCode.apply(null, bytes.subarray(i, i + trozo));
+            }
+            return btoa(binario);
+        }
+
+        function partirBase64(b64) {
+            return b64.replace(/(.{76})/g, '$1\r\n'); // líneas de 76 caracteres, como pide MIME
+        }
+
+        function tipoImagenPorExtension(src) {
+            const ext = (String(src).split('?')[0].split('.').pop() || '').toLowerCase();
+            if (ext === 'png') return 'image/png';
+            if (ext === 'gif') return 'image/gif';
+            if (ext === 'webp') return 'image/webp';
+            return 'image/jpeg';
+        }
+
+        // Descarga una imagen (también sirve para las fotos que ya vienen como
+        // "data:image/..;base64,..") y la devuelve lista para incrustar.
+        async function obtenerImagenComoBase64(src) {
+            const resp = await fetch(src);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            let mime = (resp.headers.get('Content-Type') || '').split(';')[0].trim();
+            if (!mime.startsWith('image/')) mime = tipoImagenPorExtension(src);
+            const bytes = new Uint8Array(await resp.arrayBuffer());
+            return { mime, base64: bytesABase64(bytes) };
+        }
+
+        // Codifica texto UTF-8 en "quoted-printable" (la codificación que usa Word
+        // al guardar una página web de un solo archivo): los caracteres normales
+        // pasan tal cual, los acentos y símbolos salen como =C3=A1, y las líneas
+        // se parten a 76 caracteres con "=" al final.
+        function codificarQuotedPrintable(texto) {
+            const bytes = new TextEncoder().encode(texto);
+            const HEX = '0123456789ABCDEF';
+            let salida = '';
+            let linea = '';
+            const agregar = (fragmento) => {
+                if (linea.length + fragmento.length > 75) { salida += linea + '=\r\n'; linea = ''; }
+                linea += fragmento;
+            };
+            for (let i = 0; i < bytes.length; i++) {
+                const b = bytes[i];
+                if (b === 13) continue; // los saltos de línea se normalizan abajo
+                if (b === 10) {
+                    // un espacio o tab al final de una línea debe codificarse
+                    if (linea.endsWith(' ')) linea = linea.slice(0, -1) + '=20';
+                    else if (linea.endsWith('\t')) linea = linea.slice(0, -1) + '=09';
+                    salida += linea + '\r\n';
+                    linea = '';
+                } else if (b === 9 || b === 32 || (b >= 33 && b <= 126 && b !== 61)) {
+                    agregar(String.fromCharCode(b));
+                } else {
+                    agregar('=' + HEX[b >> 4] + HEX[b & 15]);
+                }
+            }
+            return salida + linea;
+        }
+
+        // Arma el archivo MHTML: primero el documento (HTML) y después una parte
+        // por cada imagen, enlazada por su "Content-Location".
+        function construirMHTML(htmlCompleto, imagenes) {
+            const frontera = '----=_NextPart_CES_' + Date.now().toString(36);
+            const CRLF = '\r\n';
+            let mime =
+                'MIME-Version: 1.0' + CRLF +
+                'Content-Type: multipart/related; boundary="' + frontera + '"; type="text/html"' + CRLF + CRLF +
+                '--' + frontera + CRLF +
+                'Content-Type: text/html; charset="utf-8"' + CRLF +
+                'Content-Transfer-Encoding: quoted-printable' + CRLF +
+                'Content-Location: file:///C:/fake/documento.htm' + CRLF + CRLF +
+                codificarQuotedPrintable(htmlCompleto) + CRLF + CRLF;
+            imagenes.forEach(img => {
+                mime +=
+                    '--' + frontera + CRLF +
+                    'Content-Type: ' + img.mime + CRLF +
+                    'Content-Transfer-Encoding: base64' + CRLF +
+                    'Content-Location: ' + img.ubicacion + CRLF + CRLF +
+                    partirBase64(img.base64) + CRLF + CRLF;
+            });
+            mime += '--' + frontera + '--' + CRLF;
+            return mime;
+        }
+
         // Exporta cualquiera de los documentos imprimibles (informe, lista oficial,
-        // ficha de matrícula) como un archivo .doc editable en Microsoft Word,
-        // conservando el formato visual (incluye la tipografía Century Gothic).
-        function exportarComoWord(elementId, nombreArchivoBase) {
-            const contenido = document.getElementById(elementId);
-            if (!contenido) {
+        // ficha de matrícula, estado de cuenta) como un archivo .doc editable en
+        // Microsoft Word, conservando el formato visual (incluye la tipografía
+        // Century Gothic) y con todas las imágenes incrustadas.
+        async function exportarComoWord(elementId, nombreArchivoBase) {
+            const original = document.getElementById(elementId);
+            if (!original) {
                 alert('No hay contenido generado para exportar todavía.');
                 return;
             }
 
-            const estilosWord = `
+            try {
+                // Se trabaja sobre una copia para no alterar lo que se ve en pantalla.
+                const copia = original.cloneNode(true);
+                const imgsOriginal = Array.from(original.querySelectorAll('img'));
+                const imgsCopia = Array.from(copia.querySelectorAll('img'));
+
+                const partes = [];                 // imágenes a incrustar
+                const yaIncrustadas = new Map();   // misma imagen usada dos veces = una sola parte
+                let fallidas = 0;
+                const ANCHO_MAX_WORD = 680;        // 18 cm: ancho útil de la hoja en Word
+
+                for (let i = 0; i < imgsCopia.length; i++) {
+                    const imgCopia = imgsCopia[i];
+                    const imgOrig = imgsOriginal[i];
+                    const src = imgOrig.currentSrc || imgOrig.src;
+                    if (!src) continue;
+
+                    if (!WORD_INCRUSTAR_IMAGENES) {
+                        // Respaldo: dirección completa (https://...) de la imagen.
+                        imgCopia.removeAttribute('src');
+                        imgCopia.removeAttribute('srcset');
+                        imgCopia.setAttribute('data-mhtml', new URL(src, location.href).href);
+                    } else try {
+                        let ubicacion = yaIncrustadas.get(src);
+                        if (!ubicacion) {
+                            const { mime, base64 } = await obtenerImagenComoBase64(src);
+                            const ext = (mime.split('/')[1] || 'jpeg').replace('svg+xml', 'svg');
+                            ubicacion = `file:///C:/fake/imagen${partes.length + 1}.${ext}`;
+                            partes.push({ ubicacion, mime, base64 });
+                            yaIncrustadas.set(src, ubicacion);
+                        }
+                        // No se pone en "src" todavía (el navegador intentaría cargar
+                        // esa ruta interna y llenaría la consola de avisos): se marca
+                        // y se convierte a src directamente en el texto final.
+                        imgCopia.removeAttribute('src');
+                        imgCopia.removeAttribute('srcset');
+                        imgCopia.setAttribute('data-mhtml', ubicacion);
+                    } catch (errImg) {
+                        fallidas++;
+                        console.error('No se pudo incrustar la imagen en Word:', src, errImg);
+                        // Si una imagen falla, se deja su ruta original (como antes).
+                        imgCopia.removeAttribute('src');
+                        imgCopia.setAttribute('data-mhtml', imgOrig.getAttribute('src') || src);
+                    }
+
+                    // Tamaño explícito en píxeles: Word no entiende max-width ni
+                    // object-fit, así que se le da el ancho y alto ya calculados.
+                    const natW = imgOrig.naturalWidth || 0;
+                    const natH = imgOrig.naturalHeight || 0;
+                    let ancho = parseInt(imgCopia.getAttribute('data-ancho-word') || '', 10);
+                    if (!ancho) {
+                        if (imgCopia.closest('.encabezado-informe-full')) {
+                            ancho = ANCHO_MAX_WORD;  // el encabezado va a todo el ancho de la hoja
+                        } else {
+                            ancho = Math.round(imgOrig.getBoundingClientRect().width) || natW;
+                        }
+                    }
+                    ancho = Math.min(ancho, ANCHO_MAX_WORD);
+                    if (ancho && natW && natH) {
+                        const alto = Math.round(ancho * natH / natW);
+                        imgCopia.setAttribute('width', ancho);
+                        imgCopia.setAttribute('height', alto);
+                        imgCopia.setAttribute('style', `width: ${ancho}px; height: ${alto}px;`);
+                    }
+                }
+
+                const estilosWord = `
                 @page { size: 21cm 29.7cm; margin: 1.5cm; }
                 :root { --primary: #1e293b; --secondary: #0f172a; --accent: #2563eb; --accent-hover: #1d4ed8; --bg-light: #f8fafc; --border: #cbd5e1; --text: #334155; }
                 body { font-family: 'Century Gothic', 'CenturyGothic', 'Segoe UI', sans-serif; font-size: 11pt; line-height: 1.35; color: #1e293b; width: 18cm; margin: 0 auto; }
@@ -145,27 +330,40 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 h3, h4 { color: #1e293b; }
             `;
 
-            const htmlCompleto = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head>
-                    <meta charset='utf-8'>
-                    <title>${nombreArchivoBase}</title>
-                    <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-                    <style>${estilosWord}</style>
-                </head>
-                <body>${contenido.innerHTML}</body>
-                </html>
-            `;
+                const cuerpo = copia.innerHTML
+                    .replace(/var\((--[a-z-]+)\)/g, (m, v) => COLORES_WORD[v] || m)
+                    .replace(/data-mhtml="([^"]*)"/g, 'src="$1"');
 
-            const blob = new Blob(['\ufeff', htmlCompleto], { type: 'application/msword' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${nombreArchivoBase}.doc`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+                const htmlCompleto = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta charset='utf-8'>
+<title>${nombreArchivoBase}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+<style>${estilosWord}</style>
+</head>
+<body>${cuerpo}</body>
+</html>`;
+
+                const blob = WORD_INCRUSTAR_IMAGENES
+                    ? new Blob([construirMHTML(htmlCompleto, partes)], { type: 'application/msword' })
+                    : new Blob(['\ufeff', htmlCompleto], { type: 'application/msword' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${nombreArchivoBase}.doc`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+                if (fallidas > 0) {
+                    alert(`El documento se guardó, pero ${fallidas} imagen(es) no se pudieron incluir (revise su conexión a internet y vuelva a exportar).`);
+                }
+            } catch (e) {
+                console.error('Error al exportar a Word:', e);
+                alert('No se pudo generar el archivo de Word: ' + e.message);
+            }
         }
 
         // Calcula, consultando la matrícula real (solo estudiantes activos),
@@ -613,7 +811,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             // Solfeo, Instrumento principal y Académico se reparten por
             // ciclo (a diferencia de Danza/Percusión/Plásticas/Inglés/Edufi,
-            // que son el mismo docente en ambos ciclos). Se aplica solo en
+            // que są el mismo docente en ambos ciclos). Se aplica solo en
             // matrícula NUEVA — nunca pisa el docente ya guardado de un
             // estudiante que se está editando.
             aplicarDocentePorCicloDefault();
@@ -1851,22 +2049,41 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const llevaComentario = !esSolfeoPercusion && !esAcademicaPura;
             const esConducta = materia.includes('Conducta');
 
+            // ------------------------------------------------------------------
+            // Distribución de la planilla (pensada para que la reflexión del
+            // docente se lea COMPLETA en la misma vista):
+            //  - La tabla ocupa todo el ancho disponible (display: table) y va
+            //    dentro de un contenedor con scroll horizontal por si la
+            //    pantalla es muy angosta (celular).
+            //  - "Reflexiones Docentes" es la columna flexible (width: 100%):
+            //    se queda con TODO el espacio sobrante, y su caja es un
+            //    <textarea> que parte el texto en 2 o más renglones y crece
+            //    sola hasta mostrar el comentario completo.
+            //  - "Acción" queda como columna angosta en el extremo derecho: el
+            //    botón Guardar y, apilados debajo, el estado y la auditoría.
+            //  - Casillas de notas más angostas y nombre del estudiante con
+            //    salto de línea, para liberar ancho a favor de la reflexión.
+            // ------------------------------------------------------------------
+            const celdaBase = 'padding: 8px 5px;';
             let html = `
                 <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
-                <table class="data-table">
+                <div class="planilla-scroll" style="overflow-x: auto; width: 100%;">
+                <table class="data-table" style="display: table; width: 100%;">
                     <thead>
                         <tr>
-                            <th>Estudiante / Asignación</th>
+                            <th style="${celdaBase} white-space: normal; min-width: 150px;">Estudiante / Asignación</th>
             `;
 
             rubros.forEach(r => {
-                html += `<th>${r.label}<br><span style="font-size:10px; font-weight:normal;">(${Math.round(r.peso * 100)}%)</span></th>`;
+                // <wbr> permite partir "Asistencia/Participación" en dos renglones
+                // en vez de ensanchar la columna.
+                html += `<th style="${celdaBase} white-space: normal; min-width: 72px;">${r.label.replace('/', '/<wbr>')}<br><span style="font-size:10px; font-weight:normal;">(${Math.round(r.peso * 100)}%)</span></th>`;
             });
 
             html += `
-                            <th>Nota Final</th>
-                            <th style="min-width: 250px;">Reflexiones Docentes</th>
-                            <th>Acción</th>
+                            <th style="${celdaBase} white-space: normal; min-width: 58px;">Nota Final</th>
+                            <th style="${celdaBase}${llevaComentario ? ' width: 100%; min-width: 260px;' : ''}">Reflexiones Docentes</th>
+                            <th style="${celdaBase} width: 1%; min-width: 150px;">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1882,22 +2099,30 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b><br><small>Inst. Princ: ${escapeHTML(est.instrumento_principal) || 'N/A'} | Inst. 2do: ${escapeHTML(est.instrumento_segundo) || 'Ninguno'}</small></td>
+                        <td style="${celdaBase} text-align: left; white-space: normal; min-width: 150px; max-width: 220px;"><b>${escapeHTML(est.nombre)}</b><br><small>Inst. Princ: ${escapeHTML(est.instrumento_principal) || 'N/A'} | Inst. 2do: ${escapeHTML(est.instrumento_segundo) || 'Ninguno'}</small></td>
                 `;
 
                 rubros.forEach(r => {
+                    // data-rubro-id identifica el componente, y "value" recupera
+                    // la nota de ese componente guardada la última vez, para que
+                    // el docente vea SIEMPRE lo que ya calificó, no una casilla vacía.
+                    // detalleGuardado[r.id] es un objeto { label, peso, valor } —
+                    // hay que sacar solo el número (.valor) para meterlo en el
+                    // input; si se deja el objeto completo, el navegador lo
+                    // convierte en el texto "[object Object]" y lo rechaza
+                    // (esse era el error "cannot be parsed" de la consola).
                     const rubroPrevio = detalleGuardado[r.id];
                     const valorPrevio = (rubroPrevio && rubroPrevio.valor !== undefined && rubroPrevio.valor !== null) ? rubroPrevio.valor : '';
-                    html += `<td><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 70px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
+                    html += `<td style="${celdaBase}"><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 64px; padding: 8px 4px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
                 });
 
                 html += `
-                        <td><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
-                        <td style="text-align: left;">
+                        <td style="${celdaBase}"><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
+                        <td style="${celdaBase} text-align: left;">
                 `;
 
                 if (llevaComentario) {
-                    html += `<textarea id="comentario-est-${est.cedula}" rows="2" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente...'}" style="width: 100%; resize: vertical; padding: 6px; box-sizing: border-box; font-family: inherit; font-size: 12px;" ${esConducta ? 'required' : ''} oninput="programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">${escapeHTML(comentarioGuardado)}</textarea>`;
+                    html += `<textarea class="reflexion-input" id="comentario-est-${est.cedula}" rows="2" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 100%; min-width: 240px; min-height: 52px; resize: vertical; overflow: hidden; line-height: 1.35; font-family: inherit; font-size: 13px; white-space: pre-wrap;" ${esConducta ? 'required' : ''} oninput="ajustarAltoTextarea(this); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">${escapeHTML(comentarioGuardado)}</textarea>`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -1907,25 +2132,26 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // hizo el último cambio sin tener que volver a guardar.
                 let auditStr = '';
                 if (notaReg && notaReg.modificado_por && notaReg.modificado_en) {
-                    const fecha = new Date(notaReg.modificado_en);
-                    const fechaStr = fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    const horaStr = fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-                    auditStr = `Últ. cambio: ${escapeHTML(notaReg.modificado_por)} — ${fechaStr} ${horaStr}`;
+                    auditStr = htmlAuditoria(notaReg.modificado_por, notaReg.modificado_en);
                 }
 
                 html += `
                         </td>
-                        <td style="white-space: nowrap;">
+                        <td style="${celdaBase} vertical-align: top;">
                             <button class="action-btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarNotaComponentes('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">Guardar</button>
-                            <div id="save-status-${est.cedula}" style="font-size: 11px; margin-top: 4px; color: #64748b;"></div>
-                            <div id="audit-${est.cedula}" style="font-size: 10px; margin-top: 2px; color: #94a3b8; font-style: italic;">${auditStr}</div>
+                            <div id="save-status-${est.cedula}" style="font-size: 11px; margin-top: 4px; color: #64748b; white-space: normal; max-width: 150px; margin-left: auto; margin-right: auto; overflow-wrap: anywhere;"></div>
+                            <div id="audit-${est.cedula}" style="font-size: 10px; margin-top: 3px; color: #94a3b8; font-style: italic; line-height: 1.25; white-space: normal; max-width: 150px; margin-left: auto; margin-right: auto; overflow-wrap: anywhere;">${auditStr}</div>
                         </td>
                     </tr>
                 `;
             });
 
-            html += `</tbody></table>`;
+            html += `</tbody></table></div>`;
             contenedor.innerHTML = html;
+            // Ajusta cada caja de reflexión a su contenido para que el comentario
+            // se vea completo (ya con el HTML en pantalla, que es cuando se puede
+            // medir el alto real del texto).
+            contenedor.querySelectorAll('textarea.reflexion-input').forEach(ajustarAltoTextarea);
         }
 
         function calcularNotaFinalEstudiante(cedula) {
@@ -2080,17 +2306,46 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
         }
 
+        // Texto de auditoría ("quién / qué día / a qué hora" fue el último
+        // guardado), en 3 renglones apilados para caber en la columna
+        // angosta de "Acción". Se usa tanto al abrir la planilla como justo
+        // después de guardar, para que se vea siempre igual.
+        function htmlAuditoria(correo, fechaISO) {
+            const fecha = new Date(fechaISO);
+            const fechaStr = fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const horaStr = fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+            return `Últ. cambio:<br>${escapeHTML(correo)}<br>${fechaStr} ${horaStr}`;
+        }
+
         // Muestra "quién / qué día / a qué hora" quedó el último guardado,
         // justo debajo del botón Guardar de cada estudiante — la evidencia
         // de auditoría que pidió la institución para legalizar el registro.
         function actualizarEtiquetaAuditoria(cedula, correo, fechaISO) {
             const el = document.getElementById(`audit-${cedula}`);
             if (!el) return;
-            const fecha = new Date(fechaISO);
-            const fechaStr = fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const horaStr = fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-            el.innerText = `Últ. cambio: ${correo} — ${fechaStr} ${horaStr}`;
+            el.innerHTML = htmlAuditoria(correo, fechaISO);
         }
+
+        // Hace que la caja de la reflexión crezca (o se encoja) según su texto,
+        // así el comentario se ve completo en la misma vista, partido en los
+        // renglones que haga falta, sin barra de desplazamiento interna.
+        function ajustarAltoTextarea(el) {
+            if (!el) return;
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight + 2) + 'px';
+        }
+
+        // Si cambia el ancho de la ventana (girar el celular, redimensionar),
+        // el texto se parte distinto: se vuelve a medir cada caja.
+        (function () {
+            let t = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(t);
+                t = setTimeout(() => {
+                    document.querySelectorAll('textarea.reflexion-input').forEach(ajustarAltoTextarea);
+                }, 150);
+            });
+        })();
 
         // =====================================================================
         // IMPORTACIÓN DE NOTAS DESDE EXCEL
@@ -2615,7 +2870,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 : 'Segundo Periodo y Anual';
 
             const esPrimerCiclo = ['Primero', 'Segundo', 'Tercero'].includes(estData.nivel);
-            const imagenFirma = esPrimerCiclo ? 'informe%20firma%20jessica.jpeg' : 'informe%20firma%20vero.jpeg';
+            // MODIFICACIÓN APLICADA: Firma ajustada proporcionalmente (1 a 1 de manera porcentual)
+            const FIRMA_INFORME = esPrimerCiclo
+                ? { archivo: 'informe%20firma%20jessica.jpeg', anchoPct: '65%', anchoWord: 450 }
+                : { archivo: 'informe%20firma%20vero.jpeg',    anchoPct: '65%', anchoWord: 450 };
+            const imagenFirma = FIRMA_INFORME.archivo;
 
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
@@ -2662,7 +2921,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         </div>
 
                         <div style="text-align: center; margin-top: 20px; page-break-inside: avoid; break-inside: avoid;">
-                            <img src="${imagenFirma}" alt="Firma Autorizada" style="max-width: 253px; height: auto; display: inline-block;">
+                            <img src="${imagenFirma}" alt="Firma Autorizada" data-ancho-word="${FIRMA_INFORME.anchoWord}" style="width: ${FIRMA_INFORME.anchoPct}; max-width: 100%; height: auto; display: inline-block;">
                         </div>
 
                         <div class="cita-montessori cita-pie-pagina">
@@ -3745,6 +4004,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         // nadie tenga que acordarse de marcarlo a mano. El guardado real
         // (guardarOActualizarMatricula) ya queda protegido igual aunque
         // esta parte visual fallara por cualquier motivo.
+        // Docentes con profesor FIJO para un instrumento específico, sin
+        // importar el ciclo del estudiante (nombre oficial exacto, tal como
+        // está en el Directorio). Cualquier instrumento que NO esté en esta
+        // lista (Piano, Guitarra, Ukulele, Bajo, Otro) sigue la regla de
+        // ciclo normal (DOCENTE_POR_CICLO: Mariangel en Primer Ciclo,
+        // Cativo en Segundo Ciclo).
         const DOCENTE_FIJO_POR_INSTRUMENTO = {
             'Batería': 'Luis De la O Jimenez',
             'Canto': 'Amanda Obregón Apéstegui'
