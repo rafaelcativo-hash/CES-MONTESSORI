@@ -811,7 +811,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             // Solfeo, Instrumento principal y Académico se reparten por
             // ciclo (a diferencia de Danza/Percusión/Plásticas/Inglés/Edufi,
-            // que są el mismo docente en ambos ciclos). Se aplica solo en
+            // que son el mismo docente en ambos ciclos). Se aplica solo en
             // matrícula NUEVA — nunca pisa el docente ya guardado de un
             // estudiante que se está editando.
             aplicarDocentePorCicloDefault();
@@ -2110,7 +2110,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     // hay que sacar solo el número (.valor) para meterlo en el
                     // input; si se deja el objeto completo, el navegador lo
                     // convierte en el texto "[object Object]" y lo rechaza
-                    // (esse era el error "cannot be parsed" de la consola).
+                    // (ese era el error "cannot be parsed" de la consola).
                     const rubroPrevio = detalleGuardado[r.id];
                     const valorPrevio = (rubroPrevio && rubroPrevio.valor !== undefined && rubroPrevio.valor !== null) ? rubroPrevio.valor : '';
                     html += `<td style="${celdaBase}"><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 64px; padding: 8px 4px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
@@ -2869,11 +2869,24 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 ? 'Primer Periodo' 
                 : 'Segundo Periodo y Anual';
 
+            // Tamaño de las firmas del pie del informe.
+            // Las dos imágenes NO tienen la misma letra: medida contra la tipografía
+            // del informe (Century Gothic), el nombre impreso de la firma de Jessica
+            // equivale a 15,7 px a tamaño original y el de Verónica a 17,9 px. Por eso
+            // dibujarlas al mismo ancho (o con el mismo %) deja letras desiguales, y
+            // por eso aquí cada una lleva su propio ancho, calculado para que la
+            // letra de AMBAS quede igual:
+            //   - Pantalla / PDF / impresión: letra de 14 px (tabla del informe 12 px,
+            //     títulos 13 px)  ->  Jessica 553 px, Verónica 579 px.
+            //   - Word: letra de 15 px (el texto del Word es de 11 pt = 14,7 px)
+            //     ->  Jessica 592 px, Verónica 620 px.
+            // Son píxeles fijos (no %) a propósito: la letra de la tabla también es
+            // de tamaño fijo, así la proporción entre ambas no cambia con el ancho
+            // de la ventana.
             const esPrimerCiclo = ['Primero', 'Segundo', 'Tercero'].includes(estData.nivel);
-            // MODIFICACIÓN APLICADA: Firma ajustada proporcionalmente (1 a 1 de manera porcentual)
             const FIRMA_INFORME = esPrimerCiclo
-                ? { archivo: 'informe%20firma%20jessica.jpeg', anchoPct: '65%', anchoWord: 450 }
-                : { archivo: 'informe%20firma%20vero.jpeg',    anchoPct: '65%', anchoWord: 450 };
+                ? { archivo: 'informe%20firma%20jessica.jpeg', ancho: 553, anchoWord: 592 }
+                : { archivo: 'informe%20firma%20vero.jpeg',    ancho: 579, anchoWord: 620 };
             const imagenFirma = FIRMA_INFORME.archivo;
 
             contenedor.innerHTML = `
@@ -2921,7 +2934,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         </div>
 
                         <div style="text-align: center; margin-top: 20px; page-break-inside: avoid; break-inside: avoid;">
-                            <img src="${imagenFirma}" alt="Firma Autorizada" data-ancho-word="${FIRMA_INFORME.anchoWord}" style="width: ${FIRMA_INFORME.anchoPct}; max-width: 100%; height: auto; display: inline-block;">
+                            <img src="${imagenFirma}" alt="Firma Autorizada" data-ancho-word="${FIRMA_INFORME.anchoWord}" style="width: ${FIRMA_INFORME.ancho}px; max-width: 100%; height: auto; display: inline-block;">
                         </div>
 
                         <div class="cita-montessori cita-pie-pagina">
