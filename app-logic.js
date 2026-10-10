@@ -2889,6 +2889,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 : { archivo: 'informe%20firma%20vero.jpeg',    ancho: 579, anchoWord: 620 };
             const imagenFirma = FIRMA_INFORME.archivo;
 
+            // NOTA DE DISEÑO: la tabla de notas lleva display: table + width: 100% para
+            // que se estire de margen a margen, alineada con el encabezado, la caja del
+            // estudiante y la cita. En pantalla las tablas del sistema son display:block
+            // (para poder desplazarse en celulares) y, sin esto, la de notas quedaba
+            // angosta y pegada a la izquierda.
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
@@ -2917,7 +2922,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                         <div style="margin-bottom: 15px;">
                             <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Rendimiento Académico y Artístico Consolidado — ${tituloInformeHogar}</h4>
-                            <table class="data-table">
+                            <table class="data-table" style="display: table; width: 100%;">
                                 <thead>
                                     <tr>
                                         <th>Materia / Asignatura</th>
@@ -3392,7 +3397,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <table class="data-table">
+                        <table class="data-table" style="display: table; width: 100%;">
                             <thead>
                                 <tr>
                                     <th style="width: 50px;">N.°</th>
@@ -3747,7 +3752,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const columnaIzquierda = filasPorMes.slice(0, mitad).join('');
             const columnaDerecha = filasPorMes.slice(mitad).join('');
             const tablaMensualidad = (filas) => filas ? `
-                <table class="data-table" style="font-size: 10.5px; flex: 1;">
+                <table class="data-table" style="display: table; width: 100%; font-size: 10.5px; flex: 1;">
                     <thead><tr><th>Concepto</th><th>Estado</th></tr></thead>
                     <tbody>${filas}</tbody>
                 </table>
@@ -3837,7 +3842,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                     <div style="margin-bottom: 6px;">
                         <h4 style="color: var(--primary); margin: 0 0 4px 0; font-size: 12px;">Detalle de Rubros Anuales / Semestrales</h4>
-                        <table class="data-table" style="font-size: 11px;">
+                        <table class="data-table" style="display: table; width: 100%; font-size: 11px;">
                             <thead><tr><th>Concepto</th><th>Estado</th></tr></thead>
                             <tbody>${filasConceptosAnuales}</tbody>
                         </table>
