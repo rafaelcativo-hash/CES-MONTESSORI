@@ -121,6 +121,147 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             return valorOpcion.replace('[Artística] ', '').replace('[Académica] ', '').trim();
         }
 
+        // =====================================================================
+        // CRUCE ÚNICO DE NOTAS Y REFLEXIONES
+        //
+        // Por qué existe: cada pantalla buscaba las notas a su manera. El informe
+        // al hogar tolera variantes (busca por cédula y normaliza el nombre de la
+        // materia), pero la hoja de calificar exigía coincidencia EXACTA de
+        // materia + período + año, así que una reflexión guardada con la materia
+        // sin prefijo ("Danza" en vez de "[Artística] Danza"), con el período
+        // escrito distinto o en otro año lectivo aparecía en el informe y NO en la
+        // hoja. Las pantallas de listas e historial, además, no mostraban
+        // reflexiones ni docente. Ahora todas usan estas mismas funciones.
+        // =====================================================================
+        const MATERIAS_ACADEMICAS = ['Español', 'Matemáticas', 'Ciencias', 'Estudios Sociales', 'Conducta', 'Inglés'];
+        const MATERIAS_SIN_REFLEXION = ['Solfeo', 'Taller de Percusión', 'Español', 'Matemáticas', 'Ciencias', 'Estudios Sociales'];
+        // Mismo orden institucional que usa el informe al hogar.
+        const ORDEN_MATERIAS = ['Español', 'Matemáticas', 'Ciencias', 'Estudios Sociales', 'Inglés', 'Conducta', 'Artes Plásticas', 'Danza', ...INSTRUMENTOS_INDIVIDUALES, 'Solfeo', 'Edufi', 'Taller de Percusión'];
+
+        function normalizarPeriodo(p) {
+            const n = normalizarTexto(p);
+            if (n.startsWith('primer') || n.startsWith('1')) return 'Primer Periodo';
+            if (n.startsWith('segundo') || n.startsWith('2')) return 'Segundo Periodo';
+            return String(p || '');
+        }
+
+        function periodoOpuesto(p) {
+            return normalizarPeriodo(p) === 'Primer Periodo' ? 'Segundo Periodo' : 'Primer Periodo';
+        }
+
+        // "[Artística] Danza", "Danza", "danza " y "[artistica] DANZA" son la misma materia.
+        function nombreLimpioMateria(m) {
+            return String(m || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim();
+        }
+        function claveMateria(m) {
+            return normalizarTexto(nombreLimpioMateria(m));
+        }
+        function valorMateriaCanonico(nombre) {
+            return (MATERIAS_ACADEMICAS.includes(nombre) ? '[Académica] ' : '[Artística] ') + nombre;
+        }
+        function materiaRequiereReflexion(m) {
+            return !MATERIAS_SIN_REFLEXION.some(x => normalizarTexto(x) === claveMateria(m));
+        }
+
+        // Docente titular de una materia para un estudiante, según su matrícula
+        // (la misma regla que ya usaba el informe al hogar para "Docente: ...").
+        function docenteDeMateria(est, materia) {
+            if (!est) return '';
+            const clave = claveMateria(materia);
+            for (const [nombre, campo] of Object.entries(CAMPO_DOCENTE_POR_MATERIA)) {
+                if (normalizarTexto(nombre) !== clave) continue;
+                const d = est[campo];
+                return (d && d !== 'No lleva' && d !== 'Ninguno') ? String(d) : '';
+            }
+            for (const instr of INSTRUMENTOS_INDIVIDUALES) {
+                if (normalizarTexto(instr) !== clave) continue;
+                if (est.instrumento_principal === instr) return est.docente_asignado || '';
+                if (est.instrumento_segundo === instr) return est.docente_segundo || '';
+            }
+            return '';
+        }
+
+        // Materias que le corresponden a un estudiante según su matrícula.
+        function materiasDelEstudiante(est) {
+            const lista = [];
+            Object.entries(CAMPO_DOCENTE_POR_MATERIA).forEach(([nombre, campo]) => {
+                const d = est[campo];
+                if (d && d !== 'No lleva' && d !== 'Ninguno') lista.push(valorMateriaCanonico(nombre));
+            });
+            if (est.docente_ingles && est.docente_ingles !== 'No lleva') lista.push(valorMateriaCanonico('Inglés'));
+            [est.instrumento_principal, est.instrumento_segundo].forEach(instr => {
+                if (instr && INSTRUMENTOS_INDIVIDUALES.includes(instr)) lista.push(valorMateriaCanonico(instr));
+            });
+            return [...new Set(lista)];
+        }
+
+        function agruparNotasPorEstudiante(filas) {
+            const mapa = new Map();
+            (filas || []).forEach(n => {
+                const k = String(n.cedula_estudiante);
+                if (!mapa.has(k)) mapa.set(k, []);
+                mapa.get(k).push(n);
+            });
+            return mapa;
+        }
+
+        // Busca la nota de UN estudiante para una materia y un período, tolerando
+        // variantes de escritura. Si hay varias candidatas elige la mejor: primero
+        // la del año indicado, luego la que tiene el nombre de materia exacto y,
+        // por último, la modificada más recientemente.
+        //   otroAnio       -> la fila existe pero en otro año lectivo
+        //   materiaAntigua -> la fila existe pero con el nombre de materia no estándar
+        function resolverNota(notasDelEstudiante, materia, periodo, anio) {
+            const anioBuscado = Number(anio || anioLectivoActivo);
+            const clave = claveMateria(materia);
+            const per = normalizarPeriodo(periodo);
+            const canonico = valorMateriaCanonico(nombreLimpioMateria(materia));
+            let mejor = null, mejorPuntaje = -1;
+            (notasDelEstudiante || []).forEach(n => {
+                if (claveMateria(n.materia) !== clave) return;
+                if (normalizarPeriodo(n.periodo) !== per) return;
+                const puntaje = (Number(n.anio_lectivo) === anioBuscado ? 4 : 0) + (n.materia === canonico ? 2 : 0) + (n.periodo === per ? 1 : 0);
+                if (puntaje > mejorPuntaje || (puntaje === mejorPuntaje && String(n.modificado_en || '') > String(mejor.modificado_en || ''))) {
+                    mejor = n; mejorPuntaje = puntaje;
+                }
+            });
+            if (!mejor) return null;
+            return { fila: mejor, otroAnio: Number(mejor.anio_lectivo) !== anioBuscado, materiaAntigua: mejor.materia !== canonico };
+        }
+
+        function textoFechaHora(iso) {
+            if (!iso) return '';
+            const f = new Date(iso);
+            if (isNaN(f.getTime())) return '';
+            return f.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + f.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // ---- Piezas visuales de la hoja de calificar (período "opuesto") ----
+        function htmlBloqueOtroPeriodo(est, materia, periodoNombre, res) {
+            const docente = docenteDeMateria(est, materia);
+            let cuerpo;
+            if (!res) {
+                cuerpo = '<span style="color: #94a3b8;">sin nota registrada todavía</span>';
+            } else {
+                const f = res.fila;
+                const hayNota = f.promedio !== null && f.promedio !== undefined && f.promedio !== '';
+                const nota = hayNota ? `<b>${escapeHTML(f.promedio)}</b>` : '<span style="color: #b45309;">sin nota</span>';
+                const com = f.comentario ? ` — “${escapeHTML(f.comentario)}”` : '';
+                const prof = docente ? `<div style="color: #64748b; margin-top: 2px;">Prof. ${escapeHTML(docente)}</div>` : '';
+                const aviso = res.otroAnio ? `<div style="color: #b45309; margin-top: 2px;">⚠ Registro guardado en el año lectivo ${escapeHTML(f.anio_lectivo)}</div>` : '';
+                cuerpo = `${nota}${com}${prof}${aviso}`;
+            }
+            return `<div class="otro-periodo" style="margin-top: 6px; padding: 6px 8px; background: #f1f5f9; border-left: 3px solid #94a3b8; border-radius: 4px; font-size: 11px; line-height: 1.35; color: #475569; white-space: normal;"><b>${escapeHTML(periodoNombre)}:</b> ${cuerpo}</div>`;
+        }
+        function htmlAvisoOtroAnio(res) {
+            const f = res.fila;
+            const detalle = `${f.promedio !== null && f.promedio !== undefined ? 'nota ' + escapeHTML(f.promedio) : ''}${f.comentario ? ' — “' + escapeHTML(f.comentario) + '”' : ''}`;
+            return `<div style="margin-top: 6px; padding: 6px 8px; background: #fffbeb; border-left: 3px solid #d97706; border-radius: 4px; font-size: 11px; line-height: 1.35; color: #92400e; white-space: normal;">⚠ Este período tiene un registro guardado en el año lectivo ${escapeHTML(f.anio_lectivo)} (${detalle}). No es del año activo, por eso no se carga en las casillas.</div>`;
+        }
+        function htmlAvisoMateriaAntigua() {
+            return `<div style="margin-top: 4px; font-size: 10px; color: #92400e; white-space: normal;">⚠ Registro guardado con el nombre de materia antiguo; al guardar se actualiza.</div>`;
+        }
+
         // ============================================================
         // EXPORTAR A WORD (.doc editable) CON LOS LOGOS INCRUSTADOS
         //
@@ -418,7 +559,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // entrar si además es docente académico (mismo criterio que
                 // se usa para mostrar/ocultar el botón en verificarRolUsuario).
                 const esAcademico = docenteTipoActual === 'academico';
-                const tabsPermitidos = esAcademico ? ['calificar', 'mimatricula', 'seguridad'] : ['calificar', 'seguridad'];
+                const tabsPermitidos = esAcademico ? ['calificar', 'historial', 'mimatricula', 'seguridad'] : ['calificar', 'historial', 'seguridad'];
                 if (!tabsPermitidos.includes(idSeccion)) {
                     idSeccion = 'calificar';
                 }
@@ -465,6 +606,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
             if (idSeccion === 'seguridad') {
                 cargarEstadoMFA();
+            }
+            if (idSeccion === 'historial') {
+                inicializarHistorial();
             }
         }
 
@@ -2018,7 +2162,6 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             let queryEstudiantes = supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true);
             const { data: estudiantesRaw, error: errEst } = await queryEstudiantes;
-            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('periodo', periodo).eq('materia', materia).eq('anio_lectivo', anioLectivoActivo);
 
             if (errEst) {
                 contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + errEst.message + '</p>';
@@ -2042,6 +2185,22 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 contenedor.innerHTML = `<p style="text-align: center; color: #991b1b;">No hay estudiantes matriculados${instrumentoEspecifico ? ` con el instrumento ${instrumentoEspecifico}` : ''} en el nivel ${nivel}.</p>`;
                 return;
             }
+
+            // Notas de TODOS los períodos de estos estudiantes. Ya no se filtra por el
+            // texto exacto de materia/período/año en la consulta: el cruce se hace aquí
+            // con resolverNota(), igual que en el informe y en el historial, para que
+            // lo que se ve en una pantalla se vea en todas.
+            let notasAlumnos = [];
+            try {
+                const { data: dataNotas, error: errNotas } = await supabaseClient.from('notas').select('*').in('cedula_estudiante', estudiantes.map(e => e.cedula));
+                if (errNotas) throw errNotas;
+                notasAlumnos = dataNotas || [];
+            } catch (errCarga) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar las notas: ' + escapeHTML(errCarga.message || errCarga) + '</p>';
+                return;
+            }
+            const notasPorEstudiante = agruparNotasPorEstudiante(notasAlumnos);
+            const periodoOtro = periodoOpuesto(periodo);
 
             const rubros = obtenerRubrosMateria(materia);
             const esAcademicaPura = materia.includes('Español') || materia.includes('Matemáticas') || materia.includes('Ciencias') || materia.includes('Estudios Sociales');
@@ -2090,7 +2249,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             `;
 
             estudiantes.forEach(est => {
-                const notaReg = notas ? notas.find(n => n.cedula_estudiante === est.cedula) : null;
+                const notasEst = notasPorEstudiante.get(String(est.cedula)) || [];
+                const resActual = resolverNota(notasEst, materia, periodo);
+                const resOtro = resolverNota(notasEst, materia, periodoOtro);
+                // Solo se precargan las casillas con un registro del AÑO ACTIVO: un
+                // registro de otro año se muestra como aviso, nunca dentro de las
+                // casillas (para que no se vuelva a guardar por error como dato nuevo).
+                const notaReg = (resActual && !resActual.otroAnio) ? resActual.fila : null;
                 const promedioGuardado = notaReg ? notaReg.promedio : '-';
                 const comentarioGuardado = notaReg && notaReg.comentario ? notaReg.comentario : '';
                 // Evidencia de cómo se calificó cada componente la última vez
@@ -2118,7 +2283,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                 html += `
                         <td style="${celdaBase}"><b id="lbl-final-${est.cedula}" style="color: var(--accent); font-size: 13px;">${promedioGuardado}</b></td>
-                        <td style="${celdaBase} text-align: left;">
+                        <td style="${celdaBase} text-align: left;${llevaComentario ? '' : ' min-width: 180px; max-width: 320px; white-space: normal;'}">
                 `;
 
                 if (llevaComentario) {
@@ -2126,6 +2291,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
+                // Vista integrada: el OTRO período (nota, reflexión y docente) queda a la
+                // vista en la misma fila, y los registros irregulares se avisan.
+                html += htmlBloqueOtroPeriodo(est, materia, periodoOtro, resOtro);
+                if (resActual && resActual.otroAnio) html += htmlAvisoOtroAnio(resActual);
+                else if (resActual && resActual.materiaAntigua) html += htmlAvisoMateriaAntigua();
 
                 // Etiqueta de auditoría precargada con lo último guardado en
                 // Supabase (si existe), para que se vea "de entrada" quién
@@ -2766,10 +2936,10 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             if (estData.instrumento_segundo && estData.instrumento_segundo !== 'Ninguno') ordenEspeciales.push(estData.instrumento_segundo);
 
             const mapaMateriaPorNombre = {};
-            materiasUnicas.forEach(mat => { mapaMateriaPorNombre[nombreMateriaLimpio(mat)] = mat; });
+            materiasUnicas.forEach(mat => { mapaMateriaPorNombre[claveMateria(mat)] = mat; });
 
-            const filasBasicas = ordenBasicas.filter(n => mapaMateriaPorNombre[n]).map(n => mapaMateriaPorNombre[n]);
-            const filasEspeciales = ordenEspeciales.filter(n => mapaMateriaPorNombre[n]).map(n => mapaMateriaPorNombre[n]);
+            const filasBasicas = ordenBasicas.filter(n => mapaMateriaPorNombre[claveMateria(n)]).map(n => mapaMateriaPorNombre[claveMateria(n)]);
+            const filasEspeciales = ordenEspeciales.filter(n => mapaMateriaPorNombre[claveMateria(n)]).map(n => mapaMateriaPorNombre[claveMateria(n)]);
 
             const coloresElegantes = [
                 { border: '#2563eb', bg: '#eff6ff', textHeader: '#1e40af' },
@@ -2781,8 +2951,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             ];
 
             const construirFilaMateria = (mat, indexGlobal) => {
-                const notaP1 = notas.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                const notaP2 = notas.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
+                // Mismo cruce que la hoja de calificar y el historial (resolverNota): prefiere
+                // el año lectivo activo y tolera variantes del nombre de la materia/período.
+                const resP1 = resolverNota(notas || [], mat, 'Primer Periodo');
+                const resP2 = resolverNota(notas || [], mat, 'Segundo Periodo');
+                const notaP1 = resP1 ? resP1.fila : null;
+                const notaP2 = resP2 ? resP2.fila : null;
 
                 const valP1 = notaP1 ? notaP1.promedio : '-';
                 const valP2 = notaP2 ? notaP2.promedio : '-';
@@ -2819,19 +2993,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const esSolfeoPercusion = mat.includes('Solfeo') || mat.includes('Taller de Percusión');
 
                 if (!esAcademicaPura && !esSolfeoPercusion && notaMatPeriodo && notaMatPeriodo.comentario) {
-                    const nombreMateriaLimpia = nombreMateriaLimpio(mat);
-                    let docenteCargo = 'No asignado';
-                    const campoDoc = CAMPO_DOCENTE_POR_MATERIA[nombreMateriaLimpia];
-
-                    if (campoDoc) {
-                        docenteCargo = estData[campoDoc] || 'No asignado';
-                    } else if (INSTRUMENTOS_INDIVIDUALES.includes(nombreMateriaLimpia)) {
-                        if (estData.instrumento_principal === nombreMateriaLimpia) {
-                            docenteCargo = estData.docente_asignado || 'No asignado';
-                        } else if (estData.instrumento_segundo === nombreMateriaLimpia) {
-                            docenteCargo = estData.docente_segundo || 'No asignado';
-                        }
-                    }
+                    // Misma regla de "docente de la materia" que usan la hoja y el historial.
+                    const docenteCargo = docenteDeMateria(estData, mat) || 'No asignado';
 
                     const estiloColor = coloresElegantes[indexGlobal % coloresElegantes.length];
 
@@ -4109,3 +4272,290 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 sincronizarNoLlevaPercusionUI();
             });
         })();
+
+        // =====================================================================
+        // HISTORIAL DE EVALUACIONES Y REFLEXIONES (ambos períodos, con docente)
+        //
+        // Antes no existía ninguna pantalla que juntara, por estudiante y materia,
+        // la nota y la reflexión de los DOS períodos con el nombre del docente.
+        // Esta pestaña lo hace con el mismo cruce (resolverNota) que usan el informe
+        // y la hoja de calificar, y agrega una columna de CONTROL que marca lo que
+        // falta o está mal guardado (sin reflexión, sin registro, otro año, materia
+        // con nombre antiguo, materia sin docente).
+        //   - Docente: ve solo las materias que le corresponden.
+        //   - Administrador: ve todo y puede filtrar por docente.
+        // La pestaña se agrega desde aquí (no requiere tocar app-shell.html).
+        // =====================================================================
+        let historialCache = null;
+        let historialDocentes = null;
+
+        function inyectarPestanaHistorial() {
+            const nav = document.getElementById('app-nav');
+            const principal = document.querySelector('main');
+            if (!nav || !principal) return;
+
+            if (!nav.querySelector('[data-tab="historial"]')) {
+                const btn = document.createElement('button');
+                btn.className = 'tab-btn';
+                btn.setAttribute('data-tab', 'historial');
+                btn.setAttribute('data-role-req', 'all');
+                btn.textContent = 'Historial';
+                btn.addEventListener('click', (e) => cambiarPestana('historial', e));
+                nav.insertBefore(btn, nav.querySelector('[data-tab="mimatricula"]')); // justo después de "Calificar"
+            }
+
+            if (!document.getElementById('historial')) {
+                const sec = document.createElement('section');
+                sec.id = 'historial';
+                sec.className = 'tab-content';
+                sec.innerHTML = `
+                    <h2>Historial de Evaluaciones y Reflexiones</h2>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 0;">Nota y reflexión de <b>ambos períodos</b> por estudiante y asignatura, con el <b>docente</b> que las emitió y quién las registró. La columna <b>Control</b> cruza lo guardado en la base de datos con la matrícula y marca lo que falta o está mal guardado.</p>
+                    <fieldset>
+                        <legend>Filtros</legend>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Año Lectivo</label><select id="hist-anio" onchange="cargarHistorial()"></select></div>
+                            <div class="form-group"><label>Nivel</label>
+                                <select id="hist-nivel" onchange="cargarHistorial()">
+                                    <option value="">Todos los niveles</option>
+                                    <option value="Primero">Primero</option><option value="Segundo">Segundo</option><option value="Tercero">Tercero</option>
+                                    <option value="Cuarto">Cuarto</option><option value="Quinto">Quinto</option><option value="Sexto">Sexto</option>
+                                </select></div>
+                            <div class="form-group"><label>Asignatura</label><select id="hist-materia" onchange="renderizarHistorial()"><option value="">Todas</option></select></div>
+                            <div class="form-group" id="hist-docente-grupo"><label>Docente</label><select id="hist-docente" onchange="renderizarHistorial()"><option value="">Todos</option></select></div>
+                            <div class="form-group"><label>Buscar estudiante</label><input type="text" id="hist-buscar" placeholder="Nombre..." oninput="renderizarHistorial()"></div>
+                            <div class="form-group" style="justify-content: flex-end;"><label style="display: flex; align-items: center; gap: 6px; font-weight: normal;"><input type="checkbox" id="hist-alertas" style="width: auto;" onchange="renderizarHistorial()"> Solo con alertas</label></div>
+                        </div>
+                        <div id="hist-aviso-docente" style="display: none; font-size: 12px; color: #475569;"></div>
+                    </fieldset>
+                    <div id="hist-resumen" style="margin: 12px 0;"></div>
+                    <div id="hist-tabla" style="overflow-x: auto;"><p style="color: #64748b;">Cargando historial...</p></div>
+                `;
+                principal.appendChild(sec);
+            }
+        }
+
+        function inicializarHistorial() {
+            const admin = esAdminActivo();
+            inicializarSelectAnios('hist-anio', anioLectivoActivo);
+
+            const selMat = document.getElementById('hist-materia');
+            if (selMat && selMat.options.length <= 1) {
+                ORDEN_MATERIAS.forEach(nombre => {
+                    const o = document.createElement('option');
+                    o.value = nombre; o.textContent = nombre;
+                    selMat.appendChild(o);
+                });
+            }
+
+            const grupoDoc = document.getElementById('hist-docente-grupo');
+            const aviso = document.getElementById('hist-aviso-docente');
+            if (grupoDoc) grupoDoc.style.display = admin ? '' : 'none';
+            if (aviso) {
+                aviso.style.display = admin ? 'none' : 'block';
+                aviso.innerHTML = docenteNombreGlobal
+                    ? `Mostrando las asignaturas de <b>${escapeHTML(docenteNombreGlobal)}</b>.`
+                    : '⚠ No se encontró su ficha en el Directorio de Docentes (el correo con el que entró no está registrado como docente), por eso no se puede mostrar su historial. Avise al administrador.';
+            }
+            cargarHistorial();
+        }
+
+        async function cargarHistorial() {
+            const cont = document.getElementById('hist-tabla');
+            if (!cont) return;
+            cont.innerHTML = '<p>Cargando historial...</p>';
+            try {
+                const anio = parseInt(document.getElementById('hist-anio').value, 10) || anioLectivoActivo;
+                const nivel = document.getElementById('hist-nivel').value;
+
+                let q = supabaseClient.from('estudiantes').select('*').eq('activo', true);
+                if (nivel) q = q.eq('nivel', nivel);
+                const { data: ests, error: errEst } = await q;
+                if (errEst) throw errEst;
+
+                let notas = [];
+                const cedulas = (ests || []).map(e => e.cedula);
+                if (cedulas.length) {
+                    const { data: dn, error: errNotas } = await supabaseClient.from('notas').select('*').in('cedula_estudiante', cedulas);
+                    if (errNotas) throw errNotas;
+                    notas = dn || [];
+                }
+
+                // Fechas de los períodos (para saber si ya vencieron y, entonces, exigir el registro).
+                let cfg = null;
+                try { const r = await supabaseClient.from('configuracion_periodos').select('*').eq('id', 1).single(); cfg = r.data || null; } catch (_) { cfg = null; }
+
+                // Docentes: nombre por correo (para mostrar quién registró) y lista para el filtro.
+                if (!historialDocentes) {
+                    try { const r = await supabaseClient.from('docentes').select('nombre, correo').order('nombre'); historialDocentes = r.data || []; }
+                    catch (_) { historialDocentes = []; }
+                }
+                const selDoc = document.getElementById('hist-docente');
+                if (selDoc && selDoc.options.length <= 1) {
+                    historialDocentes.forEach(d => { const o = document.createElement('option'); o.value = d.nombre; o.textContent = d.nombre; selDoc.appendChild(o); });
+                    const oSin = document.createElement('option'); oSin.value = '__sin__'; oSin.textContent = '(Materias sin docente asignado)'; selDoc.appendChild(oSin);
+                }
+                const correoANombre = new Map();
+                historialDocentes.forEach(d => { if (d.correo) correoANombre.set(String(d.correo).trim().toLowerCase(), d.nombre); });
+
+                historialCache = { anio, ests: ests || [], notasPorEst: agruparNotasPorEstudiante(notas), cfg, correoANombre };
+                renderizarHistorial();
+            } catch (e) {
+                console.error('cargarHistorial:', e);
+                cont.innerHTML = '<p style="color: red;">Error al cargar el historial: ' + escapeHTML(e.message || e) + '</p>';
+            }
+        }
+
+        // Celda de UN período: nota, reflexión, quién la registró y alertas.
+        function celdaHistorial(res, requiere, vencido, correoANombre) {
+            const alertas = [];
+            if (!res) {
+                if (vencido) alertas.push('sin-registro');
+                return { html: vencido ? '<span style="color: #b45309;">⚠ Sin registro</span>' : '<span style="color: #94a3b8;">Pendiente</span>', alertas };
+            }
+            const f = res.fila;
+            const hayNota = f.promedio !== null && f.promedio !== undefined && f.promedio !== '';
+            let h = '';
+            if (hayNota) h += `<div><b style="font-size: 15px; color: var(--accent);">${escapeHTML(f.promedio)}</b></div>`;
+            else { h += '<div style="color: #b45309;">⚠ Reflexión sin nota</div>'; alertas.push('sin-nota'); }
+
+            if (f.comentario && String(f.comentario).trim()) {
+                h += `<div style="margin-top: 3px; line-height: 1.35;">“${escapeHTML(f.comentario)}”</div>`;
+                if (!requiere) h += '<div style="font-size: 10px; color: #94a3b8;">(esta asignatura no imprime reflexión en el informe)</div>';
+            } else if (requiere) {
+                h += '<div style="margin-top: 3px; color: #b45309;">⚠ Sin reflexión</div>';
+                alertas.push('sin-reflexion');
+            }
+
+            if (f.modificado_por) {
+                const quien = correoANombre.get(String(f.modificado_por).trim().toLowerCase()) || f.modificado_por;
+                h += `<div style="margin-top: 3px; font-size: 10px; color: #64748b;">Registrado por ${escapeHTML(quien)}${f.modificado_en ? ' · ' + escapeHTML(textoFechaHora(f.modificado_en)) : ''}</div>`;
+            }
+            if (res.otroAnio) { h += `<div style="margin-top: 3px; font-size: 11px; color: #b45309;">⚠ Guardado en el año lectivo ${escapeHTML(f.anio_lectivo)}</div>`; alertas.push('otro-anio'); }
+            if (res.materiaAntigua) { h += `<div style="margin-top: 3px; font-size: 11px; color: #b45309;">⚠ Materia guardada como “${escapeHTML(f.materia)}”</div>`; alertas.push('materia-antigua'); }
+            return { html: h, alertas };
+        }
+
+        const TEXTO_ALERTA_HISTORIAL = {
+            'sin-registro': 'sin registro (el período ya terminó)',
+            'sin-reflexion': 'sin reflexión',
+            'sin-nota': 'reflexión sin nota',
+            'otro-anio': 'guardado en otro año lectivo',
+            'materia-antigua': 'materia con nombre antiguo'
+        };
+
+        function renderizarHistorial() {
+            const cont = document.getElementById('hist-tabla');
+            const resumen = document.getElementById('hist-resumen');
+            if (!cont || !historialCache) return;
+            const { anio, ests, notasPorEst, cfg, correoANombre } = historialCache;
+
+            const admin = esAdminActivo();
+            const filtroMateria = document.getElementById('hist-materia').value;
+            const filtroDocente = admin ? document.getElementById('hist-docente').value : '';
+            const buscar = normalizarTexto(document.getElementById('hist-buscar').value);
+            const soloAlertas = document.getElementById('hist-alertas').checked;
+            const docenteSesion = normalizarTexto(docenteNombreGlobal);
+
+            const hoy = new Date();
+            const vencido = (periodo) => {
+                if (anio < anioLectivoActivo) return true;
+                if (anio > anioLectivoActivo) return false;
+                const fin = cfg && (periodo === 'Primer Periodo' ? cfg.p1_fin : cfg.p2_fin);
+                return !!fin && hoy > new Date(fin + 'T23:59:59');
+            };
+            const vencido1 = vencido('Primer Periodo'), vencido2 = vencido('Segundo Periodo');
+
+            const ordenNivel = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto', 'Sexto'];
+            const posMateria = (valor) => { const i = ORDEN_MATERIAS.findIndex(n => normalizarTexto(n) === claveMateria(valor)); return i === -1 ? 999 : i; };
+            const estsOrdenados = [...ests].sort((a, b) => (ordenNivel.indexOf(a.nivel) - ordenNivel.indexOf(b.nivel)) || String(a.nombre).localeCompare(String(b.nombre), 'es'));
+
+            const cuenta = { filas: 0, completas: 0, conAlertas: 0 };
+            const porTipo = {};
+            let filasHtml = '';
+
+            estsOrdenados.forEach(est => {
+                if (buscar && !normalizarTexto(est.nombre).includes(buscar)) return;
+                const lista = notasPorEst.get(String(est.cedula)) || [];
+
+                // Materias a revisar = las de la matrícula + cualquiera que tenga notas guardadas.
+                const universo = new Map();
+                materiasDelEstudiante(est).forEach(v => universo.set(claveMateria(v), { valor: v, enMatricula: true }));
+                lista.forEach(n => {
+                    const k = claveMateria(n.materia);
+                    if (!universo.has(k)) universo.set(k, { valor: valorMateriaCanonico(nombreLimpioMateria(n.materia)), enMatricula: false });
+                });
+
+                [...universo.values()].sort((a, b) => posMateria(a.valor) - posMateria(b.valor)).forEach(m => {
+                    const nombre = nombreLimpioMateria(m.valor);
+                    if (filtroMateria && claveMateria(filtroMateria) !== claveMateria(nombre)) return;
+
+                    const docente = docenteDeMateria(est, m.valor);
+                    if (!admin) {
+                        if (!docenteSesion || normalizarTexto(docente) !== docenteSesion) return;
+                    } else if (filtroDocente === '__sin__') {
+                        if (docente) return;
+                    } else if (filtroDocente && normalizarTexto(docente) !== normalizarTexto(filtroDocente)) {
+                        return;
+                    }
+
+                    const requiere = materiaRequiereReflexion(nombre);
+                    const c1 = celdaHistorial(resolverNota(lista, m.valor, 'Primer Periodo', anio), requiere, vencido1, correoANombre);
+                    const c2 = celdaHistorial(resolverNota(lista, m.valor, 'Segundo Periodo', anio), requiere, vencido2, correoANombre);
+
+                    const alertas = [];
+                    c1.alertas.forEach(a => alertas.push({ per: '1.º', tipo: a }));
+                    c2.alertas.forEach(a => alertas.push({ per: '2.º', tipo: a }));
+                    if (!docente) alertas.push({ per: '', tipo: 'sin-docente' });
+                    if (!m.enMatricula) alertas.push({ per: '', tipo: 'fuera-matricula' });
+
+                    if (soloAlertas && alertas.length === 0) return;
+
+                    cuenta.filas++;
+                    if (alertas.length) cuenta.conAlertas++; else cuenta.completas++;
+                    alertas.forEach(a => { porTipo[a.tipo] = (porTipo[a.tipo] || 0) + 1; });
+
+                    const textoControl = alertas.length
+                        ? alertas.map(a => {
+                            const t = a.tipo === 'sin-docente' ? 'sin docente asignado en la matrícula'
+                                : a.tipo === 'fuera-matricula' ? 'tiene notas pero la materia ya no está en la matrícula'
+                                : `${a.per} período: ${TEXTO_ALERTA_HISTORIAL[a.tipo]}`;
+                            return `<div style="color: #b45309; margin-bottom: 2px;">⚠ ${escapeHTML(t)}</div>`;
+                        }).join('')
+                        : '<span style="color: #166534; font-weight: bold;">✔ Al día</span>';
+
+                    filasHtml += `
+                        <tr${alertas.length ? ' style="background: #fffdf5;"' : ''}>
+                            <td style="text-align: left; white-space: normal; min-width: 150px;"><b>${escapeHTML(est.nombre)}</b><br><small>${escapeHTML(est.nivel)}</small></td>
+                            <td style="white-space: normal;">${escapeHTML(nombre)}</td>
+                            <td style="white-space: normal; min-width: 120px;">${docente ? escapeHTML(docente) : '<span style="color: #b45309;">⚠ Sin docente</span>'}</td>
+                            <td style="text-align: left; white-space: normal; min-width: 230px;">${c1.html}</td>
+                            <td style="text-align: left; white-space: normal; min-width: 230px;">${c2.html}</td>
+                            <td style="text-align: left; white-space: normal; min-width: 170px; font-size: 11px;">${textoControl}</td>
+                        </tr>`;
+                });
+            });
+
+            const tarjeta = (titulo, valor, color) => `<div style="background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; min-width: 120px; text-align: center;"><div style="font-size: 11px; color: #64748b;">${titulo}</div><div style="font-size: 20px; font-weight: bold; color: ${color};">${valor}</div></div>`;
+            resumen.innerHTML = `<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                ${tarjeta('Asignaturas revisadas', cuenta.filas, '#1e293b')}
+                ${tarjeta('Al día', cuenta.completas, '#166534')}
+                ${tarjeta('Con alertas', cuenta.conAlertas, cuenta.conAlertas ? '#b45309' : '#166534')}
+                ${tarjeta('Sin reflexión', porTipo['sin-reflexion'] || 0, '#b45309')}
+                ${tarjeta('Sin registro', porTipo['sin-registro'] || 0, '#b45309')}
+                ${tarjeta('Otro año / nombre antiguo', (porTipo['otro-anio'] || 0) + (porTipo['materia-antigua'] || 0), '#b45309')}
+                ${tarjeta('Sin docente', porTipo['sin-docente'] || 0, '#b45309')}
+            </div>`;
+
+            cont.innerHTML = filasHtml
+                ? `<table class="data-table" style="display: table; width: 100%;">
+                        <thead><tr>
+                            <th>Estudiante</th><th>Asignatura</th><th>Docente</th>
+                            <th>Primer Periodo</th><th>Segundo Periodo</th><th>Control</th>
+                        </tr></thead>
+                        <tbody>${filasHtml}</tbody>
+                   </table>`
+                : '<p style="color: #64748b; text-align: center;">No hay registros que coincidan con los filtros.</p>';
+        }
+
+        inyectarPestanaHistorial();
