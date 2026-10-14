@@ -236,6 +236,55 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             return f.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + f.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
         }
 
+        // Promedio numérico de una fila de notas (null si no hay nota real).
+        function promedioNumerico(fila) {
+            if (!fila || fila.promedio === null || fila.promedio === undefined || fila.promedio === '') return null;
+            const n = Number(fila.promedio);
+            return isNaN(n) ? null : n;
+        }
+
+        function posicionMateria(m) {
+            const i = ORDEN_MATERIAS.findIndex(n => normalizarTexto(n) === claveMateria(m));
+            return i === -1 ? 999 : i;
+        }
+
+        // Materias distintas (sin repetir por variantes de escritura) que un estudiante
+        // tiene con nota guardada, en orden institucional y sin las que "No lleva".
+        function materiasUnicasConNota(notasEst, est) {
+            const mapa = new Map();
+            (notasEst || []).forEach(n => {
+                const k = claveMateria(n.materia);
+                if (mapa.has(k)) return;
+                const entrada = Object.entries(CAMPO_DOCENTE_POR_MATERIA).find(([nombre]) => normalizarTexto(nombre) === k);
+                if (est && entrada && est[entrada[1]] === 'No lleva') return;
+                mapa.set(k, n.materia);
+            });
+            return [...mapa.values()].sort((a, b) => posicionMateria(a) - posicionMateria(b));
+        }
+
+        // Asigna el valor de un <select>; si ese valor no está entre sus opciones (por
+        // ejemplo un docente que ya no aparece en el Directorio) lo agrega, para que el
+        // select no quede en blanco y al guardar no se borre el docente ya asignado.
+        function fijarValorSelect(el, valor) {
+            if (!el) return;
+            const v = (valor === null || valor === undefined) ? '' : String(valor);
+            if (v !== '' && !Array.from(el.options).some(o => o.value === v)) {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                el.appendChild(opt);
+            }
+            el.value = v;
+        }
+
+        // Celda CSV segura: comillas dobles escapadas y sin que Excel interprete
+        // un texto que empiece con = + - @ como fórmula.
+        function csvCelda(valor) {
+            let t = (valor === null || valor === undefined) ? '' : String(valor);
+            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+            return '"' + t.replace(/"/g, '""') + '"';
+        }
+
         // ---- Piezas visuales de la hoja de calificar (período "opuesto") ----
         function htmlBloqueOtroPeriodo(est, materia, periodoNombre, res) {
             const docente = docenteDeMateria(est, materia);
@@ -284,6 +333,72 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         // un solo archivo (LibreOffice, etc.), con la condición de abrir el
         // documento con internet para que se vean los logos.
         const WORD_INCRUSTAR_IMAGENES = true;
+
+        // ============================================================
+        // ENCABEZADO INSTITUCIONAL de los documentos (informe al hogar,
+        // lista oficial y estado de cuenta). La imagen oficial tiene
+        // mucho margen blanco arriba y abajo; para que quepa en el mismo
+        // espacio que ocupaba el encabezado anterior, se recorta una sola
+        // vez ese margen (con un canvas) y se usa la versión recortada,
+        // ya como imagen incrustada (data URL), en pantalla, PDF, impresión
+        // y Word. Si algo falla (sin internet, bloqueo de CORS), se usa la
+        // imagen original tal cual, sin recortar.
+        // Cada generador de documento espera: await logoEncabezadoListo;
+        // ============================================================
+        const LOGO_ENCABEZADO_URL = 'https://raw.githubusercontent.com/rafaelcativo-hash/CES-MONTESSORI/main/Encabezado%20Institucional%20Centro%20Educativo%20Shk%C3%A9nuk.png';
+        let LOGO_ENCABEZADO_SRC = LOGO_ENCABEZADO_URL;
+        const logoEncabezadoListo = new Promise(resolve => {
+            const limite = setTimeout(resolve, 8000); // nunca bloquea un informe más de 8 s
+            const fin = () => { clearTimeout(limite); resolve(); };
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                try {
+                    const w = img.naturalWidth, h = img.naturalHeight;
+                    const lienzo = document.createElement('canvas');
+                    lienzo.width = w; lienzo.height = h;
+                    const ctx = lienzo.getContext('2d', { willReadFrequently: true });
+                    ctx.drawImage(img, 0, 0);
+                    const px = ctx.getImageData(0, 0, w, h).data;
+                    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w; x++) {
+                            const i = (y * w + x) * 4;
+                            // "contenido" = pixel visible que no es (casi) blanco
+                            if (px[i + 3] > 20 && Math.min(px[i], px[i + 1], px[i + 2]) < 235) {
+                                if (x < x0) x0 = x;
+                                if (x > x1) x1 = x;
+                                if (y < y0) y0 = y;
+                                if (y > y1) y1 = y;
+                            }
+                        }
+                    }
+                    if (x1 >= x0 && y1 >= y0) {
+                        const margen = 12;
+                        x0 = Math.max(0, x0 - margen); y0 = Math.max(0, y0 - margen);
+                        x1 = Math.min(w - 1, x1 + margen); y1 = Math.min(h - 1, y1 + margen);
+                        const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+                        const escala = Math.min(1, 1800 / cw); // 1800 px de ancho sobra para 18 cm de hoja
+                        const salida = document.createElement('canvas');
+                        salida.width = Math.round(cw * escala);
+                        salida.height = Math.round(ch * escala);
+                        const sctx = salida.getContext('2d');
+                        sctx.fillStyle = '#ffffff';
+                        sctx.fillRect(0, 0, salida.width, salida.height);
+                        sctx.drawImage(lienzo, x0, y0, cw, ch, 0, 0, salida.width, salida.height);
+                        LOGO_ENCABEZADO_SRC = salida.toDataURL('image/png');
+                    }
+                } catch (errRecorte) {
+                    console.warn('No se pudo recortar el encabezado; se usará la imagen original.', errRecorte);
+                }
+                fin();
+            };
+            img.onerror = () => {
+                console.warn('No se pudo cargar el encabezado institucional desde GitHub.');
+                fin();
+            };
+            img.src = LOGO_ENCABEZADO_URL;
+        });
 
         // Word no entiende las variables CSS (var(--border), etc.): se cambian
         // por su color real para que bordes y títulos salgan igual que en pantalla.
@@ -564,6 +679,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     idSeccion = 'calificar';
                 }
             }
+            if (!document.getElementById(idSeccion)) idSeccion = 'calificar';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(idSeccion).classList.add('active');
@@ -899,6 +1015,15 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             if (!selAcad) return;
 
+            // Si se está EDITANDO un estudiante, se recuerda lo que ya tenía seleccionado para
+            // restaurarlo al reconstruir las listas (antes volvían a los valores por defecto).
+            const selEditando = document.getElementById('select-estudiante-editar');
+            const enEdicionDocentes = !!(selEditando && selEditando.value !== '');
+            const valoresPrevios = new Map();
+            if (enEdicionDocentes) {
+                [selAcad, selAsig, selSegundoDoc, ...selectsPredefinidos].forEach(sel => { if (sel && sel.id) valoresPrevios.set(sel.id, sel.value); });
+            }
+
             selAcad.innerHTML = '<option value="">Cargando académicos...</option>';
             selAsig.innerHTML = '<option value="">Cargando instructores...</option>';
             selSegundoDoc.innerHTML = '<option value="Ninguno">Ninguno / No aplica</option>';
@@ -952,6 +1077,10 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     select.appendChild(opt);
                 });
             });
+
+            if (enEdicionDocentes) {
+                valoresPrevios.forEach((valor, id) => { if (valor) fijarValorSelect(document.getElementById(id), valor); });
+            }
 
             // Solfeo, Instrumento principal y Académico se reparten por
             // ciclo (a diferencia de Danza/Percusión/Plásticas/Inglés/Edufi,
@@ -1079,9 +1208,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             data.forEach(est => {
                 html += `
                     <tr>
-                        <td>${est.cedula}</td>
-                        <td style="text-align: left;"><b>${est.nombre}</b></td>
-                        <td><button type="button" class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="abrirEdicionMiMatricula('${est.cedula}')">Editar Datos</button></td>
+                        <td>${escapeHTML(est.cedula)}</td>
+                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b></td>
+                        <td><button type="button" class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="abrirEdicionMiMatricula('${escapeHTML(est.cedula)}')">Editar Datos</button></td>
                     </tr>
                 `;
             });
@@ -1201,14 +1330,14 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const estaOculto = est.activo === false;
                 html += `
                     <tr>
-                        <td>${est.cedula}</td>
-                        <td style="text-align: left;"><b>${est.nombre}</b></td>
-                        <td>${est.nivel}</td>
+                        <td>${escapeHTML(est.cedula)}</td>
+                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b></td>
+                        <td>${escapeHTML(est.nivel)}</td>
                         <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${estaOculto ? '#fef3c7; color: #92400e;' : '#dcfce7; color: #166534;'}">${estaOculto ? 'OCULTO' : 'ACTIVO'}</span></td>
                         <td style="white-space: nowrap;">
-                            <button type="button" class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDatosEstudianteEdicion('${est.cedula}')">Editar</button>
-                            <button type="button" class="${estaOculto ? 'success-btn' : 'warning-btn'}" style="padding: 4px 10px; font-size: 11px;" onclick="alternarVisibilidadEstudiante('${est.cedula}', ${estaOculto})">${estaOculto ? 'Reactivar' : 'Ocultar'}</button>
-                            <button type="button" class="danger-btn" onclick="eliminarEstudiantePermanente('${est.cedula}', '${(est.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
+                            <button type="button" class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDatosEstudianteEdicion('${escapeHTML(est.cedula)}')">Editar</button>
+                            <button type="button" class="${estaOculto ? 'success-btn' : 'warning-btn'}" style="padding: 4px 10px; font-size: 11px;" onclick="alternarVisibilidadEstudiante('${escapeHTML(est.cedula)}', ${estaOculto})">${estaOculto ? 'Reactivar' : 'Ocultar'}</button>
+                            <button type="button" class="danger-btn" data-nombre="${escapeHTML(est.nombre)}" onclick="eliminarEstudiantePermanente('${est.cedula}', this.dataset.nombre)">Eliminar</button>
                         </td>
                     </tr>
                 `;
@@ -1246,7 +1375,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const segundaConfirmacion = confirm('Confirme una vez más: esta eliminación es DEFINITIVA y no se puede recuperar. ¿Desea continuar?');
             if (!segundaConfirmacion) return;
 
+            if (timerAutoguardadoMatricula) clearTimeout(timerAutoguardadoMatricula); // evita que un autoguardado pendiente vuelva a crear al estudiante
             await supabaseClient.from('notas').delete().eq('cedula_estudiante', cedula);
+            await supabaseClient.from('control_financiero').delete().eq('cedula_estudiante', cedula);
             const { error } = await supabaseClient.from('estudiantes').delete().eq('cedula', cedula);
 
             if (error) {
@@ -1291,24 +1422,24 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             document.getElementById('mat-institucion-procedencia').value = data.institucion_procedencia || '';
             if (data.fecha_nacimiento) calcularEdadExacta();
             document.getElementById('mat-nivel').value = data.nivel || 'Primero';
-            document.getElementById('mat-docente-acad').value = data.docente_academico || '';
+            fijarValorSelect(document.getElementById('mat-docente-acad'), data.docente_academico || '');
             
-            if (document.getElementById('mat-doc-solfeo')) document.getElementById('mat-doc-solfeo').value = data.docente_solfeo || 'Rafael Cativo Romero';
+            if (document.getElementById('mat-doc-solfeo')) fijarValorSelect(document.getElementById('mat-doc-solfeo'), data.docente_solfeo || 'Rafael Cativo Romero');
             if (document.getElementById('mat-doc-percursion')) {
                 const noLlevaPercusion = data.docente_percursion === 'No lleva';
                 document.getElementById('mat-no-percusion').checked = noLlevaPercusion;
                 document.getElementById('mat-doc-percursion').disabled = noLlevaPercusion;
-                document.getElementById('mat-doc-percursion').value = noLlevaPercusion ? 'Luis De la O Jimenez' : (data.docente_percursion || 'Luis De la O Jimenez');
+                fijarValorSelect(document.getElementById('mat-doc-percursion'), noLlevaPercusion ? 'Luis De la O Jimenez' : (data.docente_percursion || 'Luis De la O Jimenez'));
             }
-            if (document.getElementById('mat-doc-danza')) document.getElementById('mat-doc-danza').value = data.docente_danza || 'Vanessa De La O Jimenez';
-            if (document.getElementById('mat-doc-plasticas')) document.getElementById('mat-doc-plasticas').value = data.docente_plasticas || 'Mirta Castro García';
-            if (document.getElementById('mat-doc-ingles')) document.getElementById('mat-doc-ingles').value = data.docente_ingles || 'Ulises Barajas García';
-            if (document.getElementById('mat-doc-edufi')) document.getElementById('mat-doc-edufi').value = data.docente_edufi || 'Santiago Jimenez';
+            if (document.getElementById('mat-doc-danza')) fijarValorSelect(document.getElementById('mat-doc-danza'), data.docente_danza || 'Vanessa De La O Jimenez');
+            if (document.getElementById('mat-doc-plasticas')) fijarValorSelect(document.getElementById('mat-doc-plasticas'), data.docente_plasticas || 'Mirta Castro García');
+            if (document.getElementById('mat-doc-ingles')) fijarValorSelect(document.getElementById('mat-doc-ingles'), data.docente_ingles || 'Ulises Barajas García');
+            if (document.getElementById('mat-doc-edufi')) fijarValorSelect(document.getElementById('mat-doc-edufi'), data.docente_edufi || 'Santiago Jimenez');
 
             document.getElementById('mat-instr-principal').value = data.instrumento_principal || '';
-            document.getElementById('mat-docente-asig').value = data.docente_asignado || '';
+            fijarValorSelect(document.getElementById('mat-docente-asig'), data.docente_asignado || '');
             document.getElementById('mat-instr-segundo').value = data.instrumento_segundo || 'Ninguno';
-            document.getElementById('mat-docente-segundo').value = data.docente_segundo || 'Ninguno';
+            fijarValorSelect(document.getElementById('mat-docente-segundo'), data.docente_segundo || 'Ninguno');
             document.getElementById('dir-provincia').value = data.provincia || '';
             document.getElementById('dir-canton').value = data.canton || '';
             document.getElementById('dir-distrito').value = data.distrito || '';
@@ -1347,6 +1478,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         }
 
         function limpiarFormularioMatricula() {
+            if (timerAutoguardadoMatricula) clearTimeout(timerAutoguardadoMatricula); // no guardar nada pendiente del formulario anterior
             document.getElementById('form-matricula').reset();
             document.getElementById('select-estudiante-editar').value = '';
             document.getElementById('mat-cedula').readOnly = false;
@@ -1438,6 +1570,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     const res = await supabaseClient.from('estudiantes').update(datos).eq('cedula', cedulaVal);
                     error = res.error;
                 } else {
+                    // El autoguardado NO crea un estudiante nuevo mientras la cédula siga incompleta
+                    // (antes podía quedar un registro con media cédula si se hacía una pausa al escribir).
+                    if (silencioso && cedulaVal.replace(/[\s-]/g, '').length < 9) {
+                        mostrarMensaje('mat-msg', 'Guardado automático en espera: complete la cédula del estudiante nuevo.', false);
+                        return;
+                    }
                     const res = await supabaseClient.from('estudiantes').insert([datos]);
                     error = res.error;
                 }
@@ -1491,28 +1629,28 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
         function generarVistaPreviaMatricula() {
             const anioLectivo = document.getElementById('filtro-anio-lectivo').value;
-            const nombre = document.getElementById('mat-nombre').value;
-            const cedula = document.getElementById('mat-cedula').value;
-            const fnac = document.getElementById('mat-fnac').value;
-            const lugarNac = document.getElementById('mat-lugar-nac').value;
-            const fechaIngreso = document.getElementById('mat-fecha-ingreso').value;
-            const institucionProcedencia = document.getElementById('mat-institucion-procedencia').value;
-            const edadExactaTexto = document.getElementById('edad-resultado').innerText;
+            const nombre = escapeHTML(document.getElementById('mat-nombre').value);
+            const cedula = escapeHTML(document.getElementById('mat-cedula').value);
+            const fnac = escapeHTML(document.getElementById('mat-fnac').value);
+            const lugarNac = escapeHTML(document.getElementById('mat-lugar-nac').value);
+            const fechaIngreso = escapeHTML(document.getElementById('mat-fecha-ingreso').value);
+            const institucionProcedencia = escapeHTML(document.getElementById('mat-institucion-procedencia').value);
+            const edadExactaTexto = escapeHTML(document.getElementById('edad-resultado').innerText);
 
             // CORREGIDO: Toma el nivel real del formulario de matrícula de forma independiente
-            const nivel = document.getElementById('mat-nivel').value;
+            const nivel = escapeHTML(document.getElementById('mat-nivel').value);
 
-            const docenteAcad = document.getElementById('mat-docente-acad').value;
-            const docSolfeo = document.getElementById('mat-doc-solfeo').value;
-            const docPerc = document.getElementById('mat-doc-percursion').value;
-            const docDanza = document.getElementById('mat-doc-danza').value;
-            const docPlast = document.getElementById('mat-doc-plasticas').value;
-            const docIngles = document.getElementById('mat-doc-ingles').value;
-            const docEdufi = document.getElementById('mat-doc-edufi').value;
-            const instr = document.getElementById('mat-instr-principal').value;
-            const docenteInstr = document.getElementById('mat-docente-asig').value;
-            const instrSegundo = document.getElementById('mat-instr-segundo').value;
-            const docenteSegundo = document.getElementById('mat-docente-segundo').value;
+            const docenteAcad = escapeHTML(document.getElementById('mat-docente-acad').value);
+            const docSolfeo = escapeHTML(document.getElementById('mat-doc-solfeo').value);
+            const docPerc = escapeHTML(document.getElementById('mat-doc-percursion').value);
+            const docDanza = escapeHTML(document.getElementById('mat-doc-danza').value);
+            const docPlast = escapeHTML(document.getElementById('mat-doc-plasticas').value);
+            const docIngles = escapeHTML(document.getElementById('mat-doc-ingles').value);
+            const docEdufi = escapeHTML(document.getElementById('mat-doc-edufi').value);
+            const instr = escapeHTML(document.getElementById('mat-instr-principal').value);
+            const docenteInstr = escapeHTML(document.getElementById('mat-docente-asig').value);
+            const instrSegundo = escapeHTML(document.getElementById('mat-instr-segundo').value);
+            const docenteSegundo = escapeHTML(document.getElementById('mat-docente-segundo').value);
             const prov = document.getElementById('dir-provincia').value;
             const canton = document.getElementById('dir-canton').value;
             const distrito = document.getElementById('dir-distrito').value;
@@ -1528,7 +1666,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const enc2Profesion = document.getElementById('enc2-profesion').value;
             const enc2Trabajo = document.getElementById('enc2-trabajo').value;
             const observaciones = document.getElementById('mat-observaciones').value;
-            const fotoUrl = document.getElementById('mat-foto-url').value;
+            const fotoUrl = escapeHTML(document.getElementById('mat-foto-url').value);
 
             if (!nombre || !cedula) {
                 alert('Por favor complete al menos el Nombre y la Cédula.');
@@ -1542,7 +1680,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión (Año ${anioLectivo})</h3>
                     <div>
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
-                        <button type="button" class="warning-btn" onclick="exportarComoWord('preview-matricula-impresion', 'Ficha_Matricula_${cedula}')">Guardar en Word (Editable)</button>
+                        <button type="button" class="warning-btn" onclick="exportarComoWord('preview-matricula-impresion', 'Ficha_Matricula_${cedula.replace(/[^\w-]/g, '')}')">Guardar en Word (Editable)</button>
                     </div>
                 </div>
 
@@ -1613,40 +1751,40 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             data.forEach(est => {
                 const fila = [
-                    `"${est.cedula || ''}"`,
-                    `"${est.nombre || ''}"`,
-                    `"${est.nivel || ''}"`,
-                    `"${est.activo === false ? 'Oculto' : 'Activo'}"`,
-                    `"${est.fecha_nacimiento || ''}"`,
-                    `"${est.lugar_nacimiento || ''}"`,
-                    `"${est.fecha_ingreso_ces || ''}"`,
-                    `"${(est.institucion_procedencia || '').replace(/"/g, '""')}"`,
-                    `"${est.docente_academico || ''}"`,
-                    `"${est.docente_solfeo || ''}"`,
-                    `"${est.docente_percursion || ''}"`,
-                    `"${est.docente_danza || ''}"`,
-                    `"${est.docente_plasticas || ''}"`,
-                    `"${est.docente_ingles || ''}"`,
-                    `"${est.docente_edufi || ''}"`,
-                    `"${est.instrumento_principal || ''}"`,
-                    `"${est.docente_asignado || ''}"`,
-                    `"${est.instrumento_segundo || ''}"`,
-                    `"${est.docente_segundo || ''}"`,
-                    `"${est.provincia || ''}"`,
-                    `"${est.canton || ''}"`,
-                    `"${est.distrito || ''}"`,
-                    `"${(est.direccion_detalles || '').replace(/"/g, '""')}"`,
-                    `"${est.encargado1_nombre || ''}"`,
-                    `"${est.encargado1_correo || ''}"`,
-                    `"${est.encargado1_cel || ''}"`,
-                    `"${(est.encargado1_profesion || '').replace(/"/g, '""')}"`,
-                    `"${(est.encargado1_trabajo || '').replace(/"/g, '""')}"`,
-                    `"${est.encargado2_nombre || ''}"`,
-                    `"${est.encargado2_correo || ''}"`,
-                    `"${est.encargado2_cel || ''}"`,
-                    `"${(est.encargado2_profesion || '').replace(/"/g, '""')}"`,
-                    `"${(est.encargado2_trabajo || '').replace(/"/g, '""')}"`,
-                    `"${(est.observaciones || '').replace(/"/g, '""')}"`
+                    csvCelda(est.cedula),
+                    csvCelda(est.nombre),
+                    csvCelda(est.nivel),
+                    csvCelda(est.activo === false ? 'Oculto' : 'Activo'),
+                    csvCelda(est.fecha_nacimiento),
+                    csvCelda(est.lugar_nacimiento),
+                    csvCelda(est.fecha_ingreso_ces),
+                    csvCelda(est.institucion_procedencia),
+                    csvCelda(est.docente_academico),
+                    csvCelda(est.docente_solfeo),
+                    csvCelda(est.docente_percursion),
+                    csvCelda(est.docente_danza),
+                    csvCelda(est.docente_plasticas),
+                    csvCelda(est.docente_ingles),
+                    csvCelda(est.docente_edufi),
+                    csvCelda(est.instrumento_principal),
+                    csvCelda(est.docente_asignado),
+                    csvCelda(est.instrumento_segundo),
+                    csvCelda(est.docente_segundo),
+                    csvCelda(est.provincia),
+                    csvCelda(est.canton),
+                    csvCelda(est.distrito),
+                    csvCelda(est.direccion_detalles),
+                    csvCelda(est.encargado1_nombre),
+                    csvCelda(est.encargado1_correo),
+                    csvCelda(est.encargado1_cel),
+                    csvCelda(est.encargado1_profesion),
+                    csvCelda(est.encargado1_trabajo),
+                    csvCelda(est.encargado2_nombre),
+                    csvCelda(est.encargado2_correo),
+                    csvCelda(est.encargado2_cel),
+                    csvCelda(est.encargado2_profesion),
+                    csvCelda(est.encargado2_trabajo),
+                    csvCelda(est.observaciones)
                 ].join(',');
                 csvContent += fila + '\n';
             });
@@ -1696,15 +1834,15 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const datos = {
                 id: 1,
                 anio_lectivo_activo: parseInt(document.getElementById('cfg-anio-activo').value, 10) || 2026,
-                p1_inicio: document.getElementById('cfg-p1-inicio').value,
-                p1_fin: document.getElementById('cfg-p1-fin').value,
-                vac_inicio: document.getElementById('cfg-vac-inicio').value,
-                vac_fin: document.getElementById('cfg-vac-fin').value,
-                p2_inicio: document.getElementById('cfg-p2-inicio').value,
-                p2_fin: document.getElementById('cfg-p2-fin').value,
-                festival_fecha: document.getElementById('cfg-festival-fecha').value,
+                p1_inicio: document.getElementById('cfg-p1-inicio').value || null,
+                p1_fin: document.getElementById('cfg-p1-fin').value || null,
+                vac_inicio: document.getElementById('cfg-vac-inicio').value || null,
+                vac_fin: document.getElementById('cfg-vac-fin').value || null,
+                p2_inicio: document.getElementById('cfg-p2-inicio').value || null,
+                p2_fin: document.getElementById('cfg-p2-fin').value || null,
+                festival_fecha: document.getElementById('cfg-festival-fecha').value || null,
                 festival_lugar: document.getElementById('cfg-festival-lugar').value,
-                graduacion_fecha: document.getElementById('cfg-graduacion-fecha').value,
+                graduacion_fecha: document.getElementById('cfg-graduacion-fecha').value || null,
                 graduacion_lugar: document.getElementById('cfg-graduacion-lugar').value
             };
             try {
@@ -1761,13 +1899,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             data.forEach(doc => {
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${doc.nombre}</b></td>
-                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${doc.tipo_docente === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${doc.tipo_docente.toUpperCase()}</span></td>
-                        <td>${doc.especialidad}</td>
-                        <td>${doc.correo}</td>
-                        <td>${doc.telefono}</td>
+                        <td style="text-align: left;"><b>${escapeHTML(doc.nombre)}</b></td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${doc.tipo_docente === 'academico' ? '#e0f2fe; color: #0369a1;' : '#fef3c7; color: #92400e;'}">${escapeHTML(String(doc.tipo_docente || '').toUpperCase())}</span></td>
+                        <td>${escapeHTML(doc.especialidad)}</td>
+                        <td>${escapeHTML(doc.correo)}</td>
+                        <td>${escapeHTML(doc.telefono)}</td>
                         <td>
-                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicion('${doc.id}', '${doc.nombre.replace(/'/g, "\\'")}', '${doc.correo.replace(/'/g, "\\'")}', '${doc.telefono.replace(/'/g, "\\'")}', '${doc.especialidad.replace(/'/g, "\\'")}', '${doc.tipo_docente}', '${doc.ciclo_asignado || 'Ambos Ciclos'}')">Editar</button>
+                            <button class="warning-btn" style="padding: 4px 10px; font-size: 11px;" onclick="cargarDocenteParaEdicionPorId('${doc.id}')">Editar</button>
                             <button class="danger-btn" onclick="eliminarDocente('${doc.id}')">Eliminar</button>
                         </td>
                     </tr>
@@ -1885,10 +2023,10 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             data.forEach(item => {
                 html += `
                     <tr>
-                        <td style="text-align: left;"><b>${item.email}</b></td>
-                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${item.role === 'admin' ? '#dcfce7; color: #166534;' : '#fef3c7; color: #92400e;'}">${item.role.toUpperCase()}</span></td>
+                        <td style="text-align: left;"><b>${escapeHTML(item.email)}</b></td>
+                        <td><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ${item.role === 'admin' ? '#dcfce7; color: #166534;' : '#fef3c7; color: #92400e;'}">${escapeHTML(String(item.role || '').toUpperCase())}</span></td>
                         <td>
-                            <button class="danger-btn" onclick="eliminarRolUsuario('${item.email}')">Eliminar Rol</button>
+                            <button class="danger-btn" data-email="${escapeHTML(item.email)}" onclick="eliminarRolUsuario(this.dataset.email)">Eliminar Rol</button>
                         </td>
                     </tr>
                 `;
@@ -1942,6 +2080,17 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 alert('Rol eliminado correctamente.');
                 cargarTablaRolesUsuarios();
             }
+        }
+
+        // Busca el docente por id y llena el formulario (así el botón "Editar" no necesita
+        // pasar nombre/correo/teléfono dentro del HTML, donde una comilla los rompía).
+        async function cargarDocenteParaEdicionPorId(id) {
+            const { data, error } = await supabaseClient.from('docentes').select('*').eq('id', id).single();
+            if (error || !data) {
+                alert('No se pudo cargar la información del docente.');
+                return;
+            }
+            cargarDocenteParaEdicion(data.id, data.nombre || '', data.correo || '', data.telefono || '', data.especialidad || '', data.tipo_docente || 'artistico', data.ciclo_asignado || 'Ambos Ciclos');
         }
 
         function cargarDocenteParaEdicion(id, nombre, correo, telefono, especialidad, tipo, ciclo) {
@@ -2046,7 +2195,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 resultadoDiv.innerText = 'Seleccione una fecha de nacimiento';
                 return;
             }
-            const fnac = new Date(fechaNacVal);
+            const [anioN, mesN, diaN] = fechaNacVal.split('-').map(Number);
+            const fnac = new Date(anioN, mesN - 1, diaN); // fecha local, sin desfase de zona horaria
             const hoy = new Date();
             let anos = hoy.getFullYear() - fnac.getFullYear();
             let meses = hoy.getMonth() - fnac.getMonth();
@@ -2105,8 +2255,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             } else if (materia.includes('Artes Plásticas')) {
                 return [
                     { id: 'asistencia', label: 'Asistencia', peso: 0.25 },
-                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 },
-                    { id: 'autorregulacion', label: 'Autorregulación', peso: 0.15 }
+                    { id: 'trabajo_clase', label: 'Trabajo en clase', peso: 0.75 }
                 ];
             } else if (materia.includes('Taller de Percusión')) {
                 return [
@@ -2260,7 +2409,18 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const comentarioGuardado = notaReg && notaReg.comentario ? notaReg.comentario : '';
                 // Evidencia de cómo se calificó cada componente la última vez
                 // (queda guardada en notas.detalle_componentes como JSON).
-                const detalleGuardado = (notaReg && notaReg.detalle_componentes) ? notaReg.detalle_componentes : {};
+                let detalleGuardado = (notaReg && notaReg.detalle_componentes) ? notaReg.detalle_componentes : {};
+                if (typeof detalleGuardado === 'string') { try { detalleGuardado = JSON.parse(detalleGuardado); } catch (_) { detalleGuardado = {}; } }
+                // Artes Plásticas pasó de (Asistencia 25 / Cotidiano 60 / Autorregulación 15)
+                // a (Asistencia 25 / Trabajo en clase 75). Para registros ya guardados con
+                // los rubros viejos, "Trabajo en clase" se precarga con el equivalente de
+                // Cotidiano + Autorregulación, así el docente no tiene que volver a calificar.
+                if (materia.includes('Artes Plásticas') && !detalleGuardado.trabajo_clase && detalleGuardado.cotidiano && !isNaN(Number(detalleGuardado.cotidiano.valor))) {
+                    const cot = Number(detalleGuardado.cotidiano.valor);
+                    const aut = (detalleGuardado.autorregulacion && !isNaN(Number(detalleGuardado.autorregulacion.valor))) ? Number(detalleGuardado.autorregulacion.valor) : null;
+                    const trabajo = aut !== null ? (cot * 0.60 + aut * 0.15) / 0.75 : cot;
+                    detalleGuardado = { ...detalleGuardado, trabajo_clase: { label: 'Trabajo en clase', peso: 0.75, valor: Number(trabajo.toFixed(2)) } };
+                }
 
                 html += `
                     <tr>
@@ -2405,8 +2565,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 return;
             }
 
-            const lblFinal = document.getElementById(`lbl-final-${cedula}`);
-            const promedioFinal = lblFinal ? parseFloat(lblFinal.innerText) : NaN;
+            let promedioFinal = NaN;
             const comentarioInput = document.getElementById(`comentario-est-${cedula}`);
             const comentario = comentarioInput ? comentarioInput.value.trim() : '';
 
@@ -2427,6 +2586,14 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     };
                 }
             });
+
+            // El promedio se calcula directamente de las notas escritas (no se lee del
+            // texto en pantalla). Si todavía no hay NINGÚN componente con nota, no se
+            // guarda nada: antes, escribir solo la reflexión guardaba un 0 por error.
+            const idsConNota = Object.keys(detalleComponentes);
+            if (idsConNota.length > 0) {
+                promedioFinal = Number(idsConNota.reduce((acc, id) => acc + detalleComponentes[id].valor * detalleComponentes[id].peso, 0).toFixed(2));
+            }
 
             if (isNaN(promedioFinal)) {
                 // En modo automático simplemente esperamos (el docente sigue
@@ -2736,7 +2903,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 <p><b>Periodo destino:</b> ${periodo} — <b>Año Lectivo Activo:</b> ${anioLectivoActivo}</p>
                 <p style="color: #166534;"><b>${totalOk}</b> estudiantes encontrados en la matrícula — <b>${totalNotas}</b> notas listas para importar.</p>
                 ${totalNoEncontrados > 0 ? `<p style="color: #991b1b;"><b>${totalNoEncontrados}</b> cédulas del Excel NO coinciden con ningún estudiante matriculado y NO se importarán. Revíselas abajo.</p>` : ''}
-                ${materiasNoReconocidas.size > 0 ? `<p style="color: #92400e;"><b>Materias del Excel no reconocidas (se ignoraron):</b> ${Array.from(materiasNoReconocidas).join(', ')}</p>` : ''}
+                ${materiasNoReconocidas.size > 0 ? `<p style="color: #92400e;"><b>Materias del Excel no reconocidas (se ignoraron):</b> ${escapeHTML(Array.from(materiasNoReconocidas).join(', '))}</p>` : ''}
                 <table class="data-table">
                     <thead><tr><th>Cédula</th><th style="text-align:left;">Nombre (Excel)</th><th>Estado</th><th>Materias a importar</th></tr></thead>
                     <tbody>
@@ -2744,7 +2911,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             datosParaImportar.forEach(d => {
                 const estadoTxt = !d.encontrado ? '<span style="color:#991b1b;">NO ENCONTRADO</span>' : (d.activo ? '<span style="color:#166534;">OK</span>' : '<span style="color:#92400e;">OCULTO</span>');
-                html += `<tr><td>${d.cedula}</td><td style="text-align:left;">${d.nombreExcel}</td><td>${estadoTxt}</td><td style="text-align:left; font-size:12px;">${d.materias.map(m => nombreMateriaLimpio(m.materia)).join(', ')}</td></tr>`;
+                html += `<tr><td>${escapeHTML(d.cedula)}</td><td style="text-align:left;">${escapeHTML(d.nombreExcel)}</td><td>${estadoTxt}</td><td style="text-align:left; font-size:12px;">${d.materias.map(m => nombreMateriaLimpio(m.materia)).join(', ')}</td></tr>`;
             });
 
             html += '</tbody></table>';
@@ -2781,7 +2948,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         periodo: periodo,
                         anio_lectivo: anioLectivoActivo,
                         promedio: m.promedio,
-                        comentario: m.comentario
+                        comentario: m.comentario,
+                        // El detalle por componente de una nota importada no existe: se limpia para que
+                        // la planilla no muestre componentes viejos que ya no suman ese promedio.
+                        detalle_componentes: {},
+                        modificado_por: (usuarioEmailGlobal || 'desconocido') + ' (importación Excel)',
+                        modificado_en: new Date().toISOString()
                     });
                 });
             });
@@ -2816,53 +2988,57 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             contenedor.innerHTML = '<p>Cargando registro histórico institucional...</p>';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true);
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anio);
-
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('*').eq('nivel', nivel).eq('activo', true);
+            if (errEst) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + escapeHTML(errEst.message) + '</p>';
+                return;
+            }
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No hay estudiantes matriculados en ${nivel}.</p>`;
+                contenedor.innerHTML = `<p>No hay estudiantes matriculados en ${escapeHTML(nivel)}.</p>`;
                 return;
             }
 
-            let materiasSet = new Set();
-            if (notas) {
-                notas.forEach(n => {
-                    const estMatch = estudiantes.find(e => e.cedula === n.cedula_estudiante);
-                    if (estMatch) materiasSet.add(n.materia);
-                });
+            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anio).in('cedula_estudiante', estudiantes.map(e => e.cedula));
+            if (errNotas) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar las notas: ' + escapeHTML(errNotas.message) + '</p>';
+                return;
             }
+            const notasPorEstudiante = agruparNotasPorEstudiante(notas);
 
-            const listaMaterias = Array.from(materiasSet);
+            // Materias del nivel (sin repetir por variantes de escritura), en orden institucional.
+            const mapaMaterias = new Map();
+            estudiantes.forEach(est => {
+                materiasUnicasConNota(notasPorEstudiante.get(String(est.cedula)), est).forEach(v => {
+                    const k = claveMateria(v);
+                    if (!mapaMaterias.has(k)) mapaMaterias.set(k, v);
+                });
+            });
+            const listaMaterias = [...mapaMaterias.values()].sort((a, b) => posicionMateria(a) - posicionMateria(b));
 
-            let html = `<h3>Registro Histórico - Nivel: ${nivel} - Año Lectivo: ${anio}</h3>`;
+            let html = `<h3>Registro Histórico - Nivel: ${escapeHTML(nivel)} - Año Lectivo: ${anio}</h3>`;
             html += `<table class="data-table"><thead><tr><th>Estudiante</th><th>Cédula</th><th>Profesores / Inst</th>`;
-            
+
             if (listaMaterias.length === 0) {
                 html += `<th>Sin materias registradas aún</th></tr></thead><tbody>`;
             } else {
                 listaMaterias.forEach(mat => {
-                    html += `<th>${mat}<br><span style="font-size:10px; font-weight:normal;">1°P | 2°P | Final (50%-50%)</span></th>`;
+                    html += `<th>${escapeHTML(nombreLimpioMateria(mat))}<br><span style="font-size:10px; font-weight:normal;">1°P | 2°P | Final (50%-50%)</span></th>`;
                 });
                 html += `</tr></thead><tbody>`;
             }
 
             estudiantes.forEach(est => {
-                const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
+                const notasEst = notasPorEstudiante.get(String(est.cedula)) || [];
                 html += `<tr><td><b>${escapeHTML(est.nombre)}</b></td><td>${escapeHTML(est.cedula)}</td><td><small>Acad: ${escapeHTML(est.docente_academico) || 'N/A'}<br>Solfeo: ${escapeHTML(est.docente_solfeo) || 'N/A'}<br>Percusión: ${escapeHTML(est.docente_percursion) || 'N/A'}<br>Inst: ${escapeHTML(est.instrumento_principal) || 'N/A'}</small></td>`;
-                
-                if (listaMaterias.length > 0) {
-                    listaMaterias.forEach(mat => {
-                        const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                        const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                        const p1 = n1 ? n1.promedio : '-';
-                        const p2 = n2 ? n2.promedio : '-';
-                        let finalStr = '-';
-                        if (n1 && n2) {
-                            finalStr = Number(((n1.promedio * 0.5) + (n2.promedio * 0.5)).toFixed(2));
-                        }
-                        html += `<td>1°P: ${p1}<br>2°P: ${p2}<br><b>Final: ${finalStr}</b></td>`;
-                    });
-                }
+
+                listaMaterias.forEach(mat => {
+                    const r1 = resolverNota(notasEst, mat, 'Primer Periodo', anio);
+                    const r2 = resolverNota(notasEst, mat, 'Segundo Periodo', anio);
+                    const v1 = promedioNumerico(r1 ? r1.fila : null);
+                    const v2 = promedioNumerico(r2 ? r2.fila : null);
+                    const finalStr = (v1 !== null && v2 !== null) ? Number(((v1 * 0.5) + (v2 * 0.5)).toFixed(2)) : '-';
+                    html += `<td>1°P: ${v1 !== null ? v1 : '-'}<br>2°P: ${v2 !== null ? v2 : '-'}<br><b>Final: ${finalStr}</b></td>`;
+                });
                 html += `</tr>`;
             });
 
@@ -2907,7 +3083,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const docenteSeleccionado = estData.docente_academico || '[Sin asignar]';
+            await logoEncabezadoListo;
 
             const { data: notas } = await supabaseClient.from('notas').select('*').eq('cedula_estudiante', estData.cedula);
 
@@ -2957,27 +3133,31 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const resP2 = resolverNota(notas || [], mat, 'Segundo Periodo');
                 const notaP1 = resP1 ? resP1.fila : null;
                 const notaP2 = resP2 ? resP2.fila : null;
+                // Solo cuenta como nota un promedio numérico real (una fila con reflexión pero
+                // sin nota ya no rompe el cálculo del promedio anual).
+                const n1 = promedioNumerico(notaP1);
+                const n2 = promedioNumerico(notaP2);
 
-                const valP1 = notaP1 ? notaP1.promedio : '-';
-                const valP2 = notaP2 ? notaP2.promedio : '-';
+                const valP1 = n1 !== null ? n1 : '-';
+                const valP2 = n2 !== null ? n2 : '-';
 
                 let valAnual = '-';
                 let estado = 'Pendiente';
 
-                if (notaP1 && notaP2) {
-                    valAnual = Number(((notaP1.promedio * 0.5) + (notaP2.promedio * 0.5)).toFixed(2));
-                    if (notaP1.promedio >= 65 && notaP2.promedio >= 65 && valAnual >= 65) {
+                if (n1 !== null && n2 !== null) {
+                    valAnual = Number(((n1 * 0.5) + (n2 * 0.5)).toFixed(2));
+                    if (n1 >= 65 && n2 >= 65 && valAnual >= 65) {
                         estado = '<span style="color: #166534; font-weight: bold;">Aprobado</span>';
                     } else {
                         estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado</span>';
                     }
-                } else if (periodoSel === 'Primer Periodo' && notaP1) {
+                } else if (periodoSel === 'Primer Periodo' && n1 !== null) {
                     valAnual = valP1;
                     estado = valP1 >= 65 ? '<span style="color: #166534; font-weight: bold;">Aprobado (Parcial)</span>' : '<span style="color: #991b1b; font-weight: bold;">Reprobado (Parcial)</span>';
                 }
 
                 const notaMatPeriodo = periodoSel === 'Primer Periodo' ? notaP1 : notaP2;
-                const nombreMostrado = nombreParaMostrar(nombreMateriaLimpio(mat));
+                const nombreMostrado = escapeHTML(nombreParaMostrar(nombreMateriaLimpio(mat)));
 
                 tablaMateriasHTML += `
                     <tr>
@@ -3062,7 +3242,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
-                        <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-informe-oficial', 'Informe_${estData.cedula}')">Guardar en Word (Editable)</button>
+                        <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-informe-oficial', 'Informe_${escapeHTML(estData.cedula)}')">Guardar en Word (Editable)</button>
                         <button type="button" class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informe a Encargados</button>
                     </div>
                 </div>
@@ -3070,7 +3250,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 <div class="report-preview" id="plantilla-informe-oficial">
                     <div class="seccion-pagina-1">
                         <div class="encabezado-informe-full">
-                            <img src="ces%20montessori%20encabezado.jpeg" alt="Encabezado del Informe">
+                            <img src="${LOGO_ENCABEZADO_SRC}" alt="Encabezado Institucional Centro Educativo Shkénuk" crossorigin="anonymous">
                         </div>
 
                         <div style="text-align: center; margin-bottom: 6px;">
@@ -3080,7 +3260,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         </div>
 
                         <div style="margin-bottom: 8px; font-size: 12px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            <b>Estudiante:</b> ${estData.nombre} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${estData.cedula} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${estData.nivel}
+                            <b>Estudiante:</b> ${escapeHTML(estData.nombre)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${escapeHTML(estData.cedula)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${escapeHTML(estData.nivel)}
                         </div>
 
                         <div style="margin-bottom: 15px;">
@@ -3148,7 +3328,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const nombreArchivo = `Informe_Hogar_${estData.nombre.replace(/\s+/g, '_')}_${periodoSel.replace(/\s+/g, '_')}.pdf`;
+            const nombreArchivo = `Informe_Hogar_${estData.nombre.replace(/[^\p{L}\p{N}]+/gu, '_')}_${periodoSel.replace(/\s+/g, '_')}.pdf`;
 
             msg.className = 'notification success';
             msg.innerText = 'Generando archivo PDF en formato A4, por favor espere...';
@@ -3239,16 +3419,25 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             contenedor.innerHTML = '<p>Cargando estudiantes y calificaciones...</p>';
 
             let niveles = ciclo === 'Primer Ciclo' ? ['Primero', 'Segundo', 'Tercero'] : ['Cuarto', 'Quinto', 'Sexto'];
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).eq('activo', true);
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioLectivoActivo);
-
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('*').in('nivel', niveles).eq('activo', true);
+            if (errEst) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + escapeHTML(errEst.message) + '</p>';
+                return;
+            }
             if (!estudiantes || estudiantes.length === 0) {
-                contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${ciclo}.</p>`;
+                contenedor.innerHTML = `<p>No se encontraron estudiantes matriculados en ${escapeHTML(ciclo)}.</p>`;
                 return;
             }
 
+            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioLectivoActivo).in('cedula_estudiante', estudiantes.map(e => e.cedula));
+            if (errNotas) {
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar las notas: ' + escapeHTML(errNotas.message) + '</p>';
+                return;
+            }
+            const notasPorEstudiante = agruparNotasPorEstudiante(notas);
+
             let html = `
-                <h3>Listado de ${ciclo} con Instrumentos y Notas</h3>
+                <h3>Listado de ${escapeHTML(ciclo)} con Instrumentos y Notas</h3>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -3266,18 +3455,18 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             `;
 
             estudiantes.forEach(est => {
-                const notasEst = notas ? notas.filter(n => n.cedula_estudiante === est.cedula) : [];
-                const materias = [...new Set(notasEst.map(n => n.materia))];
+                const notasEst = notasPorEstudiante.get(String(est.cedula)) || [];
+                const materias = materiasUnicasConNota(notasEst, est);
 
                 if (materias.length === 0) {
-                    html += `<tr><td>${est.cedula}</td><td><b>${est.nombre}</b><br><small>Acad: ${est.docente_academico || ''}</small></td><td>${est.nivel}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
+                    html += `<tr><td>${escapeHTML(est.cedula)}</td><td><b>${escapeHTML(est.nombre)}</b><br><small>Acad: ${escapeHTML(est.docente_academico)}</small></td><td>${escapeHTML(est.nivel)}</td><td colspan="5" style="color: #94a3b8; text-align: center;">Sin notas registradas todavía</td></tr>`;
                 } else {
                     materias.forEach((mat, idx) => {
-                        const notaP1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                        const notaP2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                        const p1Val = notaP1 ? notaP1.promedio : null;
-                        const p2Val = notaP2 ? notaP2.promedio : null;
-                        
+                        const resP1 = resolverNota(notasEst, mat, 'Primer Periodo', anioLectivoActivo);
+                        const resP2 = resolverNota(notasEst, mat, 'Segundo Periodo', anioLectivoActivo);
+                        const p1Val = promedioNumerico(resP1 ? resP1.fila : null);
+                        const p2Val = promedioNumerico(resP2 ? resP2.fila : null);
+
                         let notaFinalStr = '-';
                         let estado = 'Pendiente';
 
@@ -3294,7 +3483,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         html += `
                             <tr>
                                 ${idx === 0 ? `<td rowspan="${materias.length}">${escapeHTML(est.cedula)}</td><td rowspan="${materias.length}"><b>${escapeHTML(est.nombre)}</b><br><small>Acad: ${escapeHTML(est.docente_academico) || 'N/A'}<br>Solfeo: ${escapeHTML(est.docente_solfeo) || 'N/A'}<br>Percusión: ${escapeHTML(est.docente_percursion) || 'N/A'}<br>Inst. Princ: ${escapeHTML(est.instrumento_principal) || 'N/A'}</small></td><td rowspan="${materias.length}">${escapeHTML(est.nivel)}</td>` : ''}
-                                <td>${mat}</td>
+                                <td>${escapeHTML(nombreLimpioMateria(mat))}</td>
                                 <td>${p1Val !== null ? p1Val : '-'}</td>
                                 <td>${p2Val !== null ? p2Val : '-'}</td>
                                 <td><b>${notaFinalStr}</b></td>
@@ -3326,28 +3515,51 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             if (msgSpan) msgSpan.innerText = 'Analizando promedios y aplicando promoción...';
 
-            const { data: estudiantes } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
-            const { data: notas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioLectivoActivo);
-
-            if (!estudiantes || !notas) {
-                if (msgSpan) msgSpan.innerText = 'No hay datos suficientes para procesar.';
+            // Protección contra procesar dos veces el mismo año: si ya hay registros de
+            // promoción de este año lectivo, los estudiantes ya subieron de nivel y volver
+            // a correr el proceso los subiría OTRA VEZ.
+            const { data: yaProcesado, error: errPrevio } = await supabaseClient.from('historial_promociones').select('cedula_estudiante').eq('anio_lectivo', anioLectivoActivo).limit(1);
+            if (errPrevio) {
+                const txt = 'No se pudo consultar el historial de promociones (' + errPrevio.message + '). No se realizó ningún cambio.';
+                if (msgSpan) msgSpan.innerText = txt;
+                alert(txt);
+                return;
+            }
+            if (yaProcesado && yaProcesado.length > 0) {
+                const txt = `La promoción del Año Lectivo ${anioLectivoActivo} ya fue procesada antes. Para evitar subir de nivel dos veces a los estudiantes, no se realizó ningún cambio.`;
+                if (msgSpan) msgSpan.innerText = txt;
+                alert(txt);
                 return;
             }
 
+            const { data: estudiantes, error: errEst } = await supabaseClient.from('estudiantes').select('*').eq('activo', true);
+            const { data: notas, error: errNotas } = await supabaseClient.from('notas').select('*').eq('anio_lectivo', anioLectivoActivo);
+
+            if (errEst || errNotas || !estudiantes || !notas) {
+                if (msgSpan) msgSpan.innerText = 'No hay datos suficientes para procesar' + ((errEst || errNotas) ? ': ' + (errEst || errNotas).message : '.');
+                return;
+            }
+
+            const notasPorEstudiante = agruparNotasPorEstudiante(notas);
             const secuenciaNiveles = { 'Primero': 'Segundo', 'Segundo': 'Tercero', 'Tercero': 'Cuarto', 'Cuarto': 'Quinto', 'Quinto': 'Sexto', 'Sexto': 'Graduado' };
             let promovidosCount = 0;
+            let fallidos = 0;
             let registrosHistorial = [];
 
             for (const est of estudiantes) {
-                const notasEst = notas.filter(n => n.cedula_estudiante === est.cedula);
-                const materias = [...new Set(notasEst.map(n => n.materia))];
+                const notasEst = notasPorEstudiante.get(String(est.cedula)) || [];
+                // Mismas reglas que el resto del sistema: sin repetir materias por variantes
+                // de escritura y sin las que el estudiante "No lleva".
+                const materias = materiasUnicasConNota(notasEst, est);
                 if (materias.length === 0) continue;
 
                 let pasaTodas = true;
                 for (const mat of materias) {
-                    const n1 = notasEst.find(n => n.materia === mat && n.periodo === 'Primer Periodo');
-                    const n2 = notasEst.find(n => n.materia === mat && n.periodo === 'Segundo Periodo');
-                    if (!n1 || !n2 || n1.promedio < 65 || n2.promedio < 65) {
+                    const r1 = resolverNota(notasEst, mat, 'Primer Periodo', anioLectivoActivo);
+                    const r2 = resolverNota(notasEst, mat, 'Segundo Periodo', anioLectivoActivo);
+                    const v1 = promedioNumerico(r1 ? r1.fila : null);
+                    const v2 = promedioNumerico(r2 ? r2.fila : null);
+                    if (v1 === null || v2 === null || v1 < 65 || v2 < 65) {
                         pasaTodas = false;
                         break;
                     }
@@ -3356,7 +3568,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 if (pasaTodas && est.nivel !== 'Graduado') {
                     const nuevoNivel = secuenciaNiveles[est.nivel];
                     if (nuevoNivel) {
-                        await supabaseClient.from('estudiantes').update({ nivel: nuevoNivel }).eq('cedula', est.cedula);
+                        const { error: errUp } = await supabaseClient.from('estudiantes').update({ nivel: nuevoNivel }).eq('cedula', est.cedula);
+                        if (errUp) {
+                            // Si no se pudo subir de nivel, tampoco se anota en el historial.
+                            console.error('Promoción fallida para', est.cedula, errUp);
+                            fallidos++;
+                            continue;
+                        }
                         promovidosCount++;
                         registrosHistorial.push({
                             anio_lectivo: anioLectivoActivo,
@@ -3370,23 +3588,32 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 }
             }
 
+            let avisoHistorial = '';
             if (registrosHistorial.length > 0) {
-                await supabaseClient.from('historial_promociones').insert(registrosHistorial);
+                const { error: errHist } = await supabaseClient.from('historial_promociones').insert(registrosHistorial);
+                if (errHist) avisoHistorial = ` ATENCIÓN: los estudiantes sí subieron de nivel, pero NO se pudo guardar el historial (${errHist.message}).`;
             }
 
-            const mensajeFinal = `¡Proceso finalizado para el Año Lectivo ${anioLectivoActivo}! Estudiantes promovidos: ${promovidosCount}. El detalle quedó guardado en el historial de promociones de ese año.`;
+            const mensajeFinal = `¡Proceso finalizado para el Año Lectivo ${anioLectivoActivo}! Estudiantes promovidos: ${promovidosCount}.` +
+                (fallidos > 0 ? ` No se pudo promover a ${fallidos} estudiante(s) por un error al guardar.` : ' El detalle quedó guardado en el historial de promociones de ese año.') + avisoHistorial;
             document.querySelectorAll('#promocion-msg, #promocion-msg-matricula').forEach(el => el.innerText = mensajeFinal);
 
             cargarSelectorEstudiantesEdicion();
             cargarTablaEstudiantesNivel();
 
             if (confirm(`El proceso del Año Lectivo ${anioLectivoActivo} terminó.\n\n¿Desea avanzar el Año Lectivo Activo del sistema a ${anioLectivoActivo + 1} para comenzar a calificar el nuevo curso? (Los datos de ${anioLectivoActivo} y anteriores quedan guardados intactos)`)) {
-                anioLectivoActivo = anioLectivoActivo + 1;
-                await supabaseClient.from('configuracion_periodos').update({ anio_lectivo_activo: anioLectivoActivo }).eq('id', 1);
+                const nuevoAnio = anioLectivoActivo + 1;
+                const { error: errAnio } = await supabaseClient.from('configuracion_periodos').update({ anio_lectivo_activo: nuevoAnio }).eq('id', 1);
+                if (errAnio) {
+                    alert('No se pudo avanzar el Año Lectivo Activo: ' + errAnio.message);
+                    return;
+                }
+                anioLectivoActivo = nuevoAnio;
                 const inputAnio = document.getElementById('cfg-anio-activo');
                 if (inputAnio) inputAnio.value = anioLectivoActivo;
                 const spanAnio = document.getElementById('span-anio-activo-matricula');
                 if (spanAnio) spanAnio.textContent = anioLectivoActivo;
+                inicializarAniosLectivos();
                 alert(`El Año Lectivo Activo ahora es ${anioLectivoActivo}.`);
             }
         }
@@ -3396,7 +3623,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             if (!contenedor) return;
 
             const anioConsulta = prompt('¿De qué Año Lectivo desea ver el historial de promociones?', anioLectivoActivo);
-            if (!anioConsulta) return;
+            if (!anioConsulta || isNaN(parseInt(anioConsulta, 10))) return;
 
             contenedor.innerHTML = '<p>Cargando historial...</p>';
 
@@ -3512,10 +3739,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 tituloCicloNivel = `NIVEL: ${seleccion.toUpperCase()}`;
             }
 
+            await logoEncabezadoListo;
             const { data, error } = await supabaseClient.from('estudiantes').select('*').in('nivel', nivelesAConsultar).eq('activo', true);
 
             if (error) {
-                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + error.message + '</p>';
+                contenedor.innerHTML = '<p style="color: red;">Error al cargar estudiantes: ' + escapeHTML(error.message) + '</p>';
                 return;
             }
 
@@ -3531,9 +3759,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 filasTablaHTML += `
                     <tr>
                         <td>${index + 1}</td>
-                        <td style="text-align: center;">${est.cedula || ''}</td>
-                        <td style="text-align: left;"><b>${est.nombre || ''}</b></td>
-                        ${seleccion.includes('Ciclo') ? `<td>${est.nivel || ''}</td>` : ''}
+                        <td style="text-align: center;">${escapeHTML(est.cedula)}</td>
+                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b></td>
+                        ${seleccion.includes('Ciclo') ? `<td>${escapeHTML(est.nivel)}</td>` : ''}
                     </tr>
                 `;
             });
@@ -3549,8 +3777,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 </div>
 
                 <div class="report-preview" id="plantilla-lista-nivel-impresion">
-                    <div style="width: 100%; margin-bottom: 2px; text-align: center;">
-                        <img src="ces%20montessori%20encabezado.jpeg" alt="Encabezado del Informe" style="width: auto; max-width: 100%; height: auto; max-height: 140px; display: block; margin: 0 auto;">
+                    <div class="encabezado-informe-full" style="width: 100%; margin-bottom: 2px; text-align: center;">
+                        <img src="${LOGO_ENCABEZADO_SRC}" alt="Encabezado Institucional Centro Educativo Shkénuk" crossorigin="anonymous" style="width: 100%; height: auto; display: block; margin: 0 auto;">
                     </div>
 
                     <div style="text-align: center; margin-bottom: 20px;">
@@ -3599,9 +3827,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             data.forEach((est, index) => {
                 const fila = [
                     index + 1,
-                    `"${est.cedula || ''}"`,
-                    `"${est.nombre || ''}"`,
-                    `"${est.nivel || ''}"`
+                    csvCelda(est.cedula),
+                    csvCelda(est.nombre),
+                    csvCelda(est.nivel)
                 ].join(',');
                 csvContent += fila + '\n';
             });
@@ -3670,11 +3898,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             data.forEach(est => {
                 filas += `
                     <tr>
-                        <td style="text-align: left;"><b>${est.nombre || ''}</b></td>
-                        <td>${est.nivel || ''}</td>
-                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.matricula_pagada ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${est.cedula}', 'matricula_pagada')"></td>
-                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.materiales_sem1_pagado ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${est.cedula}', 'materiales_sem1_pagado')"></td>
-                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.materiales_sem2_pagado ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${est.cedula}', 'materiales_sem2_pagado')"></td>
+                        <td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b></td>
+                        <td>${escapeHTML(est.nivel)}</td>
+                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.matricula_pagada ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${escapeHTML(est.cedula)}', 'matricula_pagada')"></td>
+                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.materiales_sem1_pagado ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${escapeHTML(est.cedula)}', 'materiales_sem1_pagado')"></td>
+                        <td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${est.materiales_sem2_pagado ? 'checked' : ''} onchange="guardarEstadoPagoAnual(this, '${escapeHTML(est.cedula)}', 'materiales_sem2_pagado')"></td>
                     </tr>
                 `;
             });
@@ -3743,12 +3971,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
             let filas = '';
             estudiantes.forEach(est => {
-                filas += `<tr><td style="text-align: left;"><b>${est.nombre || ''}</b></td><td>${est.nivel || ''}</td>`;
+                filas += `<tr><td style="text-align: left;"><b>${escapeHTML(est.nombre)}</b></td><td>${escapeHTML(est.nivel)}</td>`;
                 MESES_FINANCIERO.forEach(m => {
                     const periodoMes = `${anio}-${m.num}`;
                     const registro = pagos ? pagos.find(p => p.cedula_estudiante === est.cedula && p.periodo_mes === periodoMes) : null;
                     const pagada = registro ? registro.mensualidad_pagada : false;
-                    filas += `<td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${pagada ? 'checked' : ''} onchange="guardarMensualidad(this, '${est.cedula}', '${periodoMes}', ${anio})"></td>`;
+                    filas += `<td><input type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" ${pagada ? 'checked' : ''} onchange="guardarMensualidad(this, '${escapeHTML(est.cedula)}', '${periodoMes}', ${anio})"></td>`;
                 });
                 filas += `</tr>`;
             });
@@ -3833,7 +4061,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             `;
 
             const filasMorosos = morosos.length > 0
-                ? morosos.map(e => `<tr><td style="text-align: left;">${e.nombre || ''}</td><td>${e.nivel || ''}</td></tr>`).join('')
+                ? morosos.map(e => `<tr><td style="text-align: left;">${escapeHTML(e.nombre)}</td><td>${escapeHTML(e.nivel)}</td></tr>`).join('')
                 : `<tr><td colspan="2" style="color: #166534;">¡Todos al día este mes!</td></tr>`;
 
             contenedor.innerHTML = `
@@ -3890,6 +4118,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
 
             contenedor.innerHTML = '<p>Generando estado de cuenta...</p>';
+            await logoEncabezadoListo;
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
             const anio = anioLectivoActivo;
 
@@ -3950,7 +4179,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     <h4 style="color: #166534; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Al Día con sus Obligaciones</h4>
                     <p style="margin: 0 0 5px 0; font-size: 10.5px; color: #14532d; line-height: 1.35; text-align: justify;">
                         Estimada familia, reciban un cordial saludo de parte del Centro Educativo Shkénuk / CES Montessori. Nos complace informarles que el
-                        estudiante <b>${estData.nombre}</b> se encuentra al día con sus obligaciones financieras al corte de <b>${nombreMesCorte} de ${anio}</b>,
+                        estudiante <b>${escapeHTML(estData.nombre)}</b> se encuentra al día con sus obligaciones financieras al corte de <b>${nombreMesCorte} de ${anio}</b>,
                         sin ningún rubro pendiente de regularizar.
                     </p>
                     <p style="margin: 0; font-size: 10.5px; color: #14532d; line-height: 1.35; text-align: justify;">
@@ -3966,7 +4195,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     <p style="margin: 0 0 5px 0; font-size: 10.5px; color: #7c2d12; line-height: 1.35; text-align: justify;">
                         Estimada familia, reciban un cordial saludo de parte del Centro Educativo Shkénuk / CES Montessori. Por medio de la presente deseamos
                         recordarles, con el mayor respeto, la importancia de mantener al día las obligaciones financieras adquiridas al momento de la matrícula
-                        del estudiante <b>${estData.nombre}</b>, ya que estas nos permiten sostener la calidad académica, los materiales y el bienestar de toda
+                        del estudiante <b>${escapeHTML(estData.nombre)}</b>, ya que estas nos permiten sostener la calidad académica, los materiales y el bienestar de toda
                         nuestra comunidad educativa.
                     </p>
                     <p style="margin: 0 0 8px 0; font-size: 10.5px; color: #7c2d12; line-height: 1.35; text-align: justify;">
@@ -3985,12 +4214,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             contenedor.innerHTML = `
                 <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
                     <button type="button" class="action-btn" onclick="descargarReporteFinancieroPDF()">Descargar en PDF</button>
-                    <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-reporte-financiero', 'Estado_Cuenta_${estData.nombre.replace(/\s+/g, '_')}')">Guardar en Word (Editable)</button>
+                    <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-reporte-financiero', 'Estado_Cuenta_${estData.nombre.replace(/[^\p{L}\p{N}]+/gu, '_')}')">Guardar en Word (Editable)</button>
                 </div>
 
                 <div class="report-preview" id="plantilla-reporte-financiero">
                     <div class="encabezado-informe-full">
-                        <img src="ces%20montessori%20encabezado.jpeg" alt="Encabezado del Informe">
+                        <img src="${LOGO_ENCABEZADO_SRC}" alt="Encabezado Institucional Centro Educativo Shkénuk" crossorigin="anonymous">
                     </div>
 
                     <div style="text-align: center; margin-bottom: 4px;">
@@ -4000,7 +4229,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     </div>
 
                     <div style="margin-bottom: 6px; font-size: 11px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        <b>Estudiante:</b> ${estData.nombre} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${estData.cedula} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${estData.nivel} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Corte:</b> ${nombreMesCorte} ${anio}
+                        <b>Estudiante:</b> ${escapeHTML(estData.nombre)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${escapeHTML(estData.cedula)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${escapeHTML(estData.nivel)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Corte:</b> ${nombreMesCorte} ${anio}
                     </div>
 
                     <div style="margin-bottom: 6px;">
@@ -4032,7 +4261,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
 
             const estData = JSON.parse(selectEst.options[selectEst.selectedIndex].dataset.estudiante);
-            const nombreArchivo = `Estado_Cuenta_${estData.nombre.replace(/\s+/g, '_')}_${anioLectivoActivo}.pdf`;
+            const nombreArchivo = `Estado_Cuenta_${estData.nombre.replace(/[^\p{L}\p{N}]+/gu, '_')}_${anioLectivoActivo}.pdf`;
 
             msg.className = 'notification success';
             msg.innerText = 'Generando archivo PDF en formato A4, por favor espere...';
@@ -4218,7 +4447,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
         }
 
-        function sincronizarNoLlevaPercusionUI() {
+        function sincronizarNoLlevaPercusionUI(sugerir) {
             const selPrincipal = document.getElementById('mat-instr-principal');
             const selSegundo = document.getElementById('mat-instr-segundo');
             const chkNoLleva = document.getElementById('mat-no-percusion');
@@ -4247,15 +4476,19 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             // que quede en blanco (como pasó con Octavio) o con el docente
             // equivocado, lo cual bloqueaba el guardado de notas por el
             // permiso de seguridad de Supabase.
-            sugerirDocentePorInstrumento(selPrincipal, selDocenteInstrPrincipal);
-            sugerirDocentePorInstrumento(selSegundo, selDocenteInstrSegundo);
+            // Solo cuando la persona CAMBIA el instrumento: al abrir un estudiante ya
+            // matriculado no se debe pisar el profesor que ya tiene asignado.
+            if (sugerir === true) {
+                sugerirDocentePorInstrumento(selPrincipal, selDocenteInstrPrincipal);
+                sugerirDocentePorInstrumento(selSegundo, selDocenteInstrSegundo);
+            }
         }
 
         (function inicializarSincroniaPercusion() {
             const selPrincipal = document.getElementById('mat-instr-principal');
             const selSegundo = document.getElementById('mat-instr-segundo');
-            if (selPrincipal) selPrincipal.addEventListener('change', sincronizarNoLlevaPercusionUI);
-            if (selSegundo) selSegundo.addEventListener('change', sincronizarNoLlevaPercusionUI);
+            if (selPrincipal) selPrincipal.addEventListener('change', () => sincronizarNoLlevaPercusionUI(true));
+            if (selSegundo) selSegundo.addEventListener('change', () => sincronizarNoLlevaPercusionUI(true));
             // Estado inicial al cargar el formulario (por si ya trae un
             // estudiante con Batería seleccionado al editar).
             sincronizarNoLlevaPercusionUI();
@@ -4269,7 +4502,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // Canto), que ese mande sobre el valor por ciclo que
                 // acabamos de aplicar arriba (ej. no perder a Luis si ya
                 // habían elegido Batería y luego cambian el Nivel).
-                sincronizarNoLlevaPercusionUI();
+                sincronizarNoLlevaPercusionUI(document.getElementById('select-estudiante-editar').value === '');
             });
         })();
 
