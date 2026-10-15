@@ -3194,6 +3194,26 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 </div>
 
                 <div class="report-preview" id="plantilla-informe-oficial">
+                    <style>
+                        /* Segunda hoja (Reflexiones Docentes): ninguna línea divisoria, ni en pantalla,
+                           ni al imprimir, ni en PDF, aunque la hoja de estilos de la página la defina. */
+                        #plantilla-informe-oficial .salto-pagina-forzado,
+                        #plantilla-informe-oficial .salto-pagina-forzado .report-header,
+                        #plantilla-informe-oficial .seccion-pagina-1 {
+                            border-top: 0 none !important;
+                            border-bottom: 0 none !important;
+                            box-shadow: none !important;
+                            background-image: none !important;
+                            outline: 0 none !important;
+                        }
+                        #plantilla-informe-oficial .salto-pagina-forzado { margin-top: 0 !important; padding-top: 0 !important; }
+                        #plantilla-informe-oficial .salto-pagina-forzado::before,
+                        #plantilla-informe-oficial .salto-pagina-forzado::after,
+                        #plantilla-informe-oficial .salto-pagina-forzado .report-header::before,
+                        #plantilla-informe-oficial .salto-pagina-forzado .report-header::after,
+                        #plantilla-informe-oficial .seccion-pagina-1::after { content: none !important; display: none !important; border: 0 none !important; }
+                        #plantilla-informe-oficial .salto-pagina-forzado hr { display: none !important; }
+                    </style>
                     <div class="seccion-pagina-1" style="margin-bottom: 40px;">
                         <div class="encabezado-informe-full">
                             <img src="${LOGO_ENCABEZADO_SRC}" alt="Encabezado Institucional Centro Educativo Shkénuk">
@@ -3237,8 +3257,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         </div>
                     </div>
 
-                    <div class="salto-pagina-forzado" style="margin: 0; padding: 0; border: none; break-before: page; page-break-before: always;">
-                        <div class="report-header" style="display: flex; align-items: center; justify-content: center; border: none; padding: 0; margin: 0 0 18px 0;">
+                    <div class="salto-pagina-forzado" style="margin: 0 !important; padding: 0 !important; border: none !important; break-before: page; page-break-before: always;">
+                        <div class="report-header" style="display: flex; align-items: center; justify-content: center; border: none !important; padding: 0 !important; margin: 0 0 18px 0;">
                             <div style="text-align: center;">
                                 <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">REFLEXIONES DOCENTES</h3>
                                 <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">${periodoSel}</p>
