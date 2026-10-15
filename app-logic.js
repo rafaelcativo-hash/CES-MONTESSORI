@@ -1,4 +1,4 @@
-/// app-logic.js — Se carga SOLO después de un login exitoso.
+// app-logic.js — Se carga SOLO después de un login exitoso.
 // Contiene toda la lógica de matrícula, calificaciones, informes y control financiero.
 
 // ============================================================
@@ -3151,7 +3151,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
 
             if (!reflexionesDocentesHTML) {
-                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin comentarios de los docentes registrados para este ${periodoSel}]</p>`;
+                reflexionesDocentesHTML = `<p style="color: #64748b; font-style: italic;">[Sin reflexiones docentes registradas para este ${periodoSel}]</p>`;
             }
 
             const tituloInformeHogar = periodoSel === 'Primer Periodo' 
@@ -3240,7 +3240,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     <div class="salto-pagina-forzado" style="margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px;">
                         <div class="report-header" style="display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
                             <div style="text-align: center;">
-                                <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">Comentarios de los Docentes</h3>
+                                <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">REFLEXIONES DOCENTES</h3>
+                                <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">${periodoSel}</p>
                             </div>
                         </div>
 
