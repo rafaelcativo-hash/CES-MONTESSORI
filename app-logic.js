@@ -3194,7 +3194,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 </div>
 
                 <div class="report-preview" id="plantilla-informe-oficial">
-                    <div class="seccion-pagina-1">
+                    <div class="seccion-pagina-1" style="margin-bottom: 40px;">
                         <div class="encabezado-informe-full">
                             <img src="${LOGO_ENCABEZADO_SRC}" alt="Encabezado Institucional Centro Educativo Shkénuk">
                         </div>
@@ -3237,8 +3237,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         </div>
                     </div>
 
-                    <div class="salto-pagina-forzado" style="margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px;">
-                        <div class="report-header" style="display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+                    <div class="salto-pagina-forzado" style="margin: 0; padding: 0; border: none; break-before: page; page-break-before: always;">
+                        <div class="report-header" style="display: flex; align-items: center; justify-content: center; border: none; padding: 0; margin: 0 0 18px 0;">
                             <div style="text-align: center;">
                                 <h3 style="margin: 0; color: var(--primary); font-size: 18px; text-transform: uppercase;">REFLEXIONES DOCENTES</h3>
                                 <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--accent); font-weight: bold;">${periodoSel}</p>
