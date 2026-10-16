@@ -568,6 +568,22 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             }
         }
 
+        // Imprimir / Guardar como PDF con el nombre ya puesto: el navegador usa el
+        // título de la página como nombre del archivo, así que se cambia el título
+        // mientras dura la impresión y se restaura al terminar.
+        function imprimirConNombre(nombreArchivo) {
+            const tituloOriginal = document.title;
+            const limpio = String(nombreArchivo || '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, '_').replace(/^_+|_+$/g, '');
+            const restaurar = () => { document.title = tituloOriginal; window.removeEventListener('afterprint', restaurar); };
+            if (limpio) {
+                document.title = limpio;
+                window.addEventListener('afterprint', restaurar);
+            }
+            window.print();
+            // Respaldo por si el navegador no dispara "afterprint".
+            setTimeout(() => { if (document.title === limpio) document.title = tituloOriginal; }, 60000);
+        }
+
         // Calcula, consultando la matrícula real (solo estudiantes activos),
         // el conjunto de materias que un docente específico imparte de verdad.
         async function obtenerCargaRealDocente(nombreDocente) {
@@ -1625,7 +1641,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa para Revisión (Año ${anioLectivo})</h3>
                     <div>
-                        <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                        <button type="button" class="action-btn" onclick="imprimirConNombre('Ficha_Matricula_${String(nombre).replace(/[^\p{L}\p{N}]+/gu, '_')}')">Imprimir / Guardar PDF</button>
                         <button type="button" class="warning-btn" onclick="exportarComoWord('preview-matricula-impresion', 'Ficha_Matricula_${cedula.replace(/[^\w-]/g, '')}')">Guardar en Word (Editable)</button>
                     </div>
                 </div>
@@ -3187,7 +3203,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa y Opciones de Informe al Hogar</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button type="button" class="action-btn" onclick="window.print()">Imprimir en Físico</button>
+                        <button type="button" class="action-btn" onclick="imprimirConNombre('Informe_Hogar_${String(estData.nombre).replace(/[^\p{L}\p{N}]+/gu, '_')}_${periodoSel.replace(/\s+/g, '_')}')">Imprimir en Físico</button>
                         <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-informe-oficial', 'Informe_${escapeHTML(estData.cedula)}')">Guardar en Word (Editable)</button>
                         <button type="button" class="success-btn" onclick="enviarInformeSimultaneo()">Enviar Informe a Encargados</button>
                     </div>
@@ -3616,7 +3632,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             data.forEach(r => {
                 html += `<tr><td>${escapeHTML(r.cedula_estudiante)}</td><td style="text-align:left;">${escapeHTML(r.nombre_estudiante)}</td><td>${escapeHTML(r.nivel_origen)}</td><td>${escapeHTML(r.nivel_destino)}</td><td>${escapeHTML(r.estado)}</td></tr>`;
             });
-            html += '</tbody></table><button type="button" class="action-btn" style="margin-top:10px;" onclick="window.print()">Imprimir esta lista</button>';
+            html += '</tbody></table><button type="button" class="action-btn" style="margin-top:10px;" onclick="imprimirConNombre(\'Historial_Promocion_' + anioConsulta + '\')">Imprimir esta lista</button>';
             contenedor.innerHTML = html;
         }
 
@@ -3736,7 +3752,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
                     <h3 style="margin: 0; color: var(--primary);">Vista Previa • Lista Oficial (${seleccion})</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button type="button" class="action-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                        <button type="button" class="action-btn" onclick="imprimirConNombre('Lista_Oficial_${seleccion}')">Imprimir / Guardar PDF</button>
                         <button type="button" class="warning-btn" onclick="exportarComoWord('plantilla-lista-nivel-impresion', 'Lista_Oficial_${seleccion.replace(/\\s+/g, '_')}')">Guardar en Word (Editable)</button>
                         <button type="button" class="success-btn" onclick="descargarListaExcel('${seleccion}')">Descargar Excel (CSV)</button>
                     </div>
