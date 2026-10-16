@@ -527,7 +527,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 th, td { padding: 6px; text-align: center; }
                 th { background-color: #1e293b; color: #ffffff; }
                 img { max-width: 100%; }
-                .encabezado-informe-full { width: 18cm; margin: 0 0 4px 0; text-align: center; }
+                .encabezado-informe-full { width: 18cm; margin: 0 0 16px 0; text-align: center; }
                 .encabezado-informe-full img { width: 18cm; height: auto; }
                 h3, h4 { color: #1e293b; }
             `;
@@ -3214,12 +3214,12 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         #plantilla-informe-oficial .seccion-pagina-1::after { content: none !important; display: none !important; border: 0 none !important; }
                         #plantilla-informe-oficial .salto-pagina-forzado hr { display: none !important; }
                     </style>
-                    <div class="seccion-pagina-1" style="margin-bottom: 40px;">
-                        <div class="encabezado-informe-full">
+                    <div class="seccion-pagina-1" style="margin-bottom: 0;">
+                        <div class="encabezado-informe-full" style="margin-bottom: 16px;">
                             <img src="${LOGO_ENCABEZADO_SRC}" alt="Encabezado Institucional Centro Educativo Shkénuk">
                         </div>
 
-                        <div style="text-align: center; margin-bottom: 6px;">
+                        <div style="text-align: center; margin-bottom: 4px;">
                             <p style="margin: 0; font-size: 15px; color: #000000; font-weight: bold; text-transform: uppercase;">Reporte de Calificaciones ${anioLectivoActivo}</p>
                             <p style="margin: 3px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; text-transform: uppercase;">Dirección Regional de Heredia - Circuito Escolar 04</p>
                             <p style="margin: 3px 0 0 0; font-size: 12px; color: #000000; font-weight: bold; text-transform: uppercase;">Centro Educativo Shkénuk</p>
@@ -3229,7 +3229,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                             <b>Estudiante:</b> ${escapeHTML(estData.nombre)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Cédula:</b> ${escapeHTML(estData.cedula)} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nivel:</b> ${escapeHTML(estData.nivel)}
                         </div>
 
-                        <div style="margin-bottom: 15px;">
+                        <div style="margin-bottom: 8px;">
                             <h4 style="color: var(--primary); margin: 0 0 6px 0; font-size: 13px;">Rendimiento Académico y Artístico Consolidado — ${tituloInformeHogar}</h4>
                             <table class="data-table" style="display: table; width: 100%;">
                                 <thead>
@@ -3247,7 +3247,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                             </table>
                         </div>
 
-                        <div style="text-align: center; margin-top: 20px; page-break-inside: avoid; break-inside: avoid;">
+                        <div style="text-align: center; margin-top: 8px; page-break-inside: avoid; break-inside: avoid;">
                             <img src="${imagenFirma}" alt="Firma Autorizada" data-ancho-word="${FIRMA_INFORME.anchoWord}" style="width: ${FIRMA_INFORME.ancho}px; max-width: 100%; height: auto; display: inline-block;">
                         </div>
 
@@ -3274,8 +3274,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                             <p class="autor-cita">Paulo Freire</p>
                         </div>
 
-                        <div style="text-align: center; margin-top: 25px;">
-                            <img src="ces%20mano.png" alt="Cierre CES Montessori" style="max-width: 160px; height: auto; display: inline-block;">
+                        <div style="text-align: center; margin-top: 12px; page-break-inside: avoid; break-inside: avoid;">
+                            <img src="ces%20logo%20final%20del%20informe.jpeg" alt="Cierre CES Montessori" data-ancho-word="230" style="width: 230px; max-width: 100%; height: auto; display: inline-block;">
                         </div>
                     </div>
                 </div>
