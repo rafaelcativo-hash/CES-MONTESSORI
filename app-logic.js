@@ -584,6 +584,40 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             setTimeout(() => { if (document.title === limpio) document.title = tituloOriginal; }, 60000);
         }
 
+        // También cubre Ctrl+P / menú del navegador: justo antes de imprimir se
+        // revisa qué documento está a la vista y se le pone su nombre al título.
+        (function () {
+            let tituloGuardado = null;
+            const limpiar = t => String(t || '').replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '');
+            function nombreDelDocumentoVisible() {
+                const visible = id => { const el = document.getElementById(id); return el && el.offsetParent !== null ? el : null; };
+                try {
+                    if (visible('plantilla-informe-oficial')) {
+                        const sel = document.getElementById('inf-estudiante-sel');
+                        const per = document.getElementById('inf-periodo-sel');
+                        if (sel && sel.value) {
+                            const est = JSON.parse(sel.options[sel.selectedIndex].dataset.estudiante);
+                            return 'Informe_Hogar_' + limpiar(est.nombre) + (per ? '_' + limpiar(per.value) : '');
+                        }
+                    }
+                    if (visible('plantilla-lista-nivel-impresion')) return 'Lista_Oficial';
+                    if (visible('preview-matricula-impresion')) {
+                        const n = document.getElementById('mat-nombre');
+                        if (n && n.value) return 'Ficha_Matricula_' + limpiar(n.value);
+                    }
+                } catch (e) { console.error('Nombre de impresión:', e); }
+                return null;
+            }
+            window.addEventListener('beforeprint', () => {
+                if (tituloGuardado !== null) return; // ya lo puso imprimirConNombre
+                const nombre = nombreDelDocumentoVisible();
+                if (nombre) { tituloGuardado = document.title; document.title = nombre; }
+            });
+            window.addEventListener('afterprint', () => {
+                if (tituloGuardado !== null) { document.title = tituloGuardado; tituloGuardado = null; }
+            });
+        })();
+
         // Calcula, consultando la matrícula real (solo estudiantes activos),
         // el conjunto de materias que un docente específico imparte de verdad.
         async function obtenerCargaRealDocente(nombreDocente) {
@@ -2183,7 +2217,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
 
-        function obtenerRubrosMateria(materia) {
+        function obtenerRubrosMateria(materia, nivel) {
             if (materia.includes('Conducta')) {
                 return [
                     { id: 'asertividad', label: 'Asertividad', peso: 0.20 },
@@ -2237,9 +2271,19 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     { id: 'disposicion', label: 'Disposición', peso: 0.25 }
                 ];
             } else if (materia.includes('Académica')) {
+                // Segundo Ciclo (Cuarto, Quinto y Sexto): hay DOS pruebas y el valor
+                // total se mantiene (30%), repartido en dos casillas de 15% cada una.
+                // Primer Ciclo conserva una sola casilla "Pruebas" de 30%.
+                const esSegundoCiclo = ['Cuarto', 'Quinto', 'Sexto'].includes(nivel);
+                const casillasPruebas = esSegundoCiclo
+                    ? [
+                        { id: 'prueba_1', label: 'Prueba 1', peso: 0.15 },
+                        { id: 'prueba_2', label: 'Prueba 2', peso: 0.15 }
+                    ]
+                    : [{ id: 'pruebas', label: 'Pruebas', peso: 0.30 }];
                 return [
                     { id: 'cotidiano', label: 'Cotidiano', peso: 0.50 },
-                    { id: 'pruebas', label: 'Pruebas', peso: 0.30 },
+                    ...casillasPruebas,
                     { id: 'extraclase', label: 'Extraclase', peso: 0.10 },
                     { id: 'asistencia', label: 'Asistencia', peso: 0.10 }
                 ];
@@ -2313,7 +2357,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const notasPorEstudiante = agruparNotasPorEstudiante(notasAlumnos);
             const periodoOtro = periodoOpuesto(periodo);
 
-            const rubros = obtenerRubrosMateria(materia);
+            const rubros = obtenerRubrosMateria(materia, nivel);
             const esAcademicaPura = materia.includes('Español') || materia.includes('Matemáticas') || materia.includes('Ciencias') || materia.includes('Estudios Sociales');
             const esSolfeoPercusion = materia.includes('Solfeo') || materia.includes('Taller de Percusión');
             const llevaComentario = !esSolfeoPercusion && !esAcademicaPura;
@@ -2382,6 +2426,18 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     const aut = (detalleGuardado.autorregulacion && !isNaN(Number(detalleGuardado.autorregulacion.valor))) ? Number(detalleGuardado.autorregulacion.valor) : null;
                     const trabajo = aut !== null ? (cot * 0.60 + aut * 0.15) / 0.75 : cot;
                     detalleGuardado = { ...detalleGuardado, trabajo_clase: { label: 'Trabajo en clase', peso: 0.75, valor: Number(trabajo.toFixed(2)) } };
+                }
+
+                // Segundo Ciclo: las notas guardadas antes con una sola casilla "Pruebas"
+                // se precargan en las dos casillas (Prueba 1 y Prueba 2) con ese mismo
+                // valor, así el promedio no cambia y el docente puede ajustarlas después.
+                if (rubros.some(r => r.id === 'prueba_1') && !detalleGuardado.prueba_1 && !detalleGuardado.prueba_2 && detalleGuardado.pruebas && !isNaN(Number(detalleGuardado.pruebas.valor))) {
+                    const vPrev = Number(detalleGuardado.pruebas.valor);
+                    detalleGuardado = {
+                        ...detalleGuardado,
+                        prueba_1: { label: 'Prueba 1', peso: 0.15, valor: vPrev },
+                        prueba_2: { label: 'Prueba 2', peso: 0.15, valor: vPrev }
+                    };
                 }
 
                 html += `
