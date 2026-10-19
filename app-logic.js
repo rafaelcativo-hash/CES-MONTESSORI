@@ -2229,8 +2229,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     { id: 'presentacion', label: 'Presentación', peso: 0.05, ...p },
                     { id: 'resp_fisico', label: 'Respeto Físico', peso: 0.20, ...p },
                     { id: 'resp_verbal', label: 'Respeto Verbal', peso: 0.20, ...p },
-                    { id: 'no_verbal', label: 'No Verbal', peso: 0.10, ...p },
-                    { id: 'resp_psico', label: 'Respeto Psicológico', peso: 0.20, ...p }
+                    { id: 'resp_psico', label: 'Respeto Psicológico', peso: 0.20, ...p },
+                    { id: 'no_verbal', label: 'No Verbal', peso: 0.10, ...p }
                 ];
             } else if (materia.includes('Inglés')) {
                 return [
@@ -3173,7 +3173,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
 
                 if (n1 !== null && n2 !== null) {
                     valAnual = Number(((n1 * 0.5) + (n2 * 0.5)).toFixed(2));
-                    if (n1 >= 65 && n2 >= 65 && valAnual >= 65) {
+                    // La condición se decide por el promedio anual (50% + 50% de los dos periodos),
+                    // no por la nota de un periodo en particular.
+                    if (valAnual >= 65) {
                         estado = 'Aprobado';
                     } else {
                         estado = 'Reprobado';
@@ -3520,7 +3522,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                         if (p1Val !== null && p2Val !== null) {
                             const finalCalc = Number(((p1Val * 0.5) + (p2Val * 0.5)).toFixed(2));
                             notaFinalStr = finalCalc;
-                            if (p1Val >= 65 && p2Val >= 65 && finalCalc >= 65) {
+                            if (finalCalc >= 65) {
                                 estado = '<span style="color: #166534; font-weight: bold;">Aprobado (≥65)</span>';
                             } else {
                                 estado = '<span style="color: #991b1b; font-weight: bold;">Reprobado (<65)</span>';
