@@ -2218,15 +2218,20 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         }
 
         function obtenerRubrosMateria(materia, nivel) {
+            const esSegundoCiclo = /cuarto|quinto|sexto|^\s*[456]\s*(°|º|to|to\.|vo|mo)?\s*$/i.test(String(nivel || ''));
             if (materia.includes('Conducta')) {
+                // Segundo Ciclo: igual que las Académicas, se digita el PORCENTAJE
+                // obtenido en cada rubro (tope = su peso) y la nota final es la suma.
+                // Primer Ciclo conserva el cálculo de siempre (cada casilla sobre 100).
+                const p = esSegundoCiclo ? { puntos: true } : {};
                 return [
-                    { id: 'asertividad', label: 'Asertividad', peso: 0.20 },
-                    { id: 'cooperacion', label: 'Cooperación', peso: 0.05 },
-                    { id: 'presentacion', label: 'Presentación', peso: 0.05 },
-                    { id: 'resp_fisico', label: 'Respeto Físico', peso: 0.20 },
-                    { id: 'resp_verbal', label: 'Respeto Verbal', peso: 0.20 },
-                    { id: 'no_verbal', label: 'No Verbal', peso: 0.10 },
-                    { id: 'resp_psico', label: 'Respeto Psicológico', peso: 0.20 }
+                    { id: 'asertividad', label: 'Asertividad', peso: 0.20, ...p },
+                    { id: 'cooperacion', label: 'Cooperación', peso: 0.05, ...p },
+                    { id: 'presentacion', label: 'Presentación', peso: 0.05, ...p },
+                    { id: 'resp_fisico', label: 'Respeto Físico', peso: 0.20, ...p },
+                    { id: 'resp_verbal', label: 'Respeto Verbal', peso: 0.20, ...p },
+                    { id: 'no_verbal', label: 'No Verbal', peso: 0.10, ...p },
+                    { id: 'resp_psico', label: 'Respeto Psicológico', peso: 0.20, ...p }
                 ];
             } else if (materia.includes('Inglés')) {
                 return [
