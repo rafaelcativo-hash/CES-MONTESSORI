@@ -2630,11 +2630,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 return;
             }
 
-            if (esConducta && !comentario) {
-                marcarEstado('⚠ Falta la reflexión docente (obligatoria en Conducta).', '#b45309');
-                if (!silencioso && comentarioInput) comentarioInput.focus();
-                return;
-            }
+            // Conducta: la nota se guarda aunque todavía falte la reflexión (queda como
+            // pendiente en el Historial); así la docente nunca pierde lo que ya digitó.
+            const reflexionPendiente = esConducta && !comentario;
 
             const datos = { 
                 cedula_estudiante: String(cedula), 
@@ -2658,7 +2656,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     marcarEstado('Error al guardar: ' + error.message, '#dc2626');
                 } else {
                     const cuando = new Date().toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-                    marcarEstado(silencioso ? `✓ Guardado automáticamente (${cuando})` : `¡Calificación guardada con éxito para la cédula ${cedula} (Año lectivo ${anioLectivoActivo})!`, '#166534');
+                    if (reflexionPendiente) {
+                        marcarEstado(`✓ Nota guardada (${cuando}). ⚠ Falta la reflexión de Conducta.`, '#b45309');
+                    } else {
+                        marcarEstado(silencioso ? `✓ Guardado automáticamente (${cuando})` : `¡Calificación guardada con éxito para la cédula ${cedula} (Año lectivo ${anioLectivoActivo})!`, '#166534');
+                    }
                     actualizarEtiquetaAuditoria(cedula, datos.modificado_por, datos.modificado_en);
                 }
             } catch (e) {
