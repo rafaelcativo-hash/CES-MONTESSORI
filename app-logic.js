@@ -2218,12 +2218,11 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
         }
 
         function obtenerRubrosMateria(materia, nivel) {
-            const esSegundoCiclo = /cuarto|quinto|sexto|^\s*[456]\s*(°|º|to|to\.|vo|mo)?\s*$/i.test(String(nivel || ''));
             if (materia.includes('Conducta')) {
-                // Segundo Ciclo: igual que las Académicas, se digita el PORCENTAJE
-                // obtenido en cada rubro (tope = su peso) y la nota final es la suma.
-                // Primer Ciclo conserva el cálculo de siempre (cada casilla sobre 100).
-                const p = esSegundoCiclo ? { puntos: true } : {};
+                // Primer y Segundo Ciclo: igual que las Académicas, se digita el
+                // PORCENTAJE obtenido en cada rubro (tope = su peso) y la nota final
+                // es la suma de las casillas.
+                const p = { puntos: true };
                 return [
                     { id: 'asertividad', label: 'Asertividad', peso: 0.20, ...p },
                     { id: 'cooperacion', label: 'Cooperación', peso: 0.05, ...p },
@@ -2276,27 +2275,17 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     { id: 'disposicion', label: 'Disposición', peso: 0.25 }
                 ];
             } else if (materia.includes('Académica')) {
-                // Segundo Ciclo (Cuarto, Quinto y Sexto): las maestras NO califican
-                // cada componente sobre 100, sino directamente en PUNTOS PORCENTUALES
-                // (lo que el estudiante sacó de lo que vale ese componente). Por eso
-                // cada casilla tiene su tope = su peso (Cotidiano 0-50, Prueba 1 0-15,
-                // etc.) y la nota final es la SUMA de las casillas, sin multiplicar.
+                // Primer y Segundo Ciclo: las maestras NO califican cada componente
+                // sobre 100, sino directamente en PUNTOS PORCENTUALES (lo que el
+                // estudiante sacó de lo que vale ese componente). Cada casilla tiene
+                // su tope = su peso y la nota final es la SUMA, sin multiplicar:
                 //   Cotidiano 50 + Prueba 1 15 + Prueba 2 20 + Extraclase 10 + Asistencia 5 = 100
-                // Primer Ciclo conserva el cálculo de siempre (cada casilla sobre 100).
-                if (/cuarto|quinto|sexto|^\s*[456]\s*(°|º|to|to\.|vo|mo)?\s*$/i.test(String(nivel || ''))) {
-                    return [
-                        { id: 'cotidiano', label: 'Cotidiano', peso: 0.50, puntos: true },
-                        { id: 'prueba_1', label: 'Prueba 1', peso: 0.15, puntos: true },
-                        { id: 'prueba_2', label: 'Prueba 2', peso: 0.20, puntos: true },
-                        { id: 'extraclase', label: 'Extraclase', peso: 0.10, puntos: true },
-                        { id: 'asistencia', label: 'Asistencia', peso: 0.05, puntos: true }
-                    ];
-                }
                 return [
-                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.50 },
-                    { id: 'pruebas', label: 'Pruebas', peso: 0.30 },
-                    { id: 'extraclase', label: 'Extraclase', peso: 0.10 },
-                    { id: 'asistencia', label: 'Asistencia', peso: 0.10 }
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.50, puntos: true },
+                    { id: 'prueba_1', label: 'Prueba 1', peso: 0.15, puntos: true },
+                    { id: 'prueba_2', label: 'Prueba 2', peso: 0.20, puntos: true },
+                    { id: 'extraclase', label: 'Extraclase', peso: 0.10, puntos: true },
+                    { id: 'asistencia', label: 'Asistencia', peso: 0.05, puntos: true }
                 ];
             } else {
                 return [
@@ -2392,7 +2381,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const celdaBase = 'padding: 8px 5px;';
             let html = `
                 <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
-                ${rubros.some(r => r.puntos) ? '<p style="margin: 0 0 8px 0; font-size: 12px; color: #0c4a6e; background: #e0f2fe; padding: 6px 10px; border-radius: 6px;"><b>Segundo Ciclo:</b> digite en cada casilla el porcentaje obtenido (máximo = el valor de la columna). La nota final es la suma.</p>' : ''}
+                ${rubros.some(r => r.puntos) ? '<p style="margin: 0 0 8px 0; font-size: 12px; color: #0c4a6e; background: #e0f2fe; padding: 6px 10px; border-radius: 6px;"><b>Calificación en porcentaje:</b> digite en cada casilla el porcentaje obtenido (máximo = el valor de la columna). La nota final es la suma.</p>' : ''}
                 <div class="planilla-scroll" style="overflow-x: auto; width: 100%;">
                 <table class="data-table" style="display: table; width: 100%;">
                     <thead>
