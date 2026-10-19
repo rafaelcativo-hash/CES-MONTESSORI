@@ -2278,7 +2278,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // etc.) y la nota final es la SUMA de las casillas, sin multiplicar.
                 //   Cotidiano 50 + Prueba 1 15 + Prueba 2 20 + Extraclase 10 + Asistencia 5 = 100
                 // Primer Ciclo conserva el cálculo de siempre (cada casilla sobre 100).
-                if (['Cuarto', 'Quinto', 'Sexto'].includes(nivel)) {
+                if (/cuarto|quinto|sexto|^\s*[456]\s*(°|º|to|to\.|vo|mo)?\s*$/i.test(String(nivel || ''))) {
                     return [
                         { id: 'cotidiano', label: 'Cotidiano', peso: 0.50, puntos: true },
                         { id: 'prueba_1', label: 'Prueba 1', peso: 0.15, puntos: true },
@@ -2387,6 +2387,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             const celdaBase = 'padding: 8px 5px;';
             let html = `
                 <h3 style="color: var(--primary); margin-top: 20px;">Planilla de Calificación: ${nivel} - ${materia} (${periodo})${instrumentoEspecifico ? ` [Instrumento: ${instrumentoEspecifico}]` : ''}</h3>
+                ${rubros.some(r => r.puntos) ? '<p style="margin: 0 0 8px 0; font-size: 12px; color: #0c4a6e; background: #e0f2fe; padding: 6px 10px; border-radius: 6px;"><b>Segundo Ciclo:</b> digite en cada casilla el porcentaje obtenido (máximo = el valor de la columna). La nota final es la suma.</p>' : ''}
                 <div class="planilla-scroll" style="overflow-x: auto; width: 100%;">
                 <table class="data-table" style="display: table; width: 100%;">
                     <thead>
