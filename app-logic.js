@@ -2271,19 +2271,25 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     { id: 'disposicion', label: 'Disposición', peso: 0.25 }
                 ];
             } else if (materia.includes('Académica')) {
-                // Segundo Ciclo (Cuarto, Quinto y Sexto): hay DOS pruebas y el valor
-                // total se mantiene (30%), repartido en dos casillas de 15% cada una.
-                // Primer Ciclo conserva una sola casilla "Pruebas" de 30%.
-                const esSegundoCiclo = ['Cuarto', 'Quinto', 'Sexto'].includes(nivel);
-                const casillasPruebas = esSegundoCiclo
-                    ? [
-                        { id: 'prueba_1', label: 'Prueba 1', peso: 0.15 },
-                        { id: 'prueba_2', label: 'Prueba 2', peso: 0.15 }
-                    ]
-                    : [{ id: 'pruebas', label: 'Pruebas', peso: 0.30 }];
+                // Segundo Ciclo (Cuarto, Quinto y Sexto): las maestras NO califican
+                // cada componente sobre 100, sino directamente en PUNTOS PORCENTUALES
+                // (lo que el estudiante sacó de lo que vale ese componente). Por eso
+                // cada casilla tiene su tope = su peso (Cotidiano 0-50, Prueba 1 0-15,
+                // etc.) y la nota final es la SUMA de las casillas, sin multiplicar.
+                //   Cotidiano 50 + Prueba 1 15 + Prueba 2 20 + Extraclase 10 + Asistencia 5 = 100
+                // Primer Ciclo conserva el cálculo de siempre (cada casilla sobre 100).
+                if (['Cuarto', 'Quinto', 'Sexto'].includes(nivel)) {
+                    return [
+                        { id: 'cotidiano', label: 'Cotidiano', peso: 0.50, puntos: true },
+                        { id: 'prueba_1', label: 'Prueba 1', peso: 0.15, puntos: true },
+                        { id: 'prueba_2', label: 'Prueba 2', peso: 0.20, puntos: true },
+                        { id: 'extraclase', label: 'Extraclase', peso: 0.10, puntos: true },
+                        { id: 'asistencia', label: 'Asistencia', peso: 0.05, puntos: true }
+                    ];
+                }
                 return [
                     { id: 'cotidiano', label: 'Cotidiano', peso: 0.50 },
-                    ...casillasPruebas,
+                    { id: 'pruebas', label: 'Pruebas', peso: 0.30 },
                     { id: 'extraclase', label: 'Extraclase', peso: 0.10 },
                     { id: 'asistencia', label: 'Asistencia', peso: 0.10 }
                 ];
@@ -2436,7 +2442,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     detalleGuardado = {
                         ...detalleGuardado,
                         prueba_1: { label: 'Prueba 1', peso: 0.15, valor: vPrev },
-                        prueba_2: { label: 'Prueba 2', peso: 0.15, valor: vPrev }
+                        prueba_2: { label: 'Prueba 2', peso: 0.20, valor: vPrev }
                     };
                 }
 
@@ -2455,8 +2461,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     // convierte en el texto "[object Object]" y lo rechaza
                     // (ese era el error "cannot be parsed" de la consola).
                     const rubroPrevio = detalleGuardado[r.id];
-                    const valorPrevio = (rubroPrevio && rubroPrevio.valor !== undefined && rubroPrevio.valor !== null) ? rubroPrevio.valor : '';
-                    html += `<td style="${celdaBase}"><input type="number" step="0.01" min="0" max="100" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-100" style="width: 64px; padding: 8px 4px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
+                    let valorPrevio = (rubroPrevio && rubroPrevio.valor !== undefined && rubroPrevio.valor !== null) ? rubroPrevio.valor : '';
+                    // Notas guardadas antes en base 100 (sin marca "puntos") se convierten a
+                    // puntos del componente, para que el docente vea el equivalente correcto.
+                    if (r.puntos && valorPrevio !== '' && !(rubroPrevio && rubroPrevio.puntos) && !isNaN(Number(valorPrevio))) {
+                        valorPrevio = Number((Number(valorPrevio) * r.peso).toFixed(2));
+                    }
+                    html += `<td style="${celdaBase}"><input type="number" step="0.01" min="0" max="${r.puntos ? Math.round(r.peso * 100) : 100}" class="input-rubro-${est.cedula}" data-rubro-id="${r.id}"${r.puntos ? ' data-puntos="1"' : ''} data-max="${r.puntos ? Math.round(r.peso * 100) : 100}" data-rubro-label="${escapeHTML(r.label)}" data-peso="${r.peso}" value="${valorPrevio}" placeholder="0-${r.puntos ? Math.round(r.peso * 100) : 100}" style="width: 64px; padding: 8px 4px; text-align: center;" oninput="calcularNotaFinalEstudiante('${est.cedula}'); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})"></td>`;
                 });
 
                 html += `
@@ -2516,17 +2527,19 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 // solo visual y no impide escribir el valor, así que aquí se
                 // valida de verdad: se resalta en rojo y NO se deja calcular
                 // ni guardar la nota final hasta corregirlo.
-                if (!isNaN(val) && (val < 0 || val > 100)) {
+                const esPuntos = input.getAttribute('data-puntos') === '1';
+                const maxPermitido = parseFloat(input.getAttribute('data-max')) || 100;
+                if (!isNaN(val) && (val < 0 || val > maxPermitido)) {
                     hayFueraDeRango = true;
                     input.style.border = '2px solid #dc2626';
-                    input.title = 'La nota debe estar entre 0 y 100';
+                    input.title = 'La nota debe estar entre 0 y ' + maxPermitido;
                 } else {
                     input.style.border = '';
                     input.title = '';
                 }
 
                 if (!isNaN(val)) {
-                    total += val * peso;
+                    total += esPuntos ? val : val * peso;
                 }
             });
 
@@ -2579,7 +2592,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             // componente fuera de 0-100.
             const rangoValido = calcularNotaFinalEstudiante(cedula);
             if (!rangoValido) {
-                marcarEstado('⚠ Hay una nota fuera de 0-100. Corríjala antes de guardar.', '#dc2626');
+                marcarEstado('⚠ Hay una nota fuera de su rango (tope de cada casilla). Corríjala antes de guardar.', '#dc2626');
                 return;
             }
 
@@ -2600,7 +2613,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     detalleComponentes[idRubro] = {
                         label: input.getAttribute('data-rubro-label') || idRubro,
                         peso: parseFloat(input.getAttribute('data-peso')),
-                        valor: valor
+                        valor: valor,
+                        ...(input.getAttribute('data-puntos') === '1' ? { puntos: true } : {})
                     };
                 }
             });
@@ -2610,7 +2624,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             // guarda nada: antes, escribir solo la reflexión guardaba un 0 por error.
             const idsConNota = Object.keys(detalleComponentes);
             if (idsConNota.length > 0) {
-                promedioFinal = Number(idsConNota.reduce((acc, id) => acc + detalleComponentes[id].valor * detalleComponentes[id].peso, 0).toFixed(2));
+                promedioFinal = Number(idsConNota.reduce((acc, id) => acc + (detalleComponentes[id].puntos ? detalleComponentes[id].valor : detalleComponentes[id].valor * detalleComponentes[id].peso), 0).toFixed(2));
             }
 
             if (isNaN(promedioFinal)) {
