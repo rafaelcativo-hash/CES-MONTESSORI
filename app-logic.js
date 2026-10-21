@@ -2429,7 +2429,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     detalleGuardado = { ...detalleGuardado, trabajo_clase: { label: 'Trabajo en clase', peso: 0.75, valor: Number(trabajo.toFixed(2)) } };
                 }
 
-                // Segundo Ciclo: las notas guardadas antes con una sola casilla "Pruebas"
+                // Primer y Segundo Ciclo: las notas guardadas antes con una sola casilla "Pruebas"
                 // se precargan en las dos casillas (Prueba 1 y Prueba 2) con ese mismo
                 // valor, así el promedio no cambia y el docente puede ajustarlas después.
                 if (rubros.some(r => r.id === 'prueba_1') && !detalleGuardado.prueba_1 && !detalleGuardado.prueba_2 && detalleGuardado.pruebas && !isNaN(Number(detalleGuardado.pruebas.valor))) {
@@ -2471,7 +2471,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 `;
 
                 if (llevaComentario) {
-                    html += `<textarea class="reflexion-input" id="comentario-est-${est.cedula}" rows="2" placeholder="${esConducta ? 'Reflexión docente obligatoria...' : 'Reflexión docente opcional...'}" style="width: 100%; min-width: 240px; min-height: 52px; resize: vertical; overflow: hidden; line-height: 1.35; font-family: inherit; font-size: 13px; white-space: pre-wrap;" ${esConducta ? 'required' : ''} oninput="ajustarAltoTextarea(this); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">${escapeHTML(comentarioGuardado)}</textarea>`;
+                    html += `<textarea class="reflexion-input" id="comentario-est-${est.cedula}" rows="2" placeholder="${esConducta ? 'Reflexión docente de Conducta (pendiente si queda vacía)...' : 'Reflexión docente opcional...'}" style="width: 100%; min-width: 240px; min-height: 52px; resize: vertical; overflow: hidden; line-height: 1.35; font-family: inherit; font-size: 13px; white-space: pre-wrap;" oninput="ajustarAltoTextarea(this); programarGuardadoAutomatico('${est.cedula}', '${materia}', '${periodo}', ${esConducta})">${escapeHTML(comentarioGuardado)}</textarea>`;
                 } else {
                     html += `<span style="color: #94a3b8; font-size: 11px; font-style: italic;">No requerido</span>`;
                 }
@@ -2517,7 +2517,8 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                 const val = parseFloat(input.value);
                 const peso = parseFloat(input.getAttribute('data-peso'));
 
-                // Bloquea notas por componente fuera de 0-100 (ej. escribir
+                // Bloquea notas por componente fuera de su tope (0-100, o 0 hasta el % del
+                // componente en modo porcentaje; ej. escribir
                 // "1000" en vez de "100" por error). El min/max del HTML es
                 // solo visual y no impide escribir el valor, así que aquí se
                 // valida de verdad: se resalta en rojo y NO se deja calcular
@@ -2584,7 +2585,7 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
             // Revalida (y vuelve a marcar en rojo si hace falta) justo antes
             // de guardar, sin depender de que el último "oninput" se haya
             // disparado a tiempo — así nunca se guarda una nota con un
-            // componente fuera de 0-100.
+            // componente fuera de su tope.
             const rangoValido = calcularNotaFinalEstudiante(cedula);
             if (!rangoValido) {
                 marcarEstado('⚠ Hay una nota fuera de su rango (tope de cada casilla). Corríjala antes de guardar.', '#dc2626');
@@ -3610,7 +3611,9 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     const r2 = resolverNota(notasEst, mat, 'Segundo Periodo', anioLectivoActivo);
                     const v1 = promedioNumerico(r1 ? r1.fila : null);
                     const v2 = promedioNumerico(r2 ? r2.fila : null);
-                    if (v1 === null || v2 === null || v1 < 65 || v2 < 65) {
+                    // Mismo criterio que el informe: se aprueba por el promedio anual
+                    // (50% + 50% de los dos periodos), no por un periodo en particular.
+                    if (v1 === null || v2 === null || Number(((v1 * 0.5) + (v2 * 0.5)).toFixed(2)) < 65) {
                         pasaTodas = false;
                         break;
                     }
