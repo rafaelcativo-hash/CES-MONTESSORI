@@ -2264,6 +2264,14 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     { id: 'asistencia', label: 'Asistencia', peso: 0.20 }
                 ];
             } else if (materia.includes('Solfeo')) {
+                // Primer Ciclo (Primero, Segundo y Tercero): Ejecución 40% y Trabajo cotidiano 60%.
+                // Se conserva el id 'cotidiano' para que lo ya calificado como Cotidiano se siga viendo.
+                if (['Primero', 'Segundo', 'Tercero'].includes(nivel)) {
+                    return [
+                        { id: 'ejecucion', label: 'Ejecución', peso: 0.40 },
+                        { id: 'cotidiano', label: 'Trabajo cotidiano', peso: 0.60 }
+                    ];
+                }
                 return [
                     { id: 'autorregulacion', label: 'Autorregulación', peso: 0.40 },
                     { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 }
@@ -2427,6 +2435,13 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     const aut = (detalleGuardado.autorregulacion && !isNaN(Number(detalleGuardado.autorregulacion.valor))) ? Number(detalleGuardado.autorregulacion.valor) : null;
                     const trabajo = aut !== null ? (cot * 0.60 + aut * 0.15) / 0.75 : cot;
                     detalleGuardado = { ...detalleGuardado, trabajo_clase: { label: 'Trabajo en clase', peso: 0.75, valor: Number(trabajo.toFixed(2)) } };
+                }
+
+                // Solfeo de Primer Ciclo: "Autorregulación" (40%) pasó a "Ejecución" (40%). Como el peso
+                // es el mismo, las notas ya guardadas como Autorregulación se precargan en Ejecución
+                // y el promedio no cambia.
+                if (materia.includes('Solfeo') && rubros.some(r => r.id === 'ejecucion') && !detalleGuardado.ejecucion && detalleGuardado.autorregulacion && !isNaN(Number(detalleGuardado.autorregulacion.valor))) {
+                    detalleGuardado = { ...detalleGuardado, ejecucion: { label: 'Ejecución', peso: 0.40, valor: Number(detalleGuardado.autorregulacion.valor) } };
                 }
 
                 // Primer y Segundo Ciclo: las notas guardadas antes con una sola casilla "Pruebas"
