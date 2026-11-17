@@ -2295,6 +2295,16 @@ function calcularMateriasDeDocente(nombreDocente, estudiantes) {
                     { id: 'extraclase', label: 'Extraclase', peso: 0.10, puntos: true },
                     { id: 'asistencia', label: 'Asistencia', peso: 0.05, puntos: true }
                 ];
+            } else if (INSTRUMENTOS_INDIVIDUALES.some(instr => materia.includes(instr)) && ['Primero', 'Segundo', 'Tercero'].includes(nivel)) {
+                // Instrumento de Primer Ciclo (Primero, Segundo y Tercero):
+                // Ejecución 30% + Cotidiano 50% + Materiales 10% + Recital/festival 10% = 100%.
+                // Segundo Ciclo sigue con las rúbricas de abajo (Cotidiano 60 / Asistencia 40).
+                return [
+                    { id: 'ejecucion', label: 'Ejecución', peso: 0.30 },
+                    { id: 'cotidiano', label: 'Cotidiano', peso: 0.50 },
+                    { id: 'materiales', label: 'Materiales', peso: 0.10 },
+                    { id: 'recital', label: 'Recital/festival', peso: 0.10 }
+                ];
             } else {
                 return [
                     { id: 'cotidiano', label: 'Cotidiano', peso: 0.60 },
